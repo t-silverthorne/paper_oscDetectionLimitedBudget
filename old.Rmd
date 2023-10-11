@@ -1,0 +1,262 @@
+# Old
+
+Try on actual optimization problem, no luck
+```{r}
+
+Nmeas=8
+Nfine=1e2
+freq=3.8
+tau=(0:Nfine)/Nfine
+tau=tau[1:(length(tau)-1)]
+
+mu=CVXR::Variable(Nfine,boolean=T)
+tilX=cbind(cos(2*pi*freq*tau),sin(2*pi*freq*tau))
+tilX=CVXR::Parameter(Nfine,2,'tilX',value=tilX)
+objective=CVXR::Minimize(CVXR::lambda_max(t(tilX)%*%CVXR::diag(mu)%*%tilX))
+prob = CVXR::Problem(objective = objective,constraints=list(sum(mu)<=Nmeas))
+CVXR::solve(prob,solver='GUROBI')
+
+# force mu to be boolean
+
+CVXR::lambda_min(t(X)%*%X)
+```
+
+Try simplified optimization problem  mu'*x + x' Sigma x with x boolean
+```{r}
+library(CVXR)
+n  <- 1e1
+# parameters
+mu          <- matrix(abs(rnorm(n)), nrow = n)
+mu2          <- matrix(abs(rnorm(n)), nrow = n)
+Sigma       <- matrix(rnorm(n^2), nrow = n, ncol = n)
+Sigma2       <- matrix(rnorm(n^2), nrow = n, ncol = n)
+Sigma       <- t(Sigma) %*% Sigma
+Sigma2       <- t(Sigma2) %*% Sigma2
+
+# problem
+x           <- Variable(n,boolean=T)
+constraints <- list( sum(x) == 4)
+objective   <- t(mu) %*% x + sqrt(1e3*t(mu2) %*% x - quad_form(x,Sigma2))
+prob        <- Problem(Maximize(objective), constraints)
+result      <- solve(prob)
+result$getValue(x)
+result$status
+```
+
+Closer to actual problem lambda_max( A diag(x) B )
+```{r}
+# size 
+n = 3
+d = 2
+x            = Variable(n,boolean=T)
+
+# parameters
+A            = matrix(rnorm(n*d),nrow=d,ncol=n)
+B            = matrix(rnorm(n*d),nrow=n,ncol=d)
+
+# problem
+constraints  = list( sum(x) == 1,x>=0,x<=1)
+#objective    = lambda_min(A%*%CVXR::diag(x)%*%B)
+objective    = x[1]+sqrt(x[2]+x[3])-sum(x)^2
+prob         = Problem(Maximize(objective),constraints)
+result       = solve(prob)
+result$status
+result$getValue(x)
+
+plot(result$getValue(x))
+```
+## Check DCP expression for lambda min
+```{r}
+freq = 3.8
+Amp  = 2
+
+Nfine = 90 
+Nmeas = 8 
+
+# generate sampling grid
+#tau   = (0:Nfine)/Nfine       # equally spaced
+tau   = runif(Nfine+1)         # uniformly random
+tau   = tau[1:(length(tau)-1)] 
+
+# evaluate model at sampling points
+cvec  = matrix(cos(2*pi*freq*tau),nrow=Nfine)
+svec  = matrix(sin(2*pi*freq*tau),nrow=Nfine)
+
+# reduced Fisher information matrix
+x0   = matrix(rep(1/Nfine,Nfine),nrow=Nfine)
+tilX = cbind(cvec,svec)
+tilM = t(tilX)%*%pracma::Diag(as.vector(x0))%*%tilX # reduced Fisher Information matrix
+det(tilM)
+# vectors for constructing disciplined quadratic form
+a11=cvec*cvec
+a22=svec*svec
+a12=cvec*svec
+
+# compare disciplined quadratic form to direct computation of eigenvalue
+lmin1 = min(eigen(tilM) %>% {.$values})
+lmin2 = 0.5*(Trace(tilM) - sqrt(Trace(tilM)^2 - 4*det(tilM)))
+bvec  = a11+a22
+Amat  = a11%*%t(a11) + a22%*%t(a22) +4*a12%*%t(a12)-a11%*%t(a22) - a22%*%t(a11)
+A12   = Re(expm::sqrtm(Amat))
+
+# check that all three eigenvalue computations give same answer
+lmin1 #eigenvalue
+lmin2 #2x2 eigenvalue formula
+0.5*(t(bvec)%*%x0 -sqrt(t(x0)%*%Amat%*%x0)) # directly evaluate form
+0.5*(t(bvec)%*%x0 -Matrix::norm(A12%*%x0,type='2')) # use matrix sqrt to evaluate form
+x            = Variable(Nfine,boolean=T)
+constraints  = list( sum(x) == Nmeas)
+#objective    = 0.5*(t(bvec)%*%x -sqrt(t(x)%*%Amat%*%x))
+objective    = 0.5*(t(bvec)%*%x - CVXR::norm2(A12%*%x))
+prob         = Problem(Maximize(objective),constraints)
+result       = solve(prob,verbose=T,num_iter=1e5)
+result$status
+#result$getValue(x)
+plot(result$getValue(x))
+```
+
+## Working DCP 
+```{r}
+
+N     =  8 
+t = (0:N)/N  # Shifted by 1 from matlab
+t = t[1:(length(t)-1)]
+tunif=t
+param = list(Amp  = 3.23,
+             acro = 0,
+             freq = 3.7)
+
+#N     =  6 
+#t = (0:N)/N  # Shifted by 1 from matlab
+#t = t[1:(length(t)-1)]
+#tunif=t
+#param = list(Amp  = 3.23,
+#             acro = 0,
+#             freq = 3)
+
+#t = (0:N)/N  # Shifted by 1 from matlab
+#t = t[1:(length(t)-1)]
+#tunif=t
+#param = list(Amp  = 1.23,
+#             acro = 0,
+#             freq = 5.5)
+# evaluation
+getPower(t,param)
+getMinPower(t,param)
+
+# optimization
+t0=t+1e-1*runif(length(t))
+xopt1=optPowerDirect(t0,param) %>% {.$par}
+xopt2=optPowerLambda(t0,param) %>% {.$par}
+getMinPower(t,param)
+getMinPower(t=xopt1,param)
+getMinPower(t=xopt2,param)
+
+
+# cvx opt
+Nfine = 2^5 
+Nmeas = N 
+
+# generate sampling grid
+tau   = (0:Nfine)/Nfine       # equally spaced
+tau   = tau[1:(length(tau)-1)] 
+#tau   = runif(Nfine+1)         # uniformly random
+
+# evaluate model at sampling points
+cvec  = matrix(cos(2*pi*param$freq*tau),nrow=Nfine)
+svec  = matrix(sin(2*pi*param$freq*tau),nrow=Nfine)
+
+# vectors for constructing disciplined quadratic form
+a11   = cvec*cvec
+a22   = svec*svec
+a12   = cvec*svec
+bvec  = a11+a22
+Amat  = a11%*%t(a11) + a22%*%t(a22) +4*a12%*%t(a12)-a11%*%t(a22) - a22%*%t(a11)
+A12   = Re(expm::sqrtm(Amat))
+bvec
+
+x            = Variable(Nfine,boolean=T)
+constraints  = list( sum(x) == Nmeas)
+objective    = 0.5*(t(bvec)%*%x - CVXR::norm2(A12%*%x))
+prob         = Problem(Maximize(objective),constraints)
+#objective    = CVXR::quad_form(x,Amat) 
+#prob         = Problem(Minimize(objective),constraints)
+
+# terminate when within  1e-2, 1% of optimality bound 
+result       = solve(prob,verbose=T,num_iter=1e6,MIPGap=1e-4)
+
+phi_vals=seq(from=0,to=2*pi,by=0.1)
+pdf<-lapply(list(sched1=list(tname='xopt1',t=xopt1),
+            sched2=list(tname='xopt2',t=xopt2),
+            sched3=list(tname='cvxr',t=tau[result[[1]]>0]),
+            sched4=list(tname='tunif',t=tunif)),
+       function(sched){
+          lapply(phi_vals %>% as.list(),
+                 function(phi){
+                    param$acro=phi
+                    return(data.frame(tname=sched$tname,
+                                      phi=phi,
+                                      power=getPower(sched$t,param)))
+          }) %>% rbindlist()
+}) %>% rbindlist()
+
+
+p1<-ggplot()+geom_vline(xintercept = xopt1,color='black')+xlim(c(0,1))
+p2<-ggplot()+geom_vline(xintercept = xopt2,color='blue') +xlim(c(0,1))
+p3<-ggplot()+geom_vline(xintercept = tau[result[[1]]>0],color='red')+xlim(c(0,1))
+
+p4<-pdf %>% ggplot(aes(x=phi,y=power,group=tname,color=tname))+geom_line()+ylim(c(0,1))+scale_color_manual(values=c(xopt1='black',xopt2='blue',cvxr='red',tunif='green'))
+p1/p2/p3|p4
+#result$getValue(x)
+#plot(result$getValue(x))
+```
+## Power osc graph
+```{r}
+N     = 8
+Nacro = 2^7
+
+t = (0:N)/N  # Shifted by 1 from matlab
+t = t[1:(length(t)-1)]
+
+param = list(Amp  = 2,
+             acro = pi,
+             freq = 2.4)
+
+acrovals = 2*pi*( 0:(Nacro+1)/(Nacro+1) )
+acrovals = acrovals[1:length(acrovals)-1]
+acrovals = matrix(acrovals)
+
+freqvals = seq(from=3.5,to=4.4,by=.1) 
+
+df<-data.frame(expand.grid(acro=acrovals,freq=freqvals)) %>% 
+  apply(1,function(x){
+  param[['freq']]  = x[['freq']]
+  param[['acro']] = x[['acro']]
+  return(c(freq=x[['freq']],acro=x[['acro']],power=getPower(t,param)))
+  }) %>% t() %>% data.frame()
+df %>% head()
+
+df %>% ggplot(aes(x=acro,y=power,group=freq,color=freq))+geom_line()#+facet_wrap(~freq)
+```
+
+```{r}
+#Nmeasvec = seq(from=8,to=20,by=2)
+#acrovec  = seq(from=0,to=2*pi,by=.1)
+#ind    = 4 # corresponds to 3hr rhythm
+#pdf<-lapply(Nmeasvec %>% as.list(),function(N){
+#  t = (0:N)/N
+#  t = t[1:(length(t)-1)]
+#  param$freq = freqs[ind]
+#  powervec = getPower_acrovec(t,param,acrovec)
+#  return(data.frame(power       = powervec,
+#                    acro        = acrovec,
+#                    Nmeas       = N,
+#                    freq        = freqs[ind],
+#                    circ_period = circ_periods[ind],
+#                    strategy    = 'equal'))
+#})  %>% rbindlist()
+#df %>%
+# mutate(cp_label=factor(circ_period,levels=circ_periods,labels=paste0('Period = ',circ_periods,' hrs')))%>%
+# mutate(budget  = as.factor(Nmeas)) %>% 
+# ggplot(aes(x=acro,y=power,group=Nmeas,color=budget))+geom_line()+facet_wrap(~strategy)+scale_color_viridis_d()
+```

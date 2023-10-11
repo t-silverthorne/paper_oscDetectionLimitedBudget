@@ -13,17 +13,15 @@ source('rowCosinor.R')
 source('powerUtils.R')
 ```
 
+Basic elemwise does not work
 ```{r}
-N     = 15
+N     = 24
 t     = (0:N)/N  # Shifted by 1 from matlab
 t     = t[1:(length(t)-1)]
 tunif = t
-param = list(Amp  = 1.5,
-             acro = 0,
-             freq = 24/2.5)
 
 # cvx opt
-Nfine = 2^6
+Nfine = 2^5
 Nmeas = N 
 
 # generate sampling grid
@@ -32,10 +30,23 @@ tau   = (0:Nfine)/Nfine       # equally spaced
 tau   = tau[1:(length(tau)-1)] 
 
 # evaluate model at sampling points
-fmin = 4
-fmax = 24 
-df   = .5
-freqlist = seq(from=fmin,to=fmax,by=df) %>% as.list()
+
+#fmin = 1 
+#fmax = 24
+#df   = .5 
+#freqlist = seq(from=fmin,to=fmax,by=df) %>% as.list()
+
+freqlist=c(1,24)
+
+param = list(Amp  = 2,
+             acro = 0,
+             freq = freqlist[1])
+
+#permin = 2/24
+#permax = 24/24
+#dp     = 1/24
+#perlist = seq(from=permin,to=permax,by=dp) 
+#freqlist = (1/perlist) %>% as.list()
 
 objective_vector = freqlist %>% lapply(function(frq){
   cvec  = matrix(cos(2*pi*frq*tau),nrow=Nfine)
@@ -50,21 +61,26 @@ objective_vector = freqlist %>% lapply(function(frq){
             4*a12%*%t(a12)-a11%*%t(a22) - a22%*%t(a11)
   A12   = Re(expm::sqrtm(Amat))
   
-  x            = Variable(Nfine,boolean=T)
-  return(0.5*(t(bvec)%*%x - CVXR::norm2(A12%*%x)))
+  x     = Variable(Nfine,boolean=T)
+#  return(0.5*(t(bvec)%*%x - CVXR::norm2(A12%*%x)+1e3*sum(x*cvec) ))
+  return(-t(matrix(1:length(tau)))%*%x)
 }) %>% as.vector()
 
 x            = Variable(Nfine,boolean=T)
-constraints  = list( sum(x) == Nmeas)
-prob         = Problem(Maximize(do.call(CVXR::min_elemwise,objective_vector)),
-                                constraints)
+constraints  = list( sum(x) == Nmeas,x>=0,x<=1)
+prob         = Problem(Maximize(min_elemwise()), constraints)
+prob         = Problem(Maximize(min_elemwise(-t(matrix(1:length(tau)))%*%x,-t(matrix(1:length(tau)))%*%x)), constraints)
 
 # terminate when within  1e-2, 1% of optimality bound 
 
 result       = solve(prob,verbose=T,num_iter=1e6,MIPGap=1e-3)
 active_inds  = result$getValue(objet=x)
-phi_vals=seq(from=0,to=2*pi,by=0.1)
+phi_vals=seq(from=0,to=2*pi,by=0.02)
 
+p1<-ggplot()+geom_vline(xintercept = 24*tunif,color='black')+
+  scale_x_continuous(breaks=seq(from=0,to=24,by=8),limits=c(0,24))+xlab('uniform')
+p2<-ggplot()+geom_vline(xintercept = 24*tau[active_inds>0],color='magenta')+
+  scale_x_continuous(breaks=seq(from=0,to=24,by=8),limits=c(0,24))+xlab('optimized')
 
 pdf<-lapply(list(scheda=list(tname='uniform',t=tunif),
                  schedb=list(tname='optim',t=tau[active_inds>0])),
@@ -78,14 +94,124 @@ pdf<-lapply(list(scheda=list(tname='uniform',t=tunif),
           }) %>% rbindlist()
 }) %>% rbindlist()
 
+p3<-pdf %>% ggplot(aes(x=phi,y=power,group=tname,color=tname))+geom_line()+ylim(c(0,1))+
+                scale_color_manual(values=c('optim'='magenta','uniform'='black'))+xlab('acrophase')
+
+param$freq = freqlist[length(freqlist)] 
+pdf<-lapply(list(scheda=list(tname='uniform',t=tunif),
+                 schedb=list(tname='optim',t=tau[active_inds>0])),
+       function(sched){
+          lapply(phi_vals %>% as.list(),
+                 function(phi){
+                    param$acro=phi
+                    return(data.frame(tname=sched$tname,
+                                      phi=phi,
+                                      power=getPower(sched$t,param)))
+          }) %>% rbindlist()
+}) %>% rbindlist()
+p4<-pdf %>% ggplot(aes(x=phi,y=power,group=tname,color=tname))+geom_line()+ylim(c(0,1))+
+                scale_color_manual(values=c('optim'='magenta','uniform'='black'))+xlab('acrophase')
+
+((p1/p2)|(p3/p4))
+```
+
+```{r}
+N     = 15 
+t     = (0:N)/N  # Shifted by 1 from matlab
+t     = t[1:(length(t)-1)]
+tunif = t
+
+# cvx opt
+Nfine = 2^6
+Nmeas = N 
+
+# generate sampling grid
+tau   = (0:Nfine)/Nfine       # equally spaced
+tau   = tau[1:(length(tau)-1)] 
+
+# evaluate model at sampling points
+
+freqlist=seq(1,24,1)
+
+param = list(Amp  = 2,
+             acro = 0,
+             freq = freqlist[1])
+
+
+A12list  = freqlist %>% lapply(function(frq){
+  cvec  = matrix(cos(2*pi*frq*tau),nrow=Nfine)
+  svec  = matrix(sin(2*pi*frq*tau),nrow=Nfine)
+  
+  # vectors for constructing disciplined quadratic form
+  a11   = cvec*cvec
+  a22   = svec*svec
+  a12   = cvec*svec
+  bvec  = a11+a22
+  Amat  = a11%*%t(a11) + a22%*%t(a22) +
+            4*a12%*%t(a12)-a11%*%t(a22) - a22%*%t(a11)
+  A12   = Re(expm::sqrtm(Amat))
+  
+  x     = Variable(Nfine,boolean=T)
+  return(A12)
+}) 
+x            = Variable(Nfine,boolean=T)
+constraints  = list( sum(x) == Nmeas,x>=0,x<=1)
+bvec=rep(1,length(tau)) %>% matrix(nrow=length(tau))
+strp=paste0('objective_vectoR=c(',paste(lapply(1:length(A12list) %>% as.list(),
+                                          function(ind){paste0('t(bvec)%*%x-norm2(A12list[[',ind,']]%*%x)')}),collapse=','),')')
+eval(parse(text=strp))
+
+#vvv=  c(t(bvec)%*%x-norm2(A12list[[1]]%*%x),
+#  t(bvec)%*%x-norm2(A12list[[2]]%*%x) )
+#vvv= lapply(A12list,function(A12){t(bvec)%*%x-norm2(A12list[[2]]%*%x)}) %>% as.vector()
+prob         = Problem(Maximize(do.call(min_elemwise,
+                                        objective_vectoR 
+  )), constraints)
+#prob         = Problem(Maximize(min_elemwise(
+#  t(bvec)%*%x-norm2(A12list[[1]]%*%x),
+#  t(bvec)%*%x-norm2(A12list[[2]]%*%x) 
+#  )), constraints)
+
+# terminate when within  1e-2, 1% of optimality bound 
+
+result       = solve(prob,verbose=T,num_iter=1e8,MIPGap=1e-3)
+active_inds  = result$getValue(objet=x)
+phi_vals=seq(from=0,to=2*pi,by=0.02)
 
 p1<-ggplot()+geom_vline(xintercept = 24*tunif,color='black')+
   scale_x_continuous(breaks=seq(from=0,to=24,by=8),limits=c(0,24))+xlab('uniform')
 p2<-ggplot()+geom_vline(xintercept = 24*tau[active_inds>0],color='magenta')+
   scale_x_continuous(breaks=seq(from=0,to=24,by=8),limits=c(0,24))+xlab('optimized')
 
+pdf<-lapply(list(scheda=list(tname='uniform',t=tunif),
+                 schedb=list(tname='optim',t=tau[active_inds>0])),
+       function(sched){
+          lapply(phi_vals %>% as.list(),
+                 function(phi){
+                    param$acro=phi
+                    return(data.frame(tname=sched$tname,
+                                      phi=phi,
+                                      power=getPower(sched$t,param)))
+          }) %>% rbindlist()
+}) %>% rbindlist()
+
 p3<-pdf %>% ggplot(aes(x=phi,y=power,group=tname,color=tname))+geom_line()+ylim(c(0,1))+
                 scale_color_manual(values=c('optim'='magenta','uniform'='black'))+xlab('acrophase')
 
-((p1/p2)|p3)
+param$freq = freqlist[length(freqlist)] 
+pdf<-lapply(list(scheda=list(tname='uniform',t=tunif),
+                 schedb=list(tname='optim',t=tau[active_inds>0])),
+       function(sched){
+          lapply(phi_vals %>% as.list(),
+                 function(phi){
+                    param$acro=phi
+                    return(data.frame(tname=sched$tname,
+                                      phi=phi,
+                                      power=getPower(sched$t,param)))
+          }) %>% rbindlist()
+}) %>% rbindlist()
+p4<-pdf %>% ggplot(aes(x=phi,y=power,group=tname,color=tname))+geom_line()+ylim(c(0,1))+
+                scale_color_manual(values=c('optim'='magenta','uniform'='black'))+xlab('acrophase')
+
+((p1/p2)|(p3/p4))
 ```
