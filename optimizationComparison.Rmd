@@ -1,0 +1,122 @@
+# Setup
+
+Have reduced power optimization to D-optimality with the reduced Fisher information matrix
+```{r}
+library(stats)
+library(dplyr)
+library(ggplot2)
+library(gurobi)
+library(CVXR)
+library(dplyr)
+library(expm)
+library(patchwork)
+source('utils/powerUtils.R')
+```
+
+# Single freq
+
+```{r}
+# Define problem
+N=12
+param=list(Amp=1.5,
+           freq=4.4,
+           acro=1)
+t=(0:N)/N
+t=t[1:(length(t)-1)]
+t0=t
+
+# gradient based
+fpwr=function(t){-getMinPower(t,param)}
+gres=optim(t0,fn=fpwr,
+      method = 'L-BFGS-B',
+      lower=rep(0,length(t)),
+      upper = rep(1,length(t)))
+
+# convex programming based
+Nfine = 2^7
+Nmeas = N 
+
+# generate sampling grid and osc vecs
+tau   = (0:Nfine)/Nfine       
+tau   = tau[1:(length(tau)-1)] 
+cvec  = matrix(cos(2*pi*param$freq*tau),nrow=Nfine)
+svec  = matrix(sin(2*pi*param$freq*tau),nrow=Nfine)
+
+a11   = cvec*cvec
+a22   = svec*svec
+a12   = cvec*svec
+bvec  = a11+a22
+Amat  = a11%*%t(a11) + a22%*%t(a22) +4*a12%*%t(a12)-a11%*%t(a22) - a22%*%t(a11)
+A12   = Re(expm::sqrtm(Amat))
+
+x            = Variable(Nfine,boolean=T)
+constraints  = list( sum(x) == Nmeas)
+objective    = 0.5*(t(bvec)%*%x - CVXR::norm2(A12%*%x))
+prob         = Problem(Maximize(objective),constraints)
+
+result       = solve(prob,verbose=T,num_iter=1e6,MIPGap=1e-3)
+active_inds  = result$getValue(objet=x)
+
+cat('Grad power: ',getMinPower(gres$par,param))
+cat('CVX power:  ',getMinPower(tau[active_inds>0],param))
+
+cat('Grad eig: ',eigen(getReducedFIM(gres$par,param)) %>% {.$values})
+cat('CVX eig:  ', eigen(getReducedFIM(tau[active_inds>0],param))%>% {.$values})
+```
+
+# Window
+
+```{r}
+fmin = 1 
+fmax = 24
+df   = 1 
+freqlist = seq(from=fmin,to=fmax,by=df) %>% as.list()
+#freqlist=c(1,24)
+
+
+#multipwr(t0)
+#gres=optim(t0,fn=function(t){-1*multipwr(t)},
+#      method = 'L-BFGS-B',
+#      lower=rep(0,length(t)),
+#      upper = rep(1,length(t)))
+
+
+A12list  = freqlist %>% lapply(function(frq){
+  cvec  = matrix(cos(2*pi*frq*tau),nrow=Nfine)
+  svec  = matrix(sin(2*pi*frq*tau),nrow=Nfine)
+  
+  # vectors for constructing disciplined quadratic form
+  a11   = cvec*cvec
+  a22   = svec*svec
+  a12   = cvec*svec
+  bvec  = a11+a22
+  Amat  = a11%*%t(a11) + a22%*%t(a22) +
+            4*a12%*%t(a12)-a11%*%t(a22) - a22%*%t(a11)
+  A12   = Re(expm::sqrtm(Amat))
+  
+  x     = Variable(Nfine,boolean=T)
+  return(A12)
+}) 
+x            = Variable(Nfine,boolean=T)
+constraints  = list( sum(x) == Nmeas,x>=0,x<=1)
+bvec=rep(1,length(tau)) %>% matrix(nrow=length(tau))
+strp=paste0('objective_vectoR=c(',paste(lapply(1:length(A12list) %>% as.list(),
+                          function(ind){paste0('t(bvec)%*%x-norm2(A12list[[',ind,']]%*%x)')}),collapse=','),')')
+eval(parse(text=strp))
+
+prob         = Problem(Maximize(do.call(min_elemwise,
+                                        objective_vectoR)), constraints)
+
+```
+
+```{r}
+result       = solve(prob,verbose=T,solver='GUROBI',TimeLimit=1)
+active_inds  = result$getValue(objet=x)
+
+#gres$value
+multipwr(tau[active_inds>0])
+```
+
+```{r}
+
+```

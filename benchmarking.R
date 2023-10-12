@@ -130,7 +130,7 @@ unifA  = tdf %>% ggplot(aes(x=time,y=value,color=type))+geom_point()+scale_color
 polyA  = polyA+theme(legend.position = "none")
 seqA   = seqA+theme(legend.position = "none")
 unifA  = unifA+theme(legend.position = "none")
-panelA = polyA/seqA/unifA
+panelA = ((polyA+ggtitle('Design'))/seqA/unifA)
 
 ############# move this eventually
 df_plot = .05 
@@ -157,7 +157,7 @@ hmat<-expand.grid(freq=freqs,Amp=Amps ) %>%
     }) %>% rbindlist()
 
 panelB = hmat %>% ggplot(aes(y=Amp,x=freq,z=minPower))+
-  geom_contour_filled(n.breaks=10)+#breaks = (0:Nbrk)/Nbrk,)+
+  geom_contour_filled()+#breaks = (0:Nbrk)/Nbrk,)+
   facet_wrap(~sched,nrow=3)+
   metR::scale_fill_discretised(low='#3B444B',high='#4997D0')
 
@@ -178,7 +178,19 @@ hmatC = freqs %>%as.list() %>%  lapply(function(frq){
     return(rbind(df1,df2,df3))
 }) %>% rbindlist()
 
-panelC <- hmatC %>% ggplot(aes(x=freq,y=minEig,color=sched,group=sched))+geom_line()+scale_color_manual(values=vis_colors)
+panelC <- hmatC %>% ggplot(aes(x=freq,y=minEig,color=sched,group=sched))+geom_line()+scale_color_manual(values=vis_colors)+facet_wrap(~sched,nrow=3)
 
 
-panelA | panelB | panelC
+panelA | panelB +ggtitle('Power') | panelC+ggtitle('Minimal eigenvalue')
+
+#TODO Generate fourth panel: spectral bias
+
+  # generate data from gamma distribution
+  # run lomb scargle on each row to generate freq estimate
+  # plot histogram of maxima
+
+# Generate fifth panel: phase bias
+
+  # uniform dist acrophases
+  # simualte measurement
+  # 

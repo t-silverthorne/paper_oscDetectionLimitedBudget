@@ -75,3 +75,17 @@ getReducedFIM <- function(t,param){
            nrow=2,byrow=T)
   Y %*% t(Y)
 }
+
+getMinEig <- function(t,param){
+  R = getReducedFIM(t,param)
+  return(eigen(R) %>% {.$values} %>% min())
+}
+multipwr=function(t,freqlist,param){
+  freqlist %>% sapply(function(f){param$freq=f
+  return(getMinPower(t,param))}) %>% min()
+}
+
+getMinEig_overFreq = function(t,freqlist,param){
+  freqlist %>% sapply(function(f){param$freq=f
+  return(getMinEig(t,param))}) %>% min()
+}
