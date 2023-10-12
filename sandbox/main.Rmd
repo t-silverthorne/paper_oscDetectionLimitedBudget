@@ -1,0 +1,243 @@
+# Introduction to power optimization 
+
+
+Outline:
+
+1. How is period uncertainty related to irregular sampling?
+2. What does our optimization method do?
+3. What remains to be understood and implemented?
+
+
+```{r}
+library(stats)
+library(dplyr)
+library(ggplot2)
+library(gurobi)
+library(CVXR)
+library(dplyr)
+library(expm)
+library(NlcOptim)
+library(patchwork)
+library(data.table)
+source('rowCosinor.R')
+source('powerUtils.R')
+```
+
+# Period uncertainty and irregular sampling 
+
+## Acrophase can influence detection 
+```{r}
+N=8
+time   = seq(from=0,to=1,by=.005)
+tunif=(0:N)/N
+tunif=tunif[1:(length(tunif)-1)]
+signal = cos(2*pi*4*time) 
+p1<-data.frame(time=time,signal=signal) %>%mutate(time_hr = 24*time) %>%  ggplot(aes(x=time_hr,y=signal))+
+  geom_line(color='blue')+
+  geom_vline(xintercept = 24*tunif,linetype='dashed')+ggtitle('high power')+
+  scale_x_continuous(breaks=seq(from=0,to=24,by=8),limits=c(0,24))
+signal = cos(2*pi*4*time-pi/2) 
+p2<-data.frame(time=time,signal=signal) %>%mutate(time_hr = 24*time) %>%  ggplot(aes(x=time_hr,y=signal))+
+  geom_line(color='red')+
+  geom_vline(xintercept = 24*tunif,linetype='dashed')+ggtitle('low power')+
+  scale_x_continuous(breaks=seq(from=0,to=24,by=8),limits=c(0,24))
+
+p1/p2
+```
+
+## Only happens when oscillation is fast 
+
+How do we remove this unwanted acrophase dependence?
+```{r}
+periods      = c(1,1/2,1/4,1/8,1/16,1/24)
+circ_periods = 24*periods
+freqs        = 1/periods
+
+param=list(
+  Amp=2,
+  acro=0,
+  freq=1
+)
+Nmeasvec     = seq(from=6,to=24,by=2)
+
+acrovec = seq(from=0,to=2*pi,by=.1)
+
+pdf<-lapply(Nmeasvec %>% as.list(),function(N){
+  t = (0:N)/N
+  t = t[1:(length(t)-1)]
+  lapply(1:length(freqs) %>% as.list(), function(ind){
+    param$freq = freqs[ind]
+    powervec = getPower_acrovec(t,param,acrovec)
+    return(data.frame(power=powervec,
+                      acro=acrovec,
+                      Nmeas=N,
+                      freq=freqs[ind],
+                      circ_period=circ_periods[ind]))
+  })  %>% rbindlist()
+}) %>% rbindlist()
+
+pdf %>%  
+  mutate(cp_label=factor(circ_period,levels=circ_periods,labels=paste0('Period = ',circ_periods,' hrs')))%>%
+  mutate(budget  = as.factor(Nmeas)) %>% 
+  ggplot(aes(x=acro,y=power,group=Nmeas,color=budget))+geom_line()+facet_wrap(~cp_label)+scale_color_viridis_d()
+```
+
+Theoretical explanation: **Experimental design and power calculation in omics circadian rhythmicity detection using the cosinor model** Zong et al. 2023.
+
+- Power is constant when evenly sampling at least 3 times per cycle
+
+# Our optimization method
+
+Our approach: turn power optimization into a convex programming problem
+
+For a given period (or range of periods)
+
+- selects measurement times to maximize the power at all acrophases simultaneously
+- avoids situation where you are always measuring at the MESOR
+
+Example: 6.5hr oscillation in a circadian experiment
+
+- (Black) Equally spaced measurements have oscillating power
+- (Magenta) Oscillations are not present in the optimal design
+```{r}
+N     =  8 
+t     = (0:N)/N  # Shifted by 1 from matlab
+t     = t[1:(length(t)-1)]
+tunif = t
+param = list(Amp  = 2.5,
+             acro = 0,
+             freq = 24/6.5)
+
+# cvx opt
+Nfine = 2^5
+Nmeas = N 
+
+# generate sampling grid
+tau   = (0:Nfine)/Nfine       # equally spaced
+tau   = tau[1:(length(tau)-1)] 
+
+# evaluate model at sampling points
+cvec  = matrix(cos(2*pi*param$freq*tau),nrow=Nfine)
+svec  = matrix(sin(2*pi*param$freq*tau),nrow=Nfine)
+
+# vectors for constructing disciplined quadratic form
+a11   = cvec*cvec
+a22   = svec*svec
+a12   = cvec*svec
+bvec  = a11+a22
+Amat  = a11%*%t(a11) + a22%*%t(a22) +4*a12%*%t(a12)-a11%*%t(a22) - a22%*%t(a11)
+A12   = Re(expm::sqrtm(Amat))
+
+x            = Variable(Nfine,boolean=T)
+constraints  = list( sum(x) == Nmeas)
+objective    = 0.5*(t(bvec)%*%x - CVXR::norm2(A12%*%x))
+prob         = Problem(Maximize(objective),constraints)
+
+# terminate when within  1e-2, 1% of optimality bound 
+result       = solve(prob,verbose=F,num_iter=1e6,MIPGap=1e-4)
+
+phi_vals=seq(from=0,to=2*pi,by=0.1)
+pdf<-lapply(list(scheda=list(tname='uniform',t=tunif),
+                 schedb=list(tname='optim',t=tau[result[[1]]>0])),
+       function(sched){
+          lapply(phi_vals %>% as.list(),
+                 function(phi){
+                    param$acro=phi
+                    return(data.frame(tname=sched$tname,
+                                      phi=phi,
+                                      power=getPower(sched$t,param)))
+          }) %>% rbindlist()
+}) %>% rbindlist()
+```
+
+
+```{r}
+
+p1<-ggplot()+geom_vline(xintercept = 24*tunif,color='black')+
+  scale_x_continuous(breaks=seq(from=0,to=24,by=8),limits=c(0,24))+xlab('uniform')
+p2<-ggplot()+geom_vline(xintercept = 24*tau[result[[1]]>0],color='magenta')+
+  scale_x_continuous(breaks=seq(from=0,to=24,by=8),limits=c(0,24))+xlab('optimized')
+
+p3<-pdf %>% ggplot(aes(x=phi,y=power,group=tname,color=tname))+geom_line()+ylim(c(0,1))+
+                scale_color_manual(values=c('optim'='magenta','uniform'='black'))+xlab('acrophase')
+
+((p1/p2)|p3)
+```
+
+## Test max elementwise
+```{r}
+objective1    = 0.5*(t(bvec)%*%x - CVXR::norm2(A12%*%x))
+objective2    = 0.5*(t(bvec)%*%x )
+prob         = Problem(Maximize(do.call(min_elemwise,c(objective1,objective2))),constraints)
+solve(prob,verbose=T,num_iter=1e6,MIPGap=1e-4)
+
+```
+
+
+```{r}
+#freqs = seq(from=1,to=24,by=.1)
+#Amps  = 10^seq(-1,1.25,0.1)
+#
+#toptim = tau[result[[1]]>0]
+#hmat<-expand.grid(freq=freqs,Amp=Amps ) %>% 
+#  apply(1,function(x){
+#    param$freq = x['freq'] 
+#    param$Amp  = x['Amp'] 
+#    punif  = getMinPower(tunif,param)
+#    poptim = getMinPower(toptim,param)
+#    df1 = data.frame(freq=x['freq'],Amp=x['Amp'],minPower=punif,sched='unif')
+#    df2 = data.frame(freq=x['freq'],Amp=x['Amp'],minPower=poptim,sched='optim')
+#    return(rbind(df1,df2))
+#    }) %>% rbindlist()
+#
+#hmat %>% head()
+#hmat %>% ggplot(aes(x=Amp,y=freq,z=minPower))+geom_contour_filled()+facet_wrap(~sched)
+```
+# Yet to be understood/implemented 
+
+Summary:
+
+- Using a uinform grid, phase dependent power happens because  MESOR can align with sampling grid
+- For a single known frequency, our optimization protocol chooses sampling strategy to remove this
+
+Ongoing work:
+
+- Test our method on period windows
+- Control possible biases in point estimators and periodogram 
+- Allow customization of replicates
+
+When not to use this:
+
+- If you measure more than 3 times per cycle, very unlikely that irregular sampling will help (Zong et al. 2023)
+- If noise is phase dependent, the theory we use is not applicable 
+
+
+
+# Comparison of Monte Carlo and exact expression
+
+Monte Carlo formula agrees with estimate
+```{r}
+# stat params 
+N    = 8 
+t    = (0:N)/N
+t    = t[1:(length(t)-1)]
+Nmc  = 2e3
+
+# model params 
+Amp  = 2
+freq = 2
+acro = 1
+
+# simulate and fit 
+monteCarloPval <-function(){
+  Ydat = replicate(Nmc,{Amp*cos(2*pi*freq*t -acro) + rnorm(length(t))}) %>% t
+  return(rowCosinor(Ydat,t,per=1/freq) %>% {.$pvalue <.05} %>% mean())
+}
+
+Nout = 1e3
+param = list(Amp=Amp,freq=freq,acro=acro)
+data.frame(power_estimate=replicate(Nout,{monteCarloPval()}) ) %>% ggplot(aes(x=power_estimate))+
+  geom_histogram()+
+  geom_vline(xintercept =getPower(t,param),color='blue')
+
+```
