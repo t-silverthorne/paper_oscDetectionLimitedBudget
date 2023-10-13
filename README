@@ -1,3 +1,14 @@
 CVXR and Gurobi are necessary. Setting up each package with R is explained in their respective documentation. An additional step is required for RStudio integration. The gurobi paths must be set not only in your .bashrc file but also in .profile. 
 
 Following CVXR and gurobi install instructions, updating .profile, and rebooting should make gurobi work in R.
+
+
+Need to use this approach to get CVXR to put timelimit on gurobi
+# Specify the GitHub repository
+github_repo <- "cvxgrp/CVXR"
+
+# Specify the branch name or commit hash
+github_branch <- "WIP_gurobi_solver_status"
+
+# Install the package from the specific branch
+devtools::install_github(repo = github_repo, ref = github_branch)

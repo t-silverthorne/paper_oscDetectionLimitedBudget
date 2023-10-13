@@ -86,6 +86,83 @@ multipwr=function(t,freqlist,param){
 }
 
 getMinEig_overFreq = function(t,freqlist,param){
-  freqlist %>% sapply(function(f){param$freq=f
-  return(getMinEig(t,param))}) %>% min()
+  freqlist %>% sapply(function(f){param$freq=f 
+  return(getMinEig(t,param))}
+  ) %>% min()
+}
+
+getMeanEig_overFreq = function(t,freqlist,param){
+  freqlist %>% sapply(function(f){param$freq=f 
+  return(getMinEig(t,param))}
+  ) %>% mean()
+}
+
+
+diffLambdaMin = function(t,param){
+  # get eigenvector corresp. to minimal eigenvalue 
+  M    = getReducedFIM(t,param)
+  eM   = eigen(M)
+  mind = which.min(eM$values)
+  yv   = eM$vectors[,mind] 
+  
+  # compute entries of derivative mat 
+  freq = param$freq
+  om   = 2*pi*freq
+  dA11 = -2*t(cos(om*t)) %*% (sin(om*t)*t)
+  dA22 = 2*t(cos(om*t)) %*% (sin(om*t)*t)
+  dA12 = t(cos(om*t)) %*% (cos(om*t)*t) - t(sin(om*t)) %*% (sin(om*t)*t)
+  
+  # use eigenvalue perturbation result
+  dA   = 2*pi*matrix(c(dA11,dA12,dA12,dA22),nrow=2)
+  
+  return(t(yv)%*%dA%*%yv/(t(yv)%*%yv))
+}
+
+diffLambdaMin_overFreq = function(t,freqlist,param){
+  der = freqlist %>% sapply(function(f){param$freq=f 
+    return(diffLambdaMin(t,param))}
+    )
+  return(sqrt(t(der)%*%der))
+}
+
+getMinEig_overFreq_Reg = function(t,freqlist,param){
+  minEig = freqlist %>% sapply(function(f){param$freq=f 
+    return(getMinEig(t,param))}
+    ) %>% min()
+  reg    = diffLambdaMin_overFreq(t,freqlist,param)
+  return(minEig-reg*param$regStrength)
+}
+
+getMinEigVariation = function(t,freqlist,param){
+  return(-1*diffLambdaMin_overFreq(t,freqlist,param))
+}
+
+Jfun_delta = function(delta,tvec1,tvec2,freqlist,param){
+  # cost fun for constructing polyrhythmic designs
+  tvec  = construct_poly_design(delta,tvec1,tvec2) 
+  if(param$method=='min'){
+   J=getMinEig_overFreq(tvec,freqlist,param) 
+  }else if(param$method=='min-reg'){
+   J=getMinEig_overFreq_Reg(tvec,freqlist,param)
+  }else if(param$method=='reg-only'){
+   J=getMinEigVariation(tvec,freqlist,param)
+  }else if(param$method=='mean'){
+   J=getMeanEig_overFreq(tvec,freqlist,param)
+  }
+  return(J)
+}
+
+Jfun_tau = function(tau,tvec1,tvec2,freqlist,param){
+  # cost fun for constructing sequential designs
+  tvec = construct_sequential_design(tau,tvec1,tvec2)
+  if(param$method=='min'){
+   J=getMinEig_overFreq(tvec,freqlist,param) 
+  }else if(param$method=='min-reg'){
+   J=getMinEig_overFreq_Reg(tvec,freqlist,param)
+  }else if(param$method=='reg-only'){
+   J=getMinEigVariation(tvec,freqlist,param)
+  }else if(param$method=='mean'){
+   J=getMeanEig_overFreq(tvec,freqlist,param)
+  }
+  return(J)
 }
