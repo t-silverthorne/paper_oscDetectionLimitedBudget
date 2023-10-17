@@ -26,8 +26,8 @@ fmin = 1
 fmax = 24
 df   = .1 
 freqlist = seq(from=fmin,to=fmax,by=df) %>% as.list()
+parm$freqlist = freqlist
 
-vis_colors <- c("poly" = "blue", "seq" = "red", 'unif'='black')
 ############# TEST RUN
 ## run optimization
 #N1=6
@@ -38,14 +38,6 @@ vis_colors <- c("poly" = "blue", "seq" = "red", 'unif'='black')
 #tvec1 = tvec1[1:(length(tvec1)-1)]
 #tvec2 = tvec2[1:(length(tvec2)-1)]
 #
-#construct_poly_design       = function(delta,tvec1,tvec2){
-#  c((tvec1+delta)%%1,tvec2) %>% sort()
-#}
-#construct_sequential_design = function(tau,tvec1,tvec2){
-#  svec1 = tvec1*tau
-#  svec2 = tvec2*(1-tau)
-#  return(c(svec1,tau+svec2) %>% sort())
-#}
 #
 #
 #res_delta = pracma::fminbnd(function(delta){-Jfun_delta(delta,tvec1,tvec2,freqlist,param)},

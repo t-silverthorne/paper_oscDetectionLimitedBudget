@@ -137,6 +137,15 @@ getMinEigVariation = function(t,freqlist,param){
   return(-1*diffLambdaMin_overFreq(t,freqlist,param))
 }
 
+construct_poly_design       = function(delta,tvec1,tvec2){
+  c((tvec1+c(delta))%%1,tvec2) %>% sort()
+}
+construct_sequential_design = function(tau,tvec1,tvec2){
+  svec1 = tvec1*c(tau)
+  svec2 = tvec2*(1-c(tau))
+  return(c(svec1,c(tau)+svec2) %>% sort())
+}
+
 Jfun_delta = function(delta,tvec1,tvec2,freqlist,param){
   # cost fun for constructing polyrhythmic designs
   tvec  = construct_poly_design(delta,tvec1,tvec2) 

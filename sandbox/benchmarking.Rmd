@@ -1,0 +1,76 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+Low measurement budget
+```{r}
+library(stats)
+library(dplyr)
+library(ggplot2)
+library(gurobi)
+library(CVXR)
+library(dplyr)
+library(expm)
+library(patchwork)
+library(pracma)
+library(data.table)
+library(tictoc)
+source('utils/powerUtils.R')
+source('utils/makeBenchmarkFig.R')
+# define problem
+N=8
+param=list(Amp         = 1.5,
+           freq        = 4.4,
+           acro        = 1,
+           method      = 'min-reg',
+           regStrength = 1)
+t=(0:N)/N
+t=t[1:(length(t)-1)]
+t0=t
+
+fmin = 1 
+fmax = 24
+df   = .1 
+freqlist = seq(from=fmin,to=fmax,by=df) %>% as.list()
+param$freqlist = freqlist
+
+compare_costfuncs = function(N,param){
+  param$method = 'mean'
+  p1=makeBenchmarkFig(N,param)
+  
+  param$method = 'min'
+  p2=makeBenchmarkFig(N,param)
+  
+  param$method = 'min-reg'
+  p3=makeBenchmarkFig(N,param)
+  
+  param$method = 'reg-only'
+  p4=makeBenchmarkFig(N,param)
+  pout = {p1  | p2 | p3| p4} + plot_layout(nrow=4) 
+  return(pout)
+}
+```
+
+```{r,fig.height=12,fig.width=8}
+N=12
+pp=compare_costfuncs(N,param)
+pp
+```
+
+```{r,fig.height=12,fig.width=8}
+N=20
+pp=compare_costfuncs(N,param)
+pp
+```
+
+```{r,fig.height=12,fig.width=8}
+N=30
+pp=compare_costfuncs(N,param)
+pp
+```
+
+```{r,fig.height=12,fig.width=8}
+
+```
