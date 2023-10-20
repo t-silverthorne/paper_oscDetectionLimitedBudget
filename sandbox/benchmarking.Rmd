@@ -6,17 +6,20 @@ editor_options:
 
 Low measurement budget
 ```{r}
-library(stats)
-library(dplyr)
-library(ggplot2)
-library(gurobi)
-library(CVXR)
-library(dplyr)
-library(expm)
-library(patchwork)
-library(pracma)
-library(data.table)
-library(tictoc)
+suppressPackageStartupMessages(
+c(
+  library(stats),
+  library(dplyr),
+  library(ggplot2),
+  library(gurobi),
+  library(CVXR),
+  library(dplyr),
+  library(expm),
+  library(patchwork),
+  library(pracma),
+  library(data.table),
+  library(tictoc)
+))
 source('utils/powerUtils.R')
 source('utils/makeBenchmarkFig.R')
 # define problem
@@ -25,7 +28,7 @@ param=list(Amp         = 1.5,
            freq        = 4.4,
            acro        = 1,
            method      = 'min-reg',
-           regStrength = 1)
+           regStrength = 1e-1)
 t=(0:N)/N
 t=t[1:(length(t)-1)]
 t0=t
@@ -48,7 +51,10 @@ compare_costfuncs = function(N,param){
   
   param$method = 'reg-only'
   p4=makeBenchmarkFig(N,param)
-  pout = {p1  | p2 | p3| p4} + plot_layout(nrow=4) 
+  pout = {p1|p2|p3|p4} +
+    plot_layout(nrow=4) + 
+    plot_annotation(tag_levels='A')+
+    plot_annotation(caption = paste0('N= ',N,' measurements'))
   return(pout)
 }
 ```

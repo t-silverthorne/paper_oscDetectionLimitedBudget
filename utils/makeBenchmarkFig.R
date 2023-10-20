@@ -54,19 +54,33 @@ makeBenchmarkFig = function(N,param,doPowerPlt=F){
   tdf = list(data.frame(time=tvec_poly,value=2,type='poly'),
              data.frame(time=(tvec1_poly+delta_opt)%%1,value=1,type='unif'),
              data.frame(time=tvec2_poly,value=3,type='unif')) %>% rbindlist()
-  polyA = tdf %>% ggplot(aes(x=time,y=value,color=type))+geom_point()+scale_color_manual(values=vis_colors)
+  polyA = tdf %>% ggplot(aes(x=time,y=value,color=type))+
+    geom_point()+scale_color_manual(values=vis_colors)
   
   tdf = list(data.frame(time=tvec_seq,value=2,type='seq'),
              data.frame(time=tvec1_seq*tau_opt,value=1,type='unif'),
              data.frame(time=tau_opt+tvec2_seq*(1-tau_opt),value=3,type='unif')) %>% rbindlist()
-  seqA  = tdf %>% ggplot(aes(x=time,y=value,color=type))+geom_point()+scale_color_manual(values=vis_colors)
+  seqA  = tdf %>% ggplot(aes(x=time,y=value,color=type))+
+    geom_point()+scale_color_manual(values=vis_colors)
   
   tdf = list(data.frame(time=t0,value=2,type='unif')) %>% rbindlist()
-  unifA  = tdf %>% ggplot(aes(x=time,y=value,color=type))+geom_point()+scale_color_manual(values=vis_colors)
+  unifA  = tdf %>% ggplot(aes(x=time,y=value,color=type))+
+    geom_point()+scale_color_manual(values=vis_colors)
   
-  polyA  = polyA+theme(legend.position = "none",axis.text.y=element_blank())+labs(y='t')
-  seqA   = seqA+theme(legend.position = "none",axis.text.y=element_blank(),axis.title.y = element_blank())
-  unifA  = unifA+theme(legend.position = "none",axis.text.y=element_blank(),axis.title.y = element_blank())
+  polyA  = polyA+xlim(c(0,1))+
+    theme(legend.position = "none",
+          axis.text.y=element_blank(),
+          axis.title.x=element_blank())+labs(y='t')
+  
+  seqA   = seqA+xlim(c(0,1))+
+    theme(legend.position = "none",axis.text.y=element_blank(),
+          axis.title.y = element_blank())
+  
+  unifA  = unifA+xlim(c(0,1))+
+    theme(legend.position = "none",axis.text.y=element_blank(),
+          axis.title.y = element_blank(),
+          axis.title.x=element_blank())
+
   panelA = polyA|seqA|unifA
  
   if (doPowerPlt){
@@ -122,6 +136,7 @@ makeBenchmarkFig = function(N,param,doPowerPlt=F){
   } else {
     plt_out =  panelA /panelC
   }
+  return(as.ggplot(plt_out + plot_annotation(title=paste0(param$method))))
   #return(plt_out + plot_annotation(title=paste0('Nmeas =',N,', ',param$method, ' cost function ')) ) 
-  return(plt_out) 
+  #return(plt_out) 
 }
