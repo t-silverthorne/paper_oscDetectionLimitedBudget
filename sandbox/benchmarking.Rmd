@@ -18,7 +18,8 @@ c(
   library(patchwork),
   library(pracma),
   library(data.table),
-  library(tictoc)
+  library(tictoc),
+  library(ggplotify)
 ))
 source('utils/powerUtils.R')
 source('utils/makeBenchmarkFig.R')
@@ -53,7 +54,7 @@ compare_costfuncs = function(N,param){
   p4=makeBenchmarkFig(N,param)
   pout = {p1|p2|p3|p4} +
     plot_layout(nrow=4) + 
-    plot_annotation(tag_levels='A')+
+    #plot_annotation(tag_levels='A')+
     plot_annotation(caption = paste0('N= ',N,' measurements'))
   return(pout)
 }
