@@ -1,0 +1,180 @@
+This notebook is for the figures which appear in the paper before the theory section
+```{r}
+source('plotConfig.R')
+source('utils/powerUtils.R')
+library(ggplot2)
+library(dplyr)
+library(annmatrix)
+library(patchwork)
+library(ggplot2)
+library(ggplotify)
+library(data.table)
+```
+# Fig: Empirical motivation
+
+## Template
+```{r}
+# templates
+tmp    = data.frame(x=c(1,1),y=c(1,1),z=c(1,2))
+ptmp   = tmp %>% ggplot(aes(x=x,y=y))+geom_point()
+ptmp2  = tmp %>% mutate(example = ifelse(z==1,'freqwindow1','freqwindow2')) %>% ggplot(aes(x=x,y=y))+geom_point()+facet_wrap(~example,nrow=2)
+
+# example of schedule figure
+psched = control_labels(ptmp,y_ticks=F,y_label = F)   +labs(x='time')
+
+# other panels are easier
+pfreq   = ptmp2 +labs(x='period',y='count')
+ppval   = pfreq +labs(x='pvalue',y='count')
+ppwr    = ppval +labs(x='phase',y='power')
+
+# example of how to combine and annotate
+{ psched | pfreq | ppval | ppwr } + plot_annotation(tag_levels = 'A')
+
+
+```
+
+
+## Schedules
+```{r}
+vis_colors <- c("alt" = "blue", 'unif'='black')
+N   = 12
+Nmc = 1e3
+
+t     = (0:N)/N
+tunif = t[1:(length(t)-1)]
+
+perw1 = c(.9*1/4,1.1*1/4)
+perw2 = c(.9*1/6,1.1*1/6)
+
+N1 = 8
+N2 = N - N1
+tvec1 = (0:N1)/N1 
+tvec2 = (0:N2)/N2 
+tvec1 = tvec1[1:(length(tvec1)-1)]
+tvec2 = tvec2[1:(length(tvec2)-1)]
+
+talt = construct_sequential_design(0.3,tvec1,tvec2)
+
+tdf = list(data.frame(time=tunif,value=2,type='unif'),
+           data.frame(time=talt, value=1,type='alt')) %>% rbindlist()
+
+# generate and format
+PSCHED = tdf %>% ggplot(aes(x=24*time,y=value,color=type))+
+  geom_point()+scale_color_manual(values=vis_colors)
+PSCHED = control_labels(PSCHED,y_ticks=F,y_label = F) + theme(legend.position='none')+labs(x='time')
+PSCHED = PSCHED + scale_x_continuous(breaks = c(0, 8, 16, 24),limits = c(0,24))
+```
+
+## Frequency histograms
+```{r}
+#TODO maybe switch to uniform period spacing
+#makeRowForEmpPlot = function(perwin,tag){
+#  c(period = runif(1,min=min(perwin),max=max(perwin)),
+#  acro   = 2*pi*runif(1),
+#  tag    = tag)
+#}
+#
+#pardf1 = replicate(Nmc,{makeRowForEmpPlot(perw1,1)}) %>%
+#  t() %>% data.frame() 
+#
+#pardf2 = replicate(Nmc,{makeRowForEmpPlot(perw2,2)}) %>%
+#  t() %>% data.frame() 
+#
+#pardf = rbind(pardf1,pardf2) 
+
+sdper = 0.01
+mper1 = 1/6
+mper2 = 1/4
+
+makeRowForEmpPlot = function(mper,tag){
+  c(period = mper + sdper*rnorm(1),
+  acro   = 2*pi*runif(1),
+  tag    = tag)
+}
+
+pardf1 = replicate(Nmc,{makeRowForEmpPlot(mper1,1)}) %>%
+  t() %>% data.frame() 
+
+pardf2 = replicate(Nmc,{makeRowForEmpPlot(mper2,2)}) %>%
+  t() %>% data.frame() 
+
+pardf = rbind(pardf1,pardf2) 
+PFREQ = pardf %>% 
+  mutate(circ_period = 24*period) %>% 
+  mutate(fwlabel = ifelse(tag==1,'perwindow1','perwindow2')) %>% 
+  ggplot(aes(x=circ_period))+geom_histogram()+facet_wrap(~fwlabel,nrow=2)
+#PFREQ = PFREQ + scale_x_continuous(breaks = c(0, 8, 16, 24),limits = c(0,24))
+
+PFREQ
+```
+
+## Attempt1: small sample size?
+```{r}
+tvec=tunif
+pardf=pardf1 # temporary
+getEmpData = function(x,tvec){cos(2*pi*tvec/x[['period']] - x[['acro']]) + rnorm(length(tvec))}
+
+rawData = apply(pardf,1,function(x){getEmpData(x,tunif)}) %>% t() 
+
+am = annmatrix(rawData,rann = c(pardf))
+pvec = rep(NA,dim(am)[1])
+for (ind in 1:dim(am)[1]){
+  pvec[ind]=rowCosinor(theData = t(am[ind,]),zts = tvec,per = am@period[ind] ) %>% {.$pvalue}
+}
+am@pvalue = pvec
+
+am@'' %>% 
+  ggplot(aes(x=acro,y=pvalue))+geom_point(size=1,alpha=0.5)+scale_color_viridis_c()+facet_wrap(~tag)+scale_y_continuous(trans='log2',breaks=c(0,0.05,0.1,1))
+
+```
+
+```{r}
+am@is_signif = am@pvalue<.05
+
+am@'' %>% ggplot(aes(x=acro))+geom_histogram()+facet_wrap(~is_signif)
+```
+
+```{r}
+param=list(Amp=1,
+           acro=1,
+           freq=6)
+
+getPower_acro = function(acro,t,param){
+  param$acro=acro
+  return(getPower(t,param))
+}
+acrovec=seq(from=0,to=2*pi,by=.1)
+pwrvec=sapply(acrovec,function(x){getPower_acro(x,tunif,param)})
+data.frame(acro=acrovec,power=pwrvec) %>% ggplot(aes(x=acro,y=power))+geom_point()
+```
+
+
+## pvalue histogram
+```{r}
+source('utils/rowCosinor.R')
+
+rowCosinor()
+
+```
+
+
+```{r}
+PSCHED | PFREQ
+```
+
+# Fig: From power to non-centrality
+
+## Template
+```{r}
+
+
+```
+
+
+# Fig: Optimization in reduced design space
+
+## Template
+```{r}
+
+
+```
