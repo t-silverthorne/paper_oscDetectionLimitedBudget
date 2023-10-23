@@ -108,7 +108,7 @@ PFREQ = pardf %>%
 PFREQ
 ```
 
-## Attempt1: small sample size?
+## Attempt 1: small sample size?
 ```{r}
 tvec=tunif
 pardf=pardf1 # temporary
@@ -135,33 +135,227 @@ am@'' %>% ggplot(aes(x=acro))+geom_histogram()+facet_wrap(~is_signif)
 ```
 
 ```{r}
-param=list(Amp=1,
-           acro=1,
-           freq=6)
+
+```
+
+
+
+## Attempt 2: fixed frequency
+```{r}
+Nmc=1e3
+Nout=3
+# model params 
+Amp  = 2
+freq = 6.2 
+acro = 1
+
+tvec=tunif
+# simulate and fit 
+monteCarloPval <-function(Amp,freq,acro){
+  Ydat = replicate(Nmc,{Amp*cos(2*pi*freq*tvec -acro) + rnorm(length(tvec))}) %>% t
+  return(rowCosinor(Ydat,tvec,per=1/freq) %>% {.$pvalue <.05} %>% mean())
+}
+
+acrovec_sparse = seq(from=0,to=2*pi,by=.25)
+df_mc=lapply(acrovec_sparse %>% as.list(),function(acro){
+  data.frame(power         =replicate(Nout,{monteCarloPval(Amp,freq,acro)}),
+             freq          =replicate(Nout,{freq}),
+             acro          =replicate(Nout,{acro}),
+             Amp           =replicate(Nout,{Amp}),
+             sched         =replicate(Nout,{'unif'})) 
+}) %>% rbindlist()
+
+ ggplot()+geom_point(data=df_mc,aes(x=acro,y=power))+ylim(c(0,1))
+
+
+param=list(Amp=Amp,
+           acro=acro,
+           freq=freq)
 
 getPower_acro = function(acro,t,param){
   param$acro=acro
   return(getPower(t,param))
 }
-acrovec=seq(from=0,to=2*pi,by=.1)
+acrovec=seq(from=0,to=2*pi,by=.05)
 pwrvec=sapply(acrovec,function(x){getPower_acro(x,tunif,param)})
-data.frame(acro=acrovec,power=pwrvec) %>% ggplot(aes(x=acro,y=power))+geom_point()
+df_exact= data.frame(acro=acrovec,power=pwrvec) 
+
+ggplot()+geom_point(data=df_mc,aes(x=acro,y=power))+
+  geom_line(data=df_exact,aes(x=acro,y=power))+ylim(c(0,1))
 ```
 
+# Fig: motivation v2 
 
-## pvalue histogram
+## Schedule with waveform shown
 ```{r}
-source('utils/rowCosinor.R')
+theme_set(theme_bw())
+vis_colors <- c("Alternative" = "blue", 'Uniform'='black')
+N   = 12
+Nmc = 1e3
 
-rowCosinor()
+t     = (0:N)/N
+tunif = t[1:(length(t)-1)]
 
+perw1 = c(.9*1/4,1.1*1/4)
+perw2 = c(.9*1/6,1.1*1/6)
+
+f0 = 5.8
+
+N1 = 8
+N2 = N - N1
+tvec1 = (0:N1)/N1 
+tvec2 = (0:N2)/N2 
+tvec1 = tvec1[1:(length(tvec1)-1)]
+tvec2 = tvec2[1:(length(tvec2)-1)]
+
+talt = construct_sequential_design(0.3,tvec1,tvec2)
+
+tdf = list(data.frame(time=tunif,value=0,type='unif'),
+           data.frame(time=talt, value=0,type='alt')) %>% rbindlist()
+
+td  = seq(from=0,to=1,by=.01)
+yd  = cos(2*pi*td*f0-pi/2)+1e-1*rnorm(length(td))
+dfd = data.frame(time=td,signal=yd,type='unif')
+
+yd   = cos(2*pi*td*f0-pi/2)+1e-1*rnorm(length(td))
+dfd2 = data.frame(time=td,signal=yd,type='alt')
+dfd  = rbind(dfd,dfd2)
+
+sched.labs = c('unif'='Uniform','alt'='Alternative')
+tdf$type = factor(tdf$type,levels=names(sched.labs),labels=sched.labs)
+dfd$type = factor(dfd$type,levels=names(sched.labs),labels=sched.labs)
+
+PSCHED = ggplot()+geom_line(data=dfd,aes(x=24*time,y=signal))+ 
+  geom_point(data=tdf,aes(x=24*time,y=value,color=type))+scale_color_manual(values=vis_colors)+
+  facet_wrap(~type,nrow=2,strip.position = 'left')
+PSCHED = control_labels(PSCHED,y_ticks=F) +
+  theme(legend.position='none',panel.grid.major = element_blank(),panel.grid.minor = element_blank())+
+  labs(x='time (hr)',y='signal')
+PSCHED = PSCHED + scale_x_continuous(breaks = c(0, 8, 16, 24),limits = c(0,24))
+PSCHED
 ```
 
+## P-value distribution
+```{r}
+Nmc=1e2
+Amp=2
+freq=5.8
+acro=0
+monteCarloPval <-function(tvec,Amp,freq,acro){
+  Ydat = replicate(Nmc,{Amp*cos(2*pi*freq*tvec -acro) + rnorm(length(tvec))}) %>% t
+  return(rowCosinor(Ydat,tvec,per=1/freq) %>% {.$pvalue} )
+}
+
+acrovec = seq(from=0,to=2*pi,by=.05)
+
+for (ii in c(1,2)){
+  if (ii==1){
+    tvec=tunif
+    type='unif'
+  }else{
+    tvec=talt
+    type='alt'
+  }
+  dfloc = lapply(acrovec %>% as.list(),function(x){
+    acroRep = replicate(Nmc,x)
+    typeRep = replicate(Nmc,{type})
+    pv=monteCarloPval(tvec,Amp,freq,x)  
+    return(data.frame(pval=pv,acro=acroRep,type=typeRep))
+  }) %>% rbindlist()
+  
+  if (ii==1){
+    df = dfloc
+  }else{
+    df = rbind(df,dfloc)
+  }
+}
+
+sched.labs = c('unif'='Uniform','alt'='Alternative')
+df$type = factor(df$type,levels=names(sched.labs),labels=sched.labs)
+
+PPVAL = df %>% ggplot(aes(x=24*acro/2/pi/f0,y=pval))+
+  geom_point(alpha=.2,size=.5)+
+  geom_hline(aes(yintercept=.05,color='red'))+
+  theme(legend.position='none',panel.grid.major = element_blank(),panel.grid.minor = element_blank())+      
+  facet_wrap(~type,nrow=2,strip.position = 'left')+
+  ylim(c(0,1))+labs(x='acrophase (hr)',y='oscillation p-value')#+
+  #theme(strip.background = element_blank(),strip.text.y = element_blank())
+PPVAL
+```
+
+
+## Power osc
+```{r}
+Nmc=5e2
+Nout=3
+# model params 
+Amp  = 2
+freq = 5.8 
+acro = 1
+
+# simulate and fit 
+monteCarloPval <-function(tvec,Amp,freq,acro){
+  Ydat = replicate(Nmc,{Amp*cos(2*pi*freq*tvec -acro) + rnorm(length(tvec))}) %>% t
+  return(rowCosinor(Ydat,tvec,per=1/freq) %>% {.$pvalue <.05} %>% mean())
+}
+
+acrovec_sparse = seq(from=0,to=2*pi,by=.25)
+for (ii in c(1,2)){
+  if (ii==1){
+    tvec=tunif
+    type='unif'
+  }else{
+    tvec=talt
+    type='alt'
+    
+  }
+  dfloc = lapply(acrovec_sparse %>% as.list(),function(x){
+    pwr=replicate(Nout,{monteCarloPval(tvec,Amp,freq,x)})
+    return(data.frame(power=pwr,acro=replicate(Nout,{x}),type=replicate(Nout,{type})))
+  }) %>% rbindlist()
+  
+  if (ii==1){
+    df = dfloc
+  }else{
+    df = rbind(df,dfloc)
+  }
+}
+
+param=list(Amp=Amp,
+           acro=acro,
+           freq=freq)
+
+getPower_acro = function(acro,t,param){
+  param$acro=acro
+  return(getPower(t,param))
+}
+acrovec=seq(from=0,to=2*pi,by=.05)
+pwrvec_unif=sapply(acrovec,function(x){getPower_acro(x,tunif,param)})
+pwrvec_alt =sapply(acrovec,function(x){getPower_acro(x,talt,param)})
+df_exact= data.frame(acro=acrovec,
+                     power=pwrvec_unif,
+                     type=replicate(length(acrovec),{'unif'}))
+
+df_exact= rbind(df_exact,data.frame(acro=acrovec,
+                                    power=pwrvec_alt,
+                                    type=replicate(length(acrovec),{'alt'})))
+
+df$type
+sched.labs = c('unif'='Uniform','alt'='Alternative')
+df_exact$type = factor(df_exact$type,levels=names(sched.labs),labels=sched.labs)
+df$type       = factor(df$type,levels=names(sched.labs),labels=sched.labs)
+
+PPWR = ggplot()+geom_point(data=df,aes(x=24*acro/2/pi/f0,y=power))+
+  geom_line(data=df_exact,aes(x=24*acro/2/pi/f0,y=power))+ylim(c(0,1))+
+  facet_wrap(~type,nrow=2,strip.position='left')+labs(x='acrophase (hr)',y='power')#+
+#  theme(strip.background = element_blank(),strip.text.y = element_blank())
+```
 
 ```{r}
-PSCHED | PFREQ
-```
+{PSCHED| PPVAL| PPWR}+plot_annotation(tag_levels = 'A')
+#ggsave("output_plot.pdf", width = 7, height = 4.5)
 
+```
 # Fig: From power to non-centrality
 
 ## Template
