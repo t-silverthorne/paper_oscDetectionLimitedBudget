@@ -1,7 +1,8 @@
 This notebook is for the figures which appear in the paper before the theory section
 ```{r}
 source('plotConfig.R')
-source('utils/powerUtils.R')
+source('utils/powerutils.r')
+source('utils/rowCosinor.R')
 library(ggplot2)
 library(dplyr)
 library(annmatrix)
@@ -9,183 +10,10 @@ library(patchwork)
 library(ggplot2)
 library(ggplotify)
 library(data.table)
-```
-# Fig: Empirical motivation
-
-## Template
-```{r}
-# templates
-tmp    = data.frame(x=c(1,1),y=c(1,1),z=c(1,2))
-ptmp   = tmp %>% ggplot(aes(x=x,y=y))+geom_point()
-ptmp2  = tmp %>% mutate(example = ifelse(z==1,'freqwindow1','freqwindow2')) %>% ggplot(aes(x=x,y=y))+geom_point()+facet_wrap(~example,nrow=2)
-
-# example of schedule figure
-psched = control_labels(ptmp,y_ticks=F,y_label = F)   +labs(x='time')
-
-# other panels are easier
-pfreq   = ptmp2 +labs(x='period',y='count')
-ppval   = pfreq +labs(x='pvalue',y='count')
-ppwr    = ppval +labs(x='phase',y='power')
-
-# example of how to combine and annotate
-{ psched | pfreq | ppval | ppwr } + plot_annotation(tag_levels = 'A')
-
-
-```
-
-
-## Schedules
-```{r}
-vis_colors <- c("alt" = "blue", 'unif'='black')
-N   = 12
-Nmc = 1e3
-
-t     = (0:N)/N
-tunif = t[1:(length(t)-1)]
-
-perw1 = c(.9*1/4,1.1*1/4)
-perw2 = c(.9*1/6,1.1*1/6)
-
-N1 = 8
-N2 = N - N1
-tvec1 = (0:N1)/N1 
-tvec2 = (0:N2)/N2 
-tvec1 = tvec1[1:(length(tvec1)-1)]
-tvec2 = tvec2[1:(length(tvec2)-1)]
-
-talt = construct_sequential_design(0.3,tvec1,tvec2)
-
-tdf = list(data.frame(time=tunif,value=2,type='unif'),
-           data.frame(time=talt, value=1,type='alt')) %>% rbindlist()
-
-# generate and format
-PSCHED = tdf %>% ggplot(aes(x=24*time,y=value,color=type))+
-  geom_point()+scale_color_manual(values=vis_colors)
-PSCHED = control_labels(PSCHED,y_ticks=F,y_label = F) + theme(legend.position='none')+labs(x='time')
-PSCHED = PSCHED + scale_x_continuous(breaks = c(0, 8, 16, 24),limits = c(0,24))
-```
-
-## Frequency histograms
-```{r}
-#TODO maybe switch to uniform period spacing
-#makeRowForEmpPlot = function(perwin,tag){
-#  c(period = runif(1,min=min(perwin),max=max(perwin)),
-#  acro   = 2*pi*runif(1),
-#  tag    = tag)
-#}
-#
-#pardf1 = replicate(Nmc,{makeRowForEmpPlot(perw1,1)}) %>%
-#  t() %>% data.frame() 
-#
-#pardf2 = replicate(Nmc,{makeRowForEmpPlot(perw2,2)}) %>%
-#  t() %>% data.frame() 
-#
-#pardf = rbind(pardf1,pardf2) 
-
-sdper = 0.01
-mper1 = 1/6
-mper2 = 1/4
-
-makeRowForEmpPlot = function(mper,tag){
-  c(period = mper + sdper*rnorm(1),
-  acro   = 2*pi*runif(1),
-  tag    = tag)
-}
-
-pardf1 = replicate(Nmc,{makeRowForEmpPlot(mper1,1)}) %>%
-  t() %>% data.frame() 
-
-pardf2 = replicate(Nmc,{makeRowForEmpPlot(mper2,2)}) %>%
-  t() %>% data.frame() 
-
-pardf = rbind(pardf1,pardf2) 
-PFREQ = pardf %>% 
-  mutate(circ_period = 24*period) %>% 
-  mutate(fwlabel = ifelse(tag==1,'perwindow1','perwindow2')) %>% 
-  ggplot(aes(x=circ_period))+geom_histogram()+facet_wrap(~fwlabel,nrow=2)
-#PFREQ = PFREQ + scale_x_continuous(breaks = c(0, 8, 16, 24),limits = c(0,24))
-
-PFREQ
-```
-
-## Attempt 1: small sample size?
-```{r}
-tvec=tunif
-pardf=pardf1 # temporary
-getEmpData = function(x,tvec){cos(2*pi*tvec/x[['period']] - x[['acro']]) + rnorm(length(tvec))}
-
-rawData = apply(pardf,1,function(x){getEmpData(x,tunif)}) %>% t() 
-
-am = annmatrix(rawData,rann = c(pardf))
-pvec = rep(NA,dim(am)[1])
-for (ind in 1:dim(am)[1]){
-  pvec[ind]=rowCosinor(theData = t(am[ind,]),zts = tvec,per = am@period[ind] ) %>% {.$pvalue}
-}
-am@pvalue = pvec
-
-am@'' %>% 
-  ggplot(aes(x=acro,y=pvalue))+geom_point(size=1,alpha=0.5)+scale_color_viridis_c()+facet_wrap(~tag)+scale_y_continuous(trans='log2',breaks=c(0,0.05,0.1,1))
-
-```
-
-```{r}
-am@is_signif = am@pvalue<.05
-
-am@'' %>% ggplot(aes(x=acro))+geom_histogram()+facet_wrap(~is_signif)
-```
-
-```{r}
-
-```
-
-
-
-## Attempt 2: fixed frequency
-```{r}
-Nmc=1e3
-Nout=3
-# model params 
-Amp  = 2
-freq = 6.2 
-acro = 1
-
-tvec=tunif
-# simulate and fit 
-monteCarloPval <-function(Amp,freq,acro){
-  Ydat = replicate(Nmc,{Amp*cos(2*pi*freq*tvec -acro) + rnorm(length(tvec))}) %>% t
-  return(rowCosinor(Ydat,tvec,per=1/freq) %>% {.$pvalue <.05} %>% mean())
-}
-
-acrovec_sparse = seq(from=0,to=2*pi,by=.25)
-df_mc=lapply(acrovec_sparse %>% as.list(),function(acro){
-  data.frame(power         =replicate(Nout,{monteCarloPval(Amp,freq,acro)}),
-             freq          =replicate(Nout,{freq}),
-             acro          =replicate(Nout,{acro}),
-             Amp           =replicate(Nout,{Amp}),
-             sched         =replicate(Nout,{'unif'})) 
-}) %>% rbindlist()
-
- ggplot()+geom_point(data=df_mc,aes(x=acro,y=power))+ylim(c(0,1))
-
-
-param=list(Amp=Amp,
-           acro=acro,
-           freq=freq)
-
-getPower_acro = function(acro,t,param){
-  param$acro=acro
-  return(getPower(t,param))
-}
-acrovec=seq(from=0,to=2*pi,by=.05)
-pwrvec=sapply(acrovec,function(x){getPower_acro(x,tunif,param)})
-df_exact= data.frame(acro=acrovec,power=pwrvec) 
-
-ggplot()+geom_point(data=df_mc,aes(x=acro,y=power))+
-  geom_line(data=df_exact,aes(x=acro,y=power))+ylim(c(0,1))
+library(pracma)
 ```
 
 # Fig: motivation v2 
-
 ## Schedule with waveform shown
 ```{r}
 theme_set(theme_bw())
@@ -213,11 +41,11 @@ talt = construct_sequential_design(0.3,tvec1,tvec2)
 tdf = list(data.frame(time=tunif,value=0,type='unif'),
            data.frame(time=talt, value=0,type='alt')) %>% rbindlist()
 
-td  = seq(from=0,to=1,by=.01)
-yd  = cos(2*pi*td*f0-pi/2)+1e-1*rnorm(length(td))
+td  = seq(from=0,to=1,by=.001)
+yd  = cos(2*pi*td*f0-pi/2)#+1e-1*rnorm(length(td))
 dfd = data.frame(time=td,signal=yd,type='unif')
 
-yd   = cos(2*pi*td*f0-pi/2)+1e-1*rnorm(length(td))
+yd   = cos(2*pi*td*f0-pi/2)#+1e-1*rnorm(length(td))
 dfd2 = data.frame(time=td,signal=yd,type='alt')
 dfd  = rbind(dfd,dfd2)
 
@@ -347,23 +175,117 @@ df$type       = factor(df$type,levels=names(sched.labs),labels=sched.labs)
 
 PPWR = ggplot()+geom_point(data=df,aes(x=24*acro/2/pi/f0,y=power))+
   geom_line(data=df_exact,aes(x=24*acro/2/pi/f0,y=power))+ylim(c(0,1))+
+  theme(legend.position='none',panel.grid.major = element_blank(),panel.grid.minor = element_blank())+
   facet_wrap(~type,nrow=2,strip.position='left')+labs(x='acrophase (hr)',y='power')#+
 #  theme(strip.background = element_blank(),strip.text.y = element_blank())
 ```
 
 ```{r}
 {PSCHED| PPVAL| PPWR}+plot_annotation(tag_levels = 'A')
-#ggsave("output_plot.pdf", width = 7, height = 4.5)
+ggsave(paste0(overleaf_plot_directory,"fig_motivation.pdf"), width = 7, height = 3)
 
 ```
 # Fig: From power to non-centrality
 
-## Template
-```{r}
+## Mean power for various amplitudes and periods
 
+Varying period looks nice but isnt as informative
+```{r}
+amps= seq(from=.5,to=5,by=.1)
+pers= seq(from=1,to=4,by=.1)
+
+tvec=tunif
+apdf = expand.grid(amp=amps,period=pers)
+apdf$minPower = apdf %>% apply(1,function(x){
+  param$Amp  = x[['amp']]
+  param$freq = 1/x[['period']]
+  return(getMinPower(tvec,param))
+  })
+head(apdf)
+
+apdf %>% ggplot(aes(x=amp,y=minPower,
+                    group=period,
+                    color=period))+geom_line()+scale_color_viridis_c()
+```
+
+Freq probably better
+```{r}
+amps= seq(from=.5,to=5,by=.1)
+freqs = seq(from=1,to=12,by=.05)
+
+tvec=tunif
+apdf = expand.grid(amp=amps,freq=freqs)
+apdf$minPower = apdf %>% apply(1,function(x){
+  param$Amp  = x[['amp']]
+  param$freq = x[['freq']]
+  return(getMinPower(tvec,param))
+  })
+head(apdf)
+```
+
+```{r}
+PMIN =apdf %>% mutate(circperiod = 24/freq) %>%  ggplot(aes(x=amp,y=minPower,
+                    group=circperiod,
+                    color=circperiod))+geom_line()+scale_color_viridis_c()+
+  theme(legend.position='bottom',panel.grid.major = element_blank(),panel.grid.minor = element_blank())
+```
+
+Mean power
+```{r}
+tvec=tunif
+acrovec=seq(from=0,to=2*pi,by=.1)
+acrovec=acrovec[1:(length(acrovec)-1)]
+apdf = expand.grid(amp=amps,freq=freqs)
+apdf$meanPower = apdf %>% apply(1,function(x){
+  param$Amp  = x[['amp']]
+  param$freq = x[['freq']]
+  return(mean(getPower_acrovec(tvec,param,acrovec)))
+  })
+```
+
+```{r}
+PMEAN = apdf %>% mutate(circperiod = 24/freq) %>%  ggplot(aes(x=amp,y=meanPower,
+                    group=circperiod,
+                    color=circperiod))+geom_line()+scale_color_viridis_c()+
+#  theme(legend.position=c(0.6,.25),legend.direction = 'horizontal',panel.grid.major = element_blank(),panel.grid.minor = element_blank())
+  theme(legend.position='none',panel.grid.major = element_blank(),panel.grid.minor = element_blank())
+
+PMEAN =  control_labels(PMEAN,x_label=F,x_ticks = F)
+```
+
+Illustrate detuning idea
+```{r}
+Nv=seq(from=8,to=24,by=2)
+pers = seq(from=1/24,to=1,by=.005)
+
+acrovec=seq(from=0,to=2*pi,by=.01)
+acrovec=acrovec[1:(length(acrovec)-1)]
+
+df = expand.grid(Nloc=Nv,period=pers)
+df$DeltaPower= df %>% apply(1,function(x){
+  Nloc   = x[['Nloc']]
+  tvec   = (0:Nloc)/Nloc
+  tvec   = tvec[1:(length(tvec)-1)]
+  param$Amp  = 1
+  param$freq = 1/x[['period']]
+  
+  pwrs=getPower_acrovec(tvec,param,acrovec) 
+  return(max(pwrs) - min(pwrs))
+})
 
 ```
 
+```{r}
+PDELTA = df %>% ggplot(aes(x=24*period,y=DeltaPower,group=Nloc,color=Nloc))+geom_line() + scale_color_viridis_c(option='inferno')+ylim(c(0,1))+theme(legend.position = 'bottom')
+PDELTA
+```
+
+
+```{r}
+{PDELTA | PMEAN/PMIN } + plot_annotation(tag_levels='A')
+ggsave(paste0(overleaf_plot_directory,"fig_framework.pdf"), width = 7, height = 3)
+
+```
 
 # Fig: Optimization in reduced design space
 
