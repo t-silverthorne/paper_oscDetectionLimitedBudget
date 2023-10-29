@@ -30,6 +30,14 @@ getMinPower <- function(t,param,alpha=.05){
         b = 2*pi) %>% {.$fmin})
 }
 
+getMaxPower <- function(t,param,alpha=.05){
+# find maximum power over the interval from [0,2pi] 
+  return(pracma::fminbnd(
+        f = function(phi){param['acro']=phi
+            return(-getPower(t,param,alpha))},
+        a = 0,
+        b = 2*pi) %>% {-.$fmin})
+}
 optPowerDirect<-function(t,param,alpha=.05){
   return(pracma::fmincon(x0=t,
                   fn=function(t){-getMinPower(t,param,alpha)},
