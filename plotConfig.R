@@ -1,7 +1,9 @@
-user='TurnerMac'
-
+#user='TurnerMac'
+user='TurnerLinux'
 if (user == 'TurnerMac'){
 	overleaf_plot_directory = '/Users/turnersilverthorn/research/overleaf/samplingPaper/figures/'
+} else {
+  overleaf_plot_directory = '/home/turner/research/overleaf/rate_limited_sampling/figures/'
 }
 
 control_labels <- function(plot, 

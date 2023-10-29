@@ -1,7 +1,7 @@
 This notebook is for the figures which appear in the paper before the theory section
 ```{r}
 source('plotConfig.R')
-source('utils/powerutils.r')
+source('utils/powerUtils.R')
 source('utils/rowCosinor.R')
 library(ggplot2)
 library(dplyr)
@@ -253,40 +253,109 @@ PMEAN = apdf %>% mutate(circperiod = 24/freq) %>%  ggplot(aes(x=amp,y=meanPower,
 PMEAN =  control_labels(PMEAN,x_label=F,x_ticks = F)
 ```
 
+
+
+```{r}
+#{PDELTA | PMEAN/PMIN } + plot_annotation(tag_levels='A')
+#ggsave(paste0(overleaf_plot_directory,"fig_framework.pdf"), width = 7, height = 3)
+
+```
+
+
+# Fig: amp variation and period variation
+How is worst case power influenced by changes in amplitude and changes in period
+
+## Amplitude part
+```{r}
+Ndes=5
+# various designs
+designsMAT = replicate(Ndes,{runif(N)}) %>% t() 
+rownames(designsMAT) = paste0('rand_design_',c(1:Ndes))
+designsMAT = rbind(designsMAT,tunif)
+
+# various periods
+freqlist = c(1,4,24/4.1) %>% as.numeric()
+
+# various amplitudes
+amps = seq(from=.1,to=5,by=.05)
+
+optdf = expand.grid(rownames(designsMAT),freqlist,amps)
+colnames(optdf) = c('design_name','freq','Amp')
+
+pwrvec = apply(optdf,1,function(x){
+  tloc       = designsMAT[rownames(designsMAT)==x[['design_name']], ]
+  param$Amp  = as.numeric(x[['Amp']])
+  param$freq = as.numeric(x[['freq']])
+  return(getMinPower(tloc,param))
+})
+optdf$minpwr = pwrvec
+
+head(optdf)
+
+unif_vs_rand_colors <- c('Random' = "grey", 'Uniform'='black')
+PAMP = optdf %>% mutate(period=1/freq) %>% mutate(circ_period = 24*period) %>% 
+  mutate(is_unif = ifelse(design_name=='tunif','Uniform','Random')) %>%
+  mutate(circ_period_label = paste0('T = ',round(circ_period,2),' hr')) %>% 
+  ggplot(aes(x=Amp,y=minpwr,group=design_name,color=is_unif))+geom_line()+
+  #scale_x_continuous(trans='log10')+
+  facet_wrap(~reorder(circ_period_label,-circ_period))+scale_color_manual(values = unif_vs_rand_colors)+
+  theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())+
+  labs(color=NULL,y='minimum power',x='amplitude')+ylim(c(0,1))
+```
+
+## Period part
 Illustrate detuning idea
 ```{r}
 Nv=seq(from=8,to=24,by=2)
-pers = seq(from=1/24,to=1,by=.005)
+pers = seq(from=1/24,to=1,by=.01)
 
-acrovec=seq(from=0,to=2*pi,by=.01)
-acrovec=acrovec[1:(length(acrovec)-1)]
+amps = c(1,1.5,3)
 
-df = expand.grid(Nloc=Nv,period=pers)
-df$DeltaPower= df %>% apply(1,function(x){
-  Nloc   = x[['Nloc']]
-  tvec   = (0:Nloc)/Nloc
-  tvec   = tvec[1:(length(tvec)-1)]
-  param$Amp  = 1
+df = expand.grid(Nloc=Nv,period=pers,Amp=amps)
+dfloc=df
+dfloc$power_col = dfloc %>% apply(1,function(x){
+  Nloc       = x[['Nloc']]
+  tvec       = (0:Nloc)/Nloc
+  tvec       = tvec[1:(length(tvec)-1)]
+  param$Amp  = x[['Amp']]
   param$freq = 1/x[['period']]
-  
-  pwrs=getPower_acrovec(tvec,param,acrovec) 
-  return(max(pwrs) - min(pwrs))
+  return(getMaxPower(tvec,param) - getMinPower(tvec,param))
 })
+dfloc$stat_type = 'delta'
+
+df$power_col = df %>% apply(1,function(x){
+  Nloc       = x[['Nloc']]
+  tvec       = (0:Nloc)/Nloc
+  tvec       = tvec[1:(length(tvec)-1)]
+  param$Amp  = x[['Amp']]
+  param$freq = 1/x[['period']]
+  return(getMinPower(tvec,param))
+})
+df$stat_type = 'min'
+
+df=rbind(df,dfloc)
+stat_type.label = c('min'='Minimum','delta'='Delta')
+df$stat_type = factor(df$stat_type,levels =names(stat_type.label),labels = stat_type.label)
+
+PDELTA = df %>% mutate(circ_period=24*period) %>%
+  mutate(amp_label=paste0('SNR = ',Amp)) %>% 
+  ggplot(aes(x=circ_period,y=power_col,group=Nloc,color=Nloc))+
+  geom_line()+
+  facet_grid(stat_type~amp_label)+ scale_color_viridis_c()+
+  theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())+
+  labs(color='N',x='period (hr)',y='power')+ylim(c(0,1))
+```
+
+```{r}
+source('plotConfig.R')
+{PAMP/PDELTA}+plot_annotation(tag_levels='A')+plot_layout(heights=c(1,1.5))
+ggsave(paste0(overleaf_plot_directory,"fig_framework.pdf"), width = 7, height =4.5)
 
 ```
 
 ```{r}
-PDELTA = df %>% ggplot(aes(x=24*period,y=DeltaPower,group=Nloc,color=Nloc))+geom_line() + scale_color_viridis_c(option='inferno')+ylim(c(0,1))+theme(legend.position = 'bottom')
-PDELTA
-```
-
-
-```{r}
-{PDELTA | PMEAN/PMIN } + plot_annotation(tag_levels='A')
-ggsave(paste0(overleaf_plot_directory,"fig_framework.pdf"), width = 7, height = 3)
 
 ```
-
 # Fig: Optimization in reduced design space
 
 ## Template
@@ -294,3 +363,13 @@ ggsave(paste0(overleaf_plot_directory,"fig_framework.pdf"), width = 7, height = 
 
 
 ```
+
+
+
+
+
+
+
+
+
+
