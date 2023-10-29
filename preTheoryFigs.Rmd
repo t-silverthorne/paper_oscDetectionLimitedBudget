@@ -282,8 +282,8 @@ PDELTA
 
 
 ```{r}
-{PDELTA | PMEAN/PMIN } + plot_annotation(tag_levels='A')
-ggsave(paste0(overleaf_plot_directory,"fig_framework.pdf"), width = 7, height = 3)
+{ PMEAN/PMIN |PDELTA } + plot_annotation(tag_levels='A')
+ggsave(paste0(overleaf_plot_directory,"fig_framework.pdf"), width = 7, height = 3.5)
 
 ```
 
