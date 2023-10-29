@@ -1,3 +1,5 @@
+# basic utils related to power analysis used throughout project
+
 getPower <- function(t,param,alpha=.05){
 # return power of one-frequency cosinor model
   Amp    = param[['Amp']];
@@ -60,7 +62,6 @@ optPowerLambda <- function(t,param,alpha=.05){
 }
 
 getFIM <- function(t,param){
-  Amp    = param[['Amp']];
   freq   = param[['freq']];
   acro   = param[['acro']];
   N      = length(t)
@@ -73,7 +74,6 @@ getFIM <- function(t,param){
   Y %*% t(Y)
 }
 getReducedFIM <- function(t,param){
-  Amp    = param[['Amp']];
   freq   = param[['freq']];
   acro   = param[['acro']];
   N      = length(t)

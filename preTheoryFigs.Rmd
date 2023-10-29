@@ -13,19 +13,15 @@ library(data.table)
 library(pracma)
 ```
 
-# Fig: motivation v2 
+# Fig: motivation 
 ## Schedule with waveform shown
 ```{r}
-theme_set(theme_bw())
 vis_colors <- c("Alternative" = "blue", 'Uniform'='black')
 N   = 12
 Nmc = 1e3
 
 t     = (0:N)/N
 tunif = t[1:(length(t)-1)]
-
-perw1 = c(.9*1/4,1.1*1/4)
-perw2 = c(.9*1/6,1.1*1/6)
 
 f0 = 5.8
 
@@ -350,14 +346,6 @@ PDELTA = df %>% mutate(circ_period=24*period) %>%
 source('plotConfig.R')
 {PAMP/PDELTA}+plot_annotation(tag_levels='A')+plot_layout(heights=c(1,1.5))
 ggsave(paste0(overleaf_plot_directory,"fig_framework.pdf"), width = 7, height =4.5)
-
-```
-
-# Fig: Optimization in reduced design space
-
-## Template
-```{r}
-
 
 ```
 
