@@ -13,6 +13,7 @@ library(ggplot2)
 library(ggplotify)
 library(data.table)
 library(pracma)
+library(nloptr)
 
 vis_colors <- c("Alternative" = "blue", 'Uniform'='black')
 N   = 12
@@ -77,6 +78,65 @@ P2= df %>% mutate(is_opt= dt==dt_opt) %>%
 P1/P2
 ```
 
+# Test nloptr
+
+
+```{r}
+library(nloptr)
+Jobj= function(tau,N1,N2,param,fmin,fmax,df,method){
+  tvec=NaN                            # construct measurement times
+  tvec1 = (0:N1)/N1 
+  tvec2 = (0:N2)/N2 
+  tvec1 = tvec1[1:(length(tvec1)-1)]
+  tvec2 = tvec2[1:(length(tvec2)-1)]
+  if (strcmp(method,'poly')){
+    tvec  =c((tvec1+c(tau))%%1,tvec2) %>% sort()
+  } else if(strcmp(method,'seq')){
+    svec1 = tvec1*c(tau)
+    svec2 = tvec2*(1-c(tau))
+    tvec=c(svec1,c(tau)+svec2) %>% sort()
+  }
+  
+  return(nloptr(x0=(fmin+fmax)/2,          # find lambda min over freq range
+         eval_f = function(f){
+           param$freq=f
+           return(getMinEig(tvec,param))
+         },
+         lb=fmin,
+         ub=fmax,
+         opts=list("algorithm" = "NLOPT_GN_DIRECT",'maxeval'=30)) %>% 
+           {.$solution}
+         )  
+
+}
+
+mloc='poly'
+
+N1=8
+N2=N-N1
+Jobj(0.001,N1,N2,param,fmin,fmax,df,mloc)
+nloptr(x0=1/N2/2,
+       eval_f = function(tau){-Jobj(tau,N1,N2,param,fmin,fmax,df,method=mloc)},
+       lb=0,
+       ub=ifelse(strcmp(method,'poly'),1/N2,1),
+       opts=list("algorithm" = "NLOPT_GN_DIRECT",'maxeval'=1)  
+)
+
+
+```
+
+```{r}
+tau=0.1445473
+tvec1 = (0:N1)/N1 
+tvec2 = (0:N2)/N2 
+tvec1 = tvec1[1:(length(tvec1)-1)]
+tvec2 = tvec2[1:(length(tvec2)-1)]
+tvec  =c((tvec1+c(tau))%%1,tvec2) %>% sort()
+eigs=freqs %>% sapply(function(f){param$freq=f
+getMinEig(tvec,param)})
+
+data.frame(eig=eigs,freq=freqs) %>% ggplot(aes(x=freq,y=eig))+geom_line()
+```
 # Fig: Optimization in reduced design space
 
 Skipping cvx optimal for now

@@ -9,8 +9,8 @@ library(expm)
 library(NlcOptim)
 library(patchwork)
 library(data.table)
-source('rowCosinor.R')
-source('powerUtils.R')
+source('utils/rowCosinor.R')
+source('utils/powerUtils.R')
 ```
 
 Basic elemwise does not work
@@ -68,7 +68,6 @@ objective_vector = freqlist %>% lapply(function(frq){
 
 x            = Variable(Nfine,boolean=T)
 constraints  = list( sum(x) == Nmeas,x>=0,x<=1)
-prob         = Problem(Maximize(min_elemwise()), constraints)
 prob         = Problem(Maximize(min_elemwise(-t(matrix(1:length(tau)))%*%x,-t(matrix(1:length(tau)))%*%x)), constraints)
 
 # terminate when within  1e-2, 1% of optimality bound 
@@ -174,7 +173,7 @@ prob         = Problem(Maximize(do.call(min_elemwise,
 
 # terminate when within  1e-2, 1% of optimality bound 
 
-result       = solve(prob,verbose=T,num_iter=1e8,MIPGap=1e-3)
+result       = solve(prob,verbose=T,num_iter=1e4,MIPGap=1e-3)
 active_inds  = result$getValue(objet=x)
 phi_vals=seq(from=0,to=2*pi,by=0.02)
 
@@ -214,4 +213,8 @@ p4<-pdf %>% ggplot(aes(x=phi,y=power,group=tname,color=tname))+geom_line()+ylim(
                 scale_color_manual(values=c('optim'='magenta','uniform'='black'))+xlab('acrophase')
 
 ((p1/p2)|(p3/p4))
+```
+
+```{r}
+
 ```

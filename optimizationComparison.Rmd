@@ -110,6 +110,10 @@ prob         = Problem(Maximize(do.call(min_elemwise,
 ```
 
 ```{r}
+fmin = 1 
+fmax = 24
+df   = 1 
+freqlist = seq(from=fmin,to=fmax,by=df) %>% as.list()
 result       = solve(prob,verbose=T,solver='GUROBI',TimeLimit=1)
 active_inds  = result$getValue(objet=x)
 
@@ -117,6 +121,11 @@ active_inds  = result$getValue(objet=x)
 multipwr(tau[active_inds>0])
 ```
 
+Most explicit way, avoiding do.call
 ```{r}
 
+strp=paste0('prob=Problem(Maximize(min_elemwise(',paste(lapply(1:length(A12list) %>% as.list(),
+                          function(ind){paste0('t(bvec)%*%x-norm2(A12list[[',ind,']]%*%x)')}),collapse=','),')),constraints)')
+eval(parse(text=strp))
+result       = solve(prob,verbose=T,num_iter=1e6,MIPGap=1e-3)
 ```
