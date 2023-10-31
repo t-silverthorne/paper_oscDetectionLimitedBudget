@@ -1,9 +1,9 @@
 This notebook is for the figures which appear in the paper before the theory section
 ```{r}
+library(ggplot2)
 source('plotConfig.R')
 source('utils/powerUtils.R')
 source('utils/rowCosinor.R')
-library(ggplot2)
 library(dplyr)
 library(annmatrix)
 library(patchwork)

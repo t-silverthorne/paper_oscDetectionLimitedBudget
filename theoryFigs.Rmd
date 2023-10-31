@@ -1,11 +1,11 @@
 This notebook is for the figures which the theory section of the paper
 
 ```{r}
+library(ggplot2)
 source('plotConfig.R')
 source('utils/powerUtils.R')
 source('utils/rowCosinor.R')
 source('utils/freqUncertaintyUtils.R')
-library(ggplot2)
 library(dplyr)
 library(annmatrix)
 library(patchwork)
@@ -13,7 +13,7 @@ library(ggplot2)
 library(ggplotify)
 library(data.table)
 library(pracma)
-library(nloptr)
+library(optimr)
 
 vis_colors <- c("Alternative" = "blue", 'Uniform'='black')
 N   = 12
@@ -26,10 +26,114 @@ param=list(Amp=1,
            freq=1)
 ```
 
+
+# Trying with different optimization approach
+
+## Multistart
+```{r}
+source('utils/multiStart_quiet.R')
+fmin      = 1 
+fmax      = 12 
+Nms_inner = 5
+Nms_outer = 5
+Ntau      = 2e2
+
+Jfun_ms = function(tau,tvec1,tvec2,param,fmin,fmax,df,method){
+  if (strcmp(method,'poly')){
+    tvec  =c((tvec1+c(tau))%%1,tvec2) %>% sort()
+  } else if(strcmp(method,'seq')){
+    svec1 = tvec1*c(tau)
+    svec2 = tvec2*(1-c(tau))
+    tvec=c(svec1,c(tau)+svec2) %>% sort()
+  }
+  # using optimr wrapper
+  capture.output(
+    res <- multistart(parmat = as.matrix(seq(from=fmin,to=fmax,length.out=Nms_inner)),
+             fn=function(f){
+               (t(cos(2*pi*f*tvec))%*%cos(2*pi*f*tvec))*(t(sin(2*pi*f*tvec))%*%sin(2*pi*f*tvec))-
+                        ( t(cos(2*pi*f*tvec))%*%sin(2*pi*f*tvec))^2
+             },lower=fmin,upper=fmax,method='L-BFGS-B',control=list(trace=0)
+            )) 
+  return(invisible(res)%>% {.$value} %>% min())
+} 
+
+Jfun_manual  = function(tau,tvec1,tvec2,param,fmin,fmax,df,method){
+  if (strcmp(method,'poly')){
+    tvec  =c((tvec1+c(tau))%%1,tvec2) %>% sort()
+  } else if(strcmp(method,'seq')){
+    svec1 = tvec1*c(tau)
+    svec2 = tvec2*(1-c(tau))
+    tvec=c(svec1,c(tau)+svec2) %>% sort()
+  }
+ 
+  # without using optimr, do multistart manually
+  parmat = seq(from=fmin,to=fmax,length.out=Nms_inner) %>% as.list()
+  parmat %>% lapply(function(par){
+    res=optim(par=par,fn=function(f){
+               (t(cos(2*pi*f*tvec))%*%cos(2*pi*f*tvec))*(t(sin(2*pi*f*tvec))%*%sin(2*pi*f*tvec))-
+                        ( t(cos(2*pi*f*tvec))%*%sin(2*pi*f*tvec))^2
+             },lower=fmin,upper=fmax,method='L-BFGS-B',control=list(trace=0)
+          ) 
+    return(data.frame(t(res)))
+  } 
+    )  %>% rbindlist()  %>% {.[which.min(.$value),][['value']][[1]]}
+}
+# test innner layer
+N1 = 5
+N2 = N-N1
+
+tvec=NaN                            # construct measurement times
+tvec1 = (0:N1)/N1 
+tvec2 = (0:N2)/N2 
+tvec1 = tvec1[1:(length(tvec1)-1)]
+tvec2 = tvec2[1:(length(tvec2)-1)]
+```
+
+## Check consistent
+```{r}
+mloc='poly'
+if (mloc=='poly'){
+  df = data.frame(tau= seq(from=0,to=max(diff(tvec2)),length.out=Ntau))
+} else {
+  df = data.frame(tau= seq(from=0,to=1,length.out=Ntau))
+}
+df1=df
+df2=df
+
+df1$Jval = apply(df1,1,function(x){
+  return(Jfun_ms(x[['tau']],tvec1,tvec2,param,fmin,fmax,method=mloc))
+  })
+df1$opt_method='ms'
+
+df2$Jval = apply(df2,1,function(x){
+  return(Jfun_manual(x[['tau']],tvec1,tvec2,param,fmin,fmax,method=mloc))
+  })
+df2$opt_method='manual'
+
+rbind(df1,df2) %>% ggplot(aes(x=tau,y=Jval))+geom_point()+facet_wrap(~opt_method)
+```
+
+## Outer optimization 
+```{r}
+mloc='poly'
+taumax=ifelse(mloc=='poly',max(diff(tvec2)),1)
+
+taulist = seq(from=0,to=taumax,length.out=Nms_outer) %>% as.list()
+
+taulist %>%lapply(function(tau_init){
+  res= optim(par=tau_init,
+        fn =function(tau){Jfun_manual(tau,tvec1,tvec2,param,fmin,fmax,df,mloc)},
+        lower=0,upper=taumax,method='L-BFGS-B',control=list(trace=0))
+    return(data.frame(t(res)))
+  }
+  )
+
+```
 # Test: Separating the integer and cts parts of reduced optimization 
 
 Plotting fast vs slow for various time shifts
 ```{r}
+library(nloptr)
 fmin = 1 
 fmax = 24
 
