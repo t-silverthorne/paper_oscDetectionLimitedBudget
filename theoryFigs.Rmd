@@ -118,16 +118,22 @@ rbind(df1,df2) %>% ggplot(aes(x=tau,y=Jval))+geom_point()+facet_wrap(~opt_method
 mloc='poly'
 taumax=ifelse(mloc=='poly',max(diff(tvec2)),1)
 
-taulist = seq(from=0,to=taumax,length.out=Nms_outer) %>% as.list()
+taulist = seq(from=0,to=taumax,length.out=2) 
 
-taulist %>%lapply(function(tau_init){
+taulist %>% sapply(function(tau_init){
   res= optim(par=tau_init,
         fn =function(tau){Jfun_manual(tau,tvec1,tvec2,param,fmin,fmax,df,mloc)},
         lower=0,upper=taumax,method='L-BFGS-B',control=list(trace=0))
     return(data.frame(t(res)))
   }
   )
+taulist
 
+for (ii in 1:length(taulist)){
+  res= optim(par=taulist[ii],
+        fn =function(tau){Jfun_manual(tau,tvec1,tvec2,param,fmin,fmax,df,mloc)},
+        lower=0,upper=taumax,method='L-BFGS-B',control=list(trace=0))
+}
 ```
 # Test: Separating the integer and cts parts of reduced optimization 
 
