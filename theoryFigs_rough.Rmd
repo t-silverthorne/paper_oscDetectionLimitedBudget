@@ -1,0 +1,398 @@
+This notebook is for the figures which the theory section of the paper
+
+```{r}
+library(ggplot2)
+source('plotConfig.R')
+source('utils/powerUtils.R')
+source('utils/rowCosinor.R')
+source('utils/freqUncertaintyUtils.R')
+library(dplyr)
+library(annmatrix)
+library(patchwork)
+library(ggplot2)
+library(ggplotify)
+library(data.table)
+library(pracma)
+library(optimr)
+
+vis_colors <- c("Alternative" = "blue", 'Uniform'='black')
+N   = 12
+
+t     = (0:N)/N
+tunif = t[1:(length(t)-1)]
+
+param=list(Amp=1,
+           acro=0,
+           freq=1)
+```
+
+
+# Trying with different optimization approach
+
+## Multistart
+```{r}
+source('utils/multiStart_quiet.R')
+fmin      = 1 
+fmax      = 12 
+Nms_inner = 5
+Nms_outer = 5
+Ntau      = 2e2
+
+Jfun_ms = function(tau,tvec1,tvec2,param,fmin,fmax,df,method){
+  if (strcmp(method,'poly')){
+    tvec  =c((tvec1+c(tau))%%1,tvec2) %>% sort()
+  } else if(strcmp(method,'seq')){
+    svec1 = tvec1*c(tau)
+    svec2 = tvec2*(1-c(tau))
+    tvec=c(svec1,c(tau)+svec2) %>% sort()
+  }
+  # using optimr wrapper
+  capture.output(
+    res <- multistart(parmat = as.matrix(seq(from=fmin,to=fmax,length.out=Nms_inner)),
+             fn=function(f){
+               (t(cos(2*pi*f*tvec))%*%cos(2*pi*f*tvec))*(t(sin(2*pi*f*tvec))%*%sin(2*pi*f*tvec))-
+                        ( t(cos(2*pi*f*tvec))%*%sin(2*pi*f*tvec))^2
+             },lower=fmin,upper=fmax,method='L-BFGS-B',control=list(trace=0)
+            )) 
+  return(invisible(res)%>% {.$value} %>% min())
+} 
+
+Jfun_manual  = function(tau,tvec1,tvec2,param,fmin,fmax,df,method){
+  if (strcmp(method,'poly')){
+    tvec  =c((tvec1+c(tau))%%1,tvec2) %>% sort()
+  } else if(strcmp(method,'seq')){
+    svec1 = tvec1*c(tau)
+    svec2 = tvec2*(1-c(tau))
+    tvec=c(svec1,c(tau)+svec2) %>% sort()
+  }
+ 
+  # without using optimr, do multistart manually
+  parmat = seq(from=fmin,to=fmax,length.out=Nms_inner) %>% as.list()
+  parmat %>% lapply(function(par){
+    res=optim(par=par,fn=function(f){
+               (t(cos(2*pi*f*tvec))%*%cos(2*pi*f*tvec))*(t(sin(2*pi*f*tvec))%*%sin(2*pi*f*tvec))-
+                        ( t(cos(2*pi*f*tvec))%*%sin(2*pi*f*tvec))^2
+             },lower=fmin,upper=fmax,method='L-BFGS-B',control=list(trace=0)
+          ) 
+    return(data.frame(t(res)))
+  } 
+    )  %>% rbindlist()  %>% {.[which.min(.$value),][['value']][[1]]}
+}
+# test innner layer
+N1 = 5
+N2 = N-N1
+
+tvec=NaN                            # construct measurement times
+tvec1 = (0:N1)/N1 
+tvec2 = (0:N2)/N2 
+tvec1 = tvec1[1:(length(tvec1)-1)]
+tvec2 = tvec2[1:(length(tvec2)-1)]
+```
+
+## Check consistent
+```{r}
+mloc='poly'
+if (mloc=='poly'){
+  df = data.frame(tau= seq(from=0,to=max(diff(tvec2)),length.out=Ntau))
+} else {
+  df = data.frame(tau= seq(from=0,to=1,length.out=Ntau))
+}
+df1=df
+df2=df
+
+df1$Jval = apply(df1,1,function(x){
+  return(Jfun_ms(x[['tau']],tvec1,tvec2,param,fmin,fmax,method=mloc))
+  })
+df1$opt_method='ms'
+
+df2$Jval = apply(df2,1,function(x){
+  return(Jfun_manual(x[['tau']],tvec1,tvec2,param,fmin,fmax,method=mloc))
+  })
+df2$opt_method='manual'
+
+rbind(df1,df2) %>% ggplot(aes(x=tau,y=Jval))+geom_point()+facet_wrap(~opt_method)
+```
+
+## Outer optimization 
+```{r}
+mloc='poly'
+taumax=ifelse(mloc=='poly',max(diff(tvec2)),1)
+
+taulist = seq(from=0,to=taumax,length.out=2) 
+
+taulist %>% sapply(function(tau_init){
+  res= optim(par=tau_init,
+        fn =function(tau){Jfun_manual(tau,tvec1,tvec2,param,fmin,fmax,df,mloc)},
+        lower=0,upper=taumax,method='L-BFGS-B',control=list(trace=0))
+    return(data.frame(t(res)))
+  }
+  )
+taulist
+
+for (ii in 1:length(taulist)){
+  res= optim(par=taulist[ii],
+        fn =function(tau){Jfun_manual(tau,tvec1,tvec2,param,fmin,fmax,df,mloc)},
+        lower=0,upper=taumax,method='L-BFGS-B',control=list(trace=0))
+}
+```
+# Test: Separating the integer and cts parts of reduced optimization 
+
+Plotting fast vs slow for various time shifts
+```{r}
+library(nloptr)
+fmin = 1 
+fmax = 24
+
+# for a given N1 how does landscape vary in delta
+N1 = 5
+N2=N-N1
+tvec1 = (0:N1)/N1 
+tvec2 = (0:N2)/N2 
+tvec1 = tvec1[1:(length(tvec1)-1)]
+tvec2 = tvec2[1:(length(tvec2)-1)]
+
+mdf = list('slow') %>% lapply(function(method_loc){
+  dt_list = seq(from=0,to=max(diff(tvec2)),by=.001)
+  #dt_list = seq(from=0,to=1,by=.01)
+  minLam = dt_list %>% as.list() %>% lapply(
+  function(delta){
+        tvec = c((tvec1+c(delta))%%1,tvec2) %>% sort()
+#        svec1 = tvec1*c(delta)
+#        svec2 = tvec2*(1-c(delta))
+#        tvec  = c(svec1,c(delta)+svec2) %>% sort()
+        return(minLambdaOverFreq(tvec,param,fmin,fmax,method_loc))}
+  ) %>% unlist()
+  return(data.frame(dt=as.vector(dt_list),lam=minLam,method=method_loc) )
+}) %>% rbindlist()
+
+P1=mdf %>% ggplot(aes(x=dt,y=lam))+geom_point()+facet_wrap(~method)
+
+dt_opt = mdf[which.max(mdf$lam),]$dt
+lam_opt = mdf[which.max(mdf$lam),]$lam
+
+dt_list = c(seq(from=0,to=max(diff(tvec2)),by=.01),dt_opt) %>% unique()
+freqs   = seq(from=fmin,to=fmax,by=.01)
+df=expand.grid(freq=freqs,dt=dt_list)
+df$lam =df%>% apply(1,function(x){
+  delta=x[['dt']]
+  param$freq =x[['freq']]
+  tvec = c((tvec1+c(delta))%%1,tvec2) %>% sort()
+  return(getMinEig(tvec,param) )
+})
+
+P2= df %>% mutate(is_opt= dt==dt_opt) %>% 
+  ggplot(aes(x=freq,y=lam,group=dt,color=is_opt))+
+  geom_line()+geom_hline(yintercept = lam_opt)+
+  facet_wrap(~dt)
+
+P1/P2
+```
+
+# Test nloptr
+
+
+```{r}
+library(nloptr)
+Jobj= function(tau,N1,N2,param,fmin,fmax,df,method){
+  tvec=NaN                            # construct measurement times
+  tvec1 = (0:N1)/N1 
+  tvec2 = (0:N2)/N2 
+  tvec1 = tvec1[1:(length(tvec1)-1)]
+  tvec2 = tvec2[1:(length(tvec2)-1)]
+  if (strcmp(method,'poly')){
+    tvec  =c((tvec1+c(tau))%%1,tvec2) %>% sort()
+  } else if(strcmp(method,'seq')){
+    svec1 = tvec1*c(tau)
+    svec2 = tvec2*(1-c(tau))
+    tvec=c(svec1,c(tau)+svec2) %>% sort()
+  }
+  
+  return(nloptr(x0=(fmin+fmax)/2,          # find lambda min over freq range
+         eval_f = function(f){
+           param$freq=f
+           return(getMinEig(tvec,param))
+         },
+         lb=fmin,
+         ub=fmax,
+         opts=list("algorithm" = "NLOPT_GN_DIRECT",'maxeval'=30)) %>% 
+           {.$solution}
+         )  
+
+}
+
+mloc='poly'
+
+N1=8
+N2=N-N1
+Jobj(0.001,N1,N2,param,fmin,fmax,df,mloc)
+nloptr(x0=1/N2/2,
+       eval_f = function(tau){-Jobj(tau,N1,N2,param,fmin,fmax,df,method=mloc)},
+       lb=0,
+       ub=ifelse(strcmp(method,'poly'),1/N2,1),
+       opts=list("algorithm" = "NLOPT_GN_DIRECT",'maxeval'=1)  
+)
+
+
+```
+
+```{r}
+tau=0.1445473
+tvec1 = (0:N1)/N1 
+tvec2 = (0:N2)/N2 
+tvec1 = tvec1[1:(length(tvec1)-1)]
+tvec2 = tvec2[1:(length(tvec2)-1)]
+tvec  =c((tvec1+c(tau))%%1,tvec2) %>% sort()
+eigs=freqs %>% sapply(function(f){param$freq=f
+getMinEig(tvec,param)})
+
+data.frame(eig=eigs,freq=freqs) %>% ggplot(aes(x=freq,y=eig))+geom_line()
+```
+# Fig: Optimization in reduced design space
+
+Skipping cvx optimal for now
+```{r}
+# set params
+N = 12
+
+t=(0:N)/N
+t=t[1:(length(t)-1)]
+t0=t
+fmin = 1 
+fmax = 24
+df   = .1 
+param$freq = 1
+param$acro = 0
+param$Amp  = 1
+
+
+# run integer part
+N1list = seq(from=4,to=floor(N/2)) %>% as.list()
+
+N2=N-N1
+tvec1 = (0:N1)/N1 
+tvec2 = (0:N2)/N2 
+tvec1 = tvec1[1:(length(tvec1)-1)]
+tvec2 = tvec2[1:(length(tvec2)-1)]
+
+
+  
+
+varyN1df= lapply(N1list,function(N1){
+  N2=N-N1
+  tvec1 = (0:N1)/N1 
+  tvec2 = (0:N2)/N2 
+  tvec1 = tvec1[1:(length(tvec1)-1)]
+  tvec2 = tvec2[1:(length(tvec2)-1)]
+  
+  res_poly = pracma::fminbnd(
+    function(delta){
+      tvec = c((tvec1+c(delta))%%1,tvec2) %>% sort()
+      return(-minLambdaOverFreq(tvec,param,fmin,fmax,'slow'))},
+    a=0,b=max(diff(tvec2)))
+  
+  res_seq  =  pracma::fminbnd(
+    function(tau){
+      svec1 = tvec1*c(tau)
+      svec2 = tvec2*(1-c(tau))
+      tvec  = c(svec1,c(tau)+svec2) %>% sort()
+      return(-minLambdaOverFreq(tvec,param,fmin,fmax,'slow'))},
+    a=0,b=1)
+  
+  
+  return(list(poly_opt   = res_poly$xmin,
+              poly_fmax  = -res_poly$fmin,
+              seq_opt    = res_seq$xmin,
+              seq_fmax   = -res_seq$fmin,
+              N1         = N1))
+}) %>% rbindlist() 
+
+# extract optimal
+extractOptDesigns = function(N1df){
+  poly_opt  = varyN1df[which.max(varyN1df$poly_fmax),]$poly_opt
+  N1poly     = varyN1df[which.max(varyN1df$poly_fmax),]$N1
+  N2poly     = N - N1poly
+  tvec1_poly = (0:N1poly)/N1poly
+  tvec2_poly = (0:N2poly)/N2poly
+  tvec1_poly = tvec1_poly[1:(length(tvec1_poly)-1)]
+  tvec2_poly = tvec2_poly[1:(length(tvec2_poly)-1)]
+  
+  seq_opt  = varyN1df[which.max(varyN1df$seq_fmax),]$seq_opt
+  N1seq     = varyN1df[which.max(varyN1df$seq_fmax),]$N1
+  N2seq     = N - N1seq
+  tvec1_seq = (0:N1seq)/N1seq
+  tvec2_seq = (0:N2seq)/N2seq
+  tvec1_seq = tvec1_seq[1:(length(tvec1_seq)-1)]
+  tvec2_seq = tvec2_seq[1:(length(tvec2_seq)-1)]
+  
+  return(list(
+    tvec_poly = construct_poly_design(poly_opt,tvec1_poly,tvec2_poly),
+    tvec_seq  = construct_sequential_design(seq_opt,tvec1_seq,tvec2_seq)))
+}
+des = extractOptDesigns(varyN1df)
+tvec_poly = des$tvec_poly
+tvec_seq  = des$tvec_seq
+
+#TODO plot optimal solutions
+PDES =rbind(data.frame(time=t0,sched='unif'),
+  data.frame(time=tvec_poly,sched='poly'),
+  data.frame(time=tvec_seq,sched='seq')) %>%
+  ggplot(aes(x=time,y=sched,color=sched))+
+  geom_point() + scale_color_manual(values=vis_colors)+theme(legend.position = "none")
+```
+
+```{r}
+# plot eigenvalue curves 
+freqs=seq(from=fmin,to=fmax,by=.1)
+hmatC = freqs %>%as.list() %>%  lapply(function(frq){
+  param$freq = frq
+  eigUnif = getMinEig(t0,param)
+  eigSeq  = getMinEig(tvec_seq,param)
+  eigPoly = getMinEig(tvec_poly,param)
+  df1 = data.frame(freq=frq,minEig=eigUnif,sched='unif')
+  df2 = data.frame(freq=frq,minEig=eigSeq,sched='seq')
+  df3 = data.frame(freq=frq,minEig=eigPoly,sched='poly')
+  return(rbind(df1,df2,df3))
+}) %>% rbindlist()
+
+vis_colors <- c("poly" = "blue", "seq" = "#48d1cc", 'unif'='black')
+PEIG = hmatC %>% ggplot(aes(x=freq,y=minEig,color=sched,group=sched))+
+  geom_line()+scale_color_manual(values=vis_colors)+facet_wrap(~sched,nrow=3)+
+  theme(legend.position = "none")
+```
+
+```{r}
+# power for various amps
+amps= seq(from=.1,to=10,by=.2)
+pers=seq(from=1/fmax,to=1/fmin,by=.01)
+pars = expand.grid(amp=amps,per=pers)
+sched_list = c('unif','seq','poly')
+pwrdf = lapply(sched_list,function(sched){
+  ploc=pars
+  if (strcmp(sched,'unif')){
+    tvec = t0
+  } else if(strcmp(sched,'seq')){
+    tvec = tvec_seq
+  } else if(strcmp(sched,'poly')){
+    tvec = tvec_poly
+  }
+  
+  ploc$pwr = apply(pars ,1, function(x){
+    param$Amp  = x[['amp']] 
+    param$freq = 1/x[['per']]
+    return(getMinPower(tvec,param))
+  })
+  ploc$sched = sched
+  return(ploc)
+  }) %>% rbindlist()
+pwrdf %>% head()
+
+PPWROPT = pwrdf %>% mutate(circ_per = 24*per) %>% 
+  ggplot(aes(x=amp,y=pwr,group=circ_per,color=circ_per))+
+  geom_line()+facet_wrap(~sched,nrow=3)+
+  scale_color_viridis_c(option='plasma') + ylim(c(0,1)) + xlim(c(0,10))
+
+```
+
+```{r}
+{PDES | PEIG| PPWROPT} + plot_annotation(tag_levels = 'A')
+```
