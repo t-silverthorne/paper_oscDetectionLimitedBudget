@@ -39,35 +39,35 @@ dmeth = c('seq','poly')
 
 stngs = expand.grid(N=Nvals,dm=dmeth)
 
-df = stngs %>% apply(1,function(x){
-  N     = x[['N']] %>% as.numeric() 
-  t     = (0:N)/N
-  
-  N1    = 3*N/4 
-  N2    = N-N1
-  tvec1 = (0:N1)/N1 
-  tvec2 = (0:N2)/N2 
-  tvec1 = tvec1[1:(length(tvec1)-1)]
-  tvec2 = tvec2[1:(length(tvec2)-1)]
-  
-  design_method = x[['dm']]
-  taumax = ifelse(strcmp(design_method,'seq'),1,min(diff(tvec2)))
-  taus          = seq(from=0,to=taumax,length.out=Ntau)
-  ys            = sapply(taus,function(tau){
-    min(detFvec(getTvec(tau,tvec1,tvec2,design_method),fvec))
-  })
-  return(data.frame(tau=taus/taumax,cfun=ys/N,
-           design_method=x[['dm']],
-           Nmeas = x[['N']]))
-}) %>% rbindlist()
-df %>% ggplot(aes(x=tau,y=cfun,group=design_method,color=design_method))+
-  geom_line()+facet_wrap(~Nmeas)
+#df = stngs %>% apply(1,function(x){
+#  N     = x[['N']] %>% as.numeric() 
+#  t     = (0:N)/N
+#  
+#  N1    = 3*N/4 
+#  N2    = N-N1
+#  tvec1 = (0:N1)/N1 
+#  tvec2 = (0:N2)/N2 
+#  tvec1 = tvec1[1:(length(tvec1)-1)]
+#  tvec2 = tvec2[1:(length(tvec2)-1)]
+#  
+#  design_method = x[['dm']]
+#  taumax = ifelse(strcmp(design_method,'seq'),1,min(diff(tvec2)))
+#  taus          = seq(from=0,to=taumax,length.out=Ntau)
+#  ys            = sapply(taus,function(tau){
+#    min(detFvec(getTvec(tau,tvec1,tvec2,design_method),fvec))
+#  })
+#  return(data.frame(tau=taus/taumax,cfun=ys/N,
+#           design_method=x[['dm']],
+#           Nmeas = x[['N']]))
+#}) %>% rbindlist()
+#df %>% ggplot(aes(x=tau,y=cfun,group=design_method,color=design_method))+
+#  geom_line()+facet_wrap(~Nmeas)
 ```
 # Main fig
 
 ## Iterate over N1 and plot designs
 ```{r}
-Nmeasvec = c(12,16,24,32)
+Nmeasvec = c(12,16,24)
 #Nmeasvec = c(16,20)
 
 df_PDES = Nmeasvec %>% as.list() %>% lapply(function(NN){
@@ -147,7 +147,7 @@ df_PDES = Nmeasvec %>% as.list() %>% lapply(function(NN){
 
 
 PDES = df_PDES %>% ggplot(aes(x=time,y=sched,color=sched))+
-  geom_point() + scale_color_manual(values=vis_colors)+theme(legend.position = "none")+facet_wrap(~Nmeas,nrow=length(Nmeasvec),strip.position = 'top')
+  geom_point()+theme(legend.position = "none")+facet_wrap(~Nmeas,nrow=length(Nmeasvec),strip.position = 'top')
 ```
 
 ## Plot cost function for each design
@@ -163,7 +163,7 @@ df_PDET = expand.grid(Nmeasloc=Nmeasvec,sc_type=c('unif','seq','poly')) %>%
     return(data.frame(freq=fvec,detRedFIM=detFvec(tvec,fvec),sched=sc_type,Nmeas=Nmeasloc))
   }) %>% rbindlist()
 
-PDET = df_PDET %>% ggplot(aes(x=freq,y=detRedFIM,group=sched,color=sched))+geom_line()+facet_wrap(~Nmeas,nrow=length(Nmeasvec))
+PDET = df_PDET %>% ggplot(aes(x=freq,y=detRedFIM,group=sched,color=sched))+geom_line()+facet_wrap(~Nmeas,nrow=length(Nmeasvec),scales='free_y')
 ```
 
 ## Plot power for each design
@@ -196,10 +196,10 @@ PPWR = df_PPWR %>% ggplot(aes(x=freq,y=pwr,group=amp,color=amp))+geom_line()+fac
 
 
 ```{r}
-{PDES | PDET | PPWR}+plot_annotation(tag_levels='A')+plot_layout(guides='collect') &theme(legend.position = 'bottom',
+{PDES | PDET | PPWR}+plot_annotation(tag_levels='A')+plot_layout(widths = c(1,1,2),guides='collect') &theme(legend.position = 'bottom',
         legend.direction = 'horizontal',
         legend.box = 'horizontal')
-ggsave(paste0(overleaf_plot_directory,"fig_reduced_design_space.pdf"), width = 7, height =6)
+ggsave(paste0(overleaf_plot_directory,"fig_reduced_design_space.pdf"), width = 7, height =4.5)
 
 ```
 ## Plot phase/freq scatter plot for each design
