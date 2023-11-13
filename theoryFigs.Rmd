@@ -196,14 +196,48 @@ PPWR = df_PPWR %>% ggplot(aes(x=freq,y=pwr,group=amp,color=amp))+geom_line()+fac
 
 
 ```{r}
-{PDES | PDET | PPWR}+plot_annotation(tag_levels='A')+plot_layout(widths = c(1,1,2),guides='collect') &theme(legend.position = 'bottom',
+PDES2 = PDES+guides(color=F)
+{PDES2  | PDET | PPWR}+plot_annotation(tag_levels='A')+plot_layout(widths = c(1,1,2),guides='collect') &theme(legend.position = 'bottom',
         legend.direction = 'horizontal',
         legend.box = 'horizontal')
-ggsave(paste0(overleaf_plot_directory,"fig_reduced_design_space.pdf"), width = 7, height =4.5)
+ggsave(paste0(overleaf_plot_directory,"fig_reduced_design_space.pdf"), width = 7, height =5.5)
 
 ```
-## Plot phase/freq scatter plot for each design
+
+
+# Frequency distribution 
+
 ```{r}
+library(MetaCycle)
+
+Nrep = 1e3
+sc_type  = 'unif'
+Nmeasloc = 24 
+tvec = df_PDES %>% filter(sched==sc_type,Nmeas==Nmeasloc) %>% {.$time} 
+
+# simulate data
+runif(1,fmin,fmax)
+
+simdat = replicate(Nrep,
+          {freq=runif(1,fmin,fmax)
+          acro = 2*pi*runif(1)
+          return(c(freq,acro,1.5*cos(2*pi*tvec*freq-acro)+rnorm(length(tvec))))}) %>% t() 
+simdat[,3:(length(tvec)+2)] %>% write.csv('temp.csv',row.names = T)
+
+# estimate period 
+mout = meta2d('temp.csv',filestyle = 'csv',
+       timepoints=tvec,
+       cycMethod = 'LS',
+       minper=1/24,maxper=1.5,
+       outputFile = F,adjustPhase = 'notAdjusted') 
+
+pdf = data.frame(freq=simdat[,1],acro=simdat[,2],
+           freq_est = 1/mout$LS$Period,
+           acro_est =mout$meta$LS_adjphase) 
+
+pdf %>% ggplot(aes(x=freq,y=freq_est))+geom_point()
+pdf %>% ggplot(aes(x=acro,y=acro_est))+geom_point()
+
 ```
 
 
