@@ -1,0 +1,66 @@
+```{r}
+library(stats)
+library(dplyr)
+library(ggplot2)
+library(gurobi)
+library(CVXR)
+library(dplyr)
+library(expm)
+library(patchwork)
+library(pracma)
+```
+
+```{r}
+Nfine        = 2^5
+Nfreq        = 2^2
+Nmeas        = 12 
+x            = Variable(Nfine,boolean=T)
+constraints  = list( sum(x) == Nmeas)
+
+tau   = (0:Nfine)/Nfine       
+tau   = tau[1:(length(tau)-1)] 
+fmin  = 1
+fmax  = 24 
+fvec  = seq(from=fmin,to=fmax,length.out=Nfreq)
+
+cfun_method = 'quad_form' # options are quad_form or norm
+for (freq in fvec ){ 
+  cvec  = matrix(cos(2*pi*freq*tau),nrow=Nfine)
+  svec  = matrix(sin(2*pi*freq*tau),nrow=Nfine)
+  
+  a11   = cvec*cvec
+  a22   = svec*svec
+  a12   = cvec*svec
+  #bvec  = a11+a22
+  Amat  = a11%*%t(a11) + a22%*%t(a22) +4*a12%*%t(a12)-a11%*%t(a22) - a22%*%t(a11)
+  
+  if (strcmp(cfun_method,'quad_form')){
+    if (freq==fmin){
+      obj   =  Nmeas - CVXR::quad_form(x,Amat)
+    }else{
+      obj   = rbind(obj,Nmeas - CVXR::quad_form(x,Amat))
+    }
+  }else if (strcmp(cfun_method,'norm2')){
+    A12   = Re(expm::sqrtm(Amat))
+    if (freq==fmin){
+      obj   = 0.5*(Nmeas - CVXR::norm2(A12%*%x))
+    }else{
+      obj   = rbind(obj,0.5*(Nmeas - CVXR::norm2(A12%*%x)))
+    }
+  }
+}
+
+prob         = Problem(Maximize(min_entries(obj)),constraints)
+result       = solve(prob,verbose=T,num_iter=1e7)
+#result$getValue(objet=x)
+```
+
+
+```{r}
+bigA=kronecker(eye(3),Amat)
+dim(rbind(x,x,x))
+dim(bigA)
+solve(Problem(Minimize(quad_form(rbind(x,x,x),bigA)),constraints))
+
+
+```

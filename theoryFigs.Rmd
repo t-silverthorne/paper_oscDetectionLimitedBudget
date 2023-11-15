@@ -147,7 +147,7 @@ df_PDES = Nmeasvec %>% as.list() %>% lapply(function(NN){
 
 
 PDES = df_PDES %>% ggplot(aes(x=time,y=sched,color=sched))+
-  geom_point()+theme(legend.position = "none")+facet_wrap(~Nmeas,nrow=length(Nmeasvec),strip.position = 'top')
+  geom_point()+theme(legend.position = "none")+facet_wrap(~Nmeas,ncol=length(Nmeasvec),strip.position = 'top')
 ```
 
 ## Plot cost function for each design
@@ -163,7 +163,7 @@ df_PDET = expand.grid(Nmeasloc=Nmeasvec,sc_type=c('unif','seq','poly')) %>%
     return(data.frame(freq=fvec,detRedFIM=detFvec(tvec,fvec),sched=sc_type,Nmeas=Nmeasloc))
   }) %>% rbindlist()
 
-PDET = df_PDET %>% ggplot(aes(x=freq,y=detRedFIM,group=sched,color=sched))+geom_line()+facet_wrap(~Nmeas,nrow=length(Nmeasvec),scales='free_y')
+PDET = df_PDET %>% ggplot(aes(x=freq,y=detRedFIM,group=sched,color=sched))+geom_line()+facet_wrap(~Nmeas,ncol=length(Nmeasvec),scales='free_y')
 ```
 
 ## Plot power for each design
@@ -191,16 +191,16 @@ df_PPWR = pars = expand.grid(amp=amps,
 df_PPWR$amp = as.numeric(df_PPWR$amp)                     
 df_PPWR$pwr = as.numeric(df_PPWR$pwr)
 df_PPWR$freq = as.numeric(df_PPWR$freq)
-PPWR = df_PPWR %>% ggplot(aes(x=freq,y=pwr,group=amp,color=amp))+geom_line()+facet_grid(Nmeasloc~sc_type,switch = 'y')+scale_color_viridis_c()
+PPWR = df_PPWR %>% ggplot(aes(x=freq,y=pwr,group=amp,color=amp))+geom_line()+facet_grid(sc_type~Nmeasloc,switch = 'y')+scale_color_viridis_c()
 ```
 
 
 ```{r}
 PDES2 = PDES+guides(color=F)
-{PDES2  | PDET | PPWR}+plot_annotation(tag_levels='A')+plot_layout(widths = c(1,1,2),guides='collect') &theme(legend.position = 'bottom',
-        legend.direction = 'horizontal',
-        legend.box = 'horizontal')
-ggsave(paste0(overleaf_plot_directory,"fig_reduced_design_space.pdf"), width = 7, height =5.5)
+{PDES2  / PDET / PPWR}+plot_annotation(tag_levels='A')+plot_layout(heights= c(1,1,3),guides='collect') &theme(legend.position = 'right',
+        legend.direction = 'vertical',
+        legend.box = 'vertical')
+ggsave(paste0(overleaf_plot_directory,"fig_reduced_design_space.pdf"), width = 7, height =8)
 
 ```
 
@@ -211,7 +211,7 @@ ggsave(paste0(overleaf_plot_directory,"fig_reduced_design_space.pdf"), width = 7
 library(MetaCycle)
 
 Nrep = 1e3
-sc_type  = 'unif'
+sc_type  = 'seq'
 Nmeasloc = 24 
 tvec = df_PDES %>% filter(sched==sc_type,Nmeas==Nmeasloc) %>% {.$time} 
 
@@ -222,24 +222,36 @@ simdat = replicate(Nrep,
           {freq=runif(1,fmin,fmax)
           acro = 2*pi*runif(1)
           return(c(freq,acro,1.5*cos(2*pi*tvec*freq-acro)+rnorm(length(tvec))))}) %>% t() 
-simdat[,3:(length(tvec)+2)] %>% write.csv('temp.csv',row.names = T)
+simdat_nopar = simdat[,3:(length(tvec)+2)] 
+
+simdat_nopar %>% write.csv('temp.csv',row.names = T)
 
 # estimate period 
 mout = meta2d('temp.csv',filestyle = 'csv',
        timepoints=tvec,
        cycMethod = 'LS',
        minper=1/24,maxper=1.5,
-       outputFile = F,adjustPhase = 'notAdjusted') 
+       outputFile = F,adjustPhase = 'predictedPer') 
 
 pdf = data.frame(freq=simdat[,1],acro=simdat[,2],
            freq_est = 1/mout$LS$Period,
-           acro_est =mout$meta$LS_adjphase) 
+           acro_est_LS =mout$meta$LS_adjphase) 
 
-pdf %>% ggplot(aes(x=freq,y=freq_est))+geom_point()
-pdf %>% ggplot(aes(x=acro,y=acro_est))+geom_point()
+source('utils/rowCosinor.R')
+acro_est = replicate(Nrep,{NaN})
+for (ii in seq(1,Nrep)){
+  acro_est[ii] = rowCosinor(t(simdat_nopar[ii,]),zts=tvec,per=1/pdf$freq_est[ii]) %>% {.$acrophase*pdf$freq_est[ii]*2*pi}
+}
+pdf$acro_est = acro_est
+
+p1 = pdf %>% ggplot(aes(x=freq,y=freq_est))+geom_point()
+p2 = pdf %>% ggplot(aes(x=acro,y=acro_est))+geom_point()
+p3 = pdf %>% ggplot(aes(x=freq_est))+geom_histogram()
+(p1|p2)/p3
 
 ```
 
 
 
 
+  
