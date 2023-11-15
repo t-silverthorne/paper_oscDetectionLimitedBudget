@@ -12,3 +12,15 @@ github_branch <- "WIP_gurobi_solver_status"
 
 # Install the package from the specific branch
 devtools::install_github(repo = github_repo, ref = github_branch)
+
+
+
+
+Need to install cvxpy old version in order for it to work with dsp-cvxpy
+
+
+Gurobi backend in python is currently unused
+
+
+SCIPOPTSUITE needs to be installed externally so that pyscipopt will install in python and you can then used cvxpy to do MIQP (Gurobi does not appear to handle this conic formulation)
+
