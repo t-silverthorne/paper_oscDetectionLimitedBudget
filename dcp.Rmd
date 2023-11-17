@@ -11,8 +11,8 @@ library(pracma)
 ```
 
 ```{r}
-Nfine        = 2^5
-Nfreq        = 2^2
+Nfine        = 2^7
+Nfreq        = 2^7
 Nmeas        = 12 
 x            = Variable(Nfine,boolean=T)
 constraints  = list( sum(x) == Nmeas)
@@ -22,7 +22,47 @@ tau   = tau[1:(length(tau)-1)]
 fmin  = 1
 fmax  = 24 
 fvec  = seq(from=fmin,to=fmax,length.out=Nfreq)
+```
 
+Kill overhead on pre-solve using min_elemwise
+```{r}
+start=Sys.time()
+Amlist = list() 
+for (ii in c(1:Nfreq)){
+  freq  = fvec[ii]
+  cvec  = matrix(cos(2*pi*freq*tau),nrow=Nfine)
+  svec  = matrix(sin(2*pi*freq*tau),nrow=Nfine)
+  
+  a11   = cvec*cvec
+  a22   = svec*svec
+  a12   = cvec*svec
+  Amat  = a11%*%t(a11) + a22%*%t(a22) +4*a12%*%t(a12)-a11%*%t(a22) - a22%*%t(a11)
+  
+  Amlist[[ii]]=Amat
+}
+big_str = paste(lapply(1:length(Amlist) %>% as.list(),
+       function(ind){
+         paste0('Nmeas - quad_form(x,Amlist[[',ind,']])')
+       }),collapse=',')
+strp=paste0('prob=Problem(Maximize(min_elemwise(',big_str,')),constraints)')
+eval(parse(text=strp))
+prob
+#prob = Problem(Maximize(min_elemwise(Nmeas-quad_form(x,Amlist[[1]]),
+#                            Nmeas-quad_form(x,Amlist[[2]]),
+#                            Nmeas-quad_form(x,Amlist[[3]]),
+#                            Nmeas-quad_form(x,Amlist[[4]]),
+#                            Nmeas-quad_form(x,Amlist[[5]]),
+#                            Nmeas-quad_form(x,Amlist[[6]]),
+#                            Nmeas-quad_form(x,Amlist[[7]]),
+#                            Nmeas-quad_form(x,Amlist[[8]])
+#                            )),constraints)
+result       = solve(prob,verbose=T,num_iter=1e7)
+end=Sys.time()
+end-start
+```
+
+```{r}
+start=Sys.time()
 cfun_method = 'quad_form' # options are quad_form or norm
 for (freq in fvec ){ 
   cvec  = matrix(cos(2*pi*freq*tau),nrow=Nfine)
@@ -31,14 +71,13 @@ for (freq in fvec ){
   a11   = cvec*cvec
   a22   = svec*svec
   a12   = cvec*svec
-  #bvec  = a11+a22
   Amat  = a11%*%t(a11) + a22%*%t(a22) +4*a12%*%t(a12)-a11%*%t(a22) - a22%*%t(a11)
   
   if (strcmp(cfun_method,'quad_form')){
     if (freq==fmin){
       obj   =  Nmeas - CVXR::quad_form(x,Amat)
     }else{
-      obj   = rbind(obj,Nmeas - CVXR::quad_form(x,Amat))
+      obj   = vstack(obj,Nmeas - CVXR::quad_form(x,Amat))
     }
   }else if (strcmp(cfun_method,'norm2')){
     A12   = Re(expm::sqrtm(Amat))
@@ -49,18 +88,9 @@ for (freq in fvec ){
     }
   }
 }
-
 prob         = Problem(Maximize(min_entries(obj)),constraints)
 result       = solve(prob,verbose=T,num_iter=1e7)
-#result$getValue(objet=x)
+end=Sys.time()
+end-start
 ```
 
-
-```{r}
-bigA=kronecker(eye(3),Amat)
-dim(rbind(x,x,x))
-dim(bigA)
-solve(Problem(Minimize(quad_form(rbind(x,x,x),bigA)),constraints))
-
-
-```
