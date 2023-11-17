@@ -14,6 +14,9 @@ library(pracma)
 Nfine        = 2^6
 Nfreq        = 2^4
 Nmeas        = 12 
+```
+
+```{r}
 x            = Variable(Nfine,boolean=T)
 constraints  = list( sum(x) == Nmeas)
 
@@ -22,10 +25,8 @@ tau   = tau[1:(length(tau)-1)]
 fmin  = 1
 fmax  = 24 
 fvec  = seq(from=fmin,to=fmax,length.out=Nfreq)
-```
 
-Kill overhead on pre-solve using min_elemwise
-```{r}
+# kill overhead on pre-solve using min_elemwise
 start=Sys.time()
 Amlist = list() 
 for (ii in c(1:Nfreq)){
