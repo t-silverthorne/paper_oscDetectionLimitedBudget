@@ -1,0 +1,75 @@
+Attempt at disciplined convex programming under constraint of only using designs of a certain complexity
+```{r}
+library(data.table)
+Nfine = 3e2
+Nfreq = 2^3
+Nmeas = 8 
+
+tau   = (0:Nfine)/Nfine       
+tau   = tau[1:(length(tau)-1)] 
+fmin  = 1
+fmax  = 24 
+fvec  = seq(from=fmin,to=fmax,length.out=Nfreq)
+
+# matrix for storing lattice structure
+L=matrix(NA,nrow=0,ncol=Nfine)
+
+min_dx  = 1 #floor(Nfine*5/24/60) # min lattice spacing, no tighter than once/5 minutes
+min_lat = 4 # min number of points in lattice
+max_lat = Nmeas # max number of points in lattice
+
+for (npts in c(min_lat:max_lat)){
+  dx = min_dx
+  x0 = 1
+  while (x0 + dx*(npts-1) <= Nfine){
+    lat  = seq(from=x0,to=x0+dx*(npts-1),by=dx)
+    shift = 0
+    while (lat[length(lat)] + shift <= Nfine){
+      lat       = lat + shift
+      svec      = rep({0},Nfine)
+      svec[lat] = 1 
+      L         = rbind(L,svec)
+      shift=shift+1 # dont shift by arbitrarily small amounts
+    }
+    dx = dx +1 # dont shift by arbitrarily small amounts
+  }
+}
+L=t(L)
+Lnum=L
+w=colSums(L)
+L=Constant(L)
+w=Constant(w)
+dim(Lnum)
+```
+
+```{r}
+x            = Variable(dim(L)[2],boolean=T)
+constraints  = list( sum(x) == 2, t(w)%*%x == Nmeas)
+
+
+start=Sys.time()
+Amlist = list() 
+for (ii in c(1:Nfreq)){
+  freq  = fvec[ii]
+  cvec  = matrix(cos(2*pi*freq*tau),nrow=Nfine)
+  svec  = matrix(sin(2*pi*freq*tau),nrow=Nfine)
+  
+  a11   = cvec*cvec
+  a22   = svec*svec
+  a12   = cvec*svec
+  Amat  = a11%*%t(a11) + a22%*%t(a22) +4*a12%*%t(a12)-a11%*%t(a22) - a22%*%t(a11)
+  
+  Amlist[[ii]]=Constant(t(Lnum)%*%Amat%*%Lnum)
+}
+big_str = paste(lapply(1:length(Amlist) %>% as.list(),
+       function(ind){
+         paste0('Nmeas - quad_form(x,Amlist[[',ind,']])')
+       }),collapse=',')
+strp=paste0('prob=Problem(Maximize(min_elemwise(',big_str,')),constraints)')
+eval(parse(text=strp))
+
+result       = solve(prob,verbose=T,num_iter=1e7)
+
+end=Sys.time()
+end-start
+```

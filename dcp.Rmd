@@ -11,8 +11,8 @@ library(pracma)
 ```
 
 ```{r}
-Nfine        = 2^7
-Nfreq        = 2^7
+Nfine        = 2^6
+Nfreq        = 2^4
 Nmeas        = 12 
 x            = Variable(Nfine,boolean=T)
 constraints  = list( sum(x) == Nmeas)
@@ -38,7 +38,7 @@ for (ii in c(1:Nfreq)){
   a12   = cvec*svec
   Amat  = a11%*%t(a11) + a22%*%t(a22) +4*a12%*%t(a12)-a11%*%t(a22) - a22%*%t(a11)
   
-  Amlist[[ii]]=Amat
+  Amlist[[ii]]=Constant(Amat)
 }
 big_str = paste(lapply(1:length(Amlist) %>% as.list(),
        function(ind){
