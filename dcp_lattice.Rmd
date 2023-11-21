@@ -10,8 +10,8 @@ library(expm)
 library(patchwork)
 library(pracma)
 #Nfine = 288 # 24 hr with 5 minute discretization
-Nfine = 2^6 # 24 hr with 10 minute discretization
-Nfreq = 2^4
+Nfine = 144 # 24 hr with 10 minute discretization
+Nfreq = 2^3
 Nmeas = 16 
 
 tau   = (0:Nfine)/Nfine       
