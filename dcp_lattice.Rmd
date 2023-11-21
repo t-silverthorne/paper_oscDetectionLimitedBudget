@@ -1,8 +1,17 @@
 Attempt at disciplined convex programming under constraint of only using designs of a certain complexity
 ```{r}
-library(data.table)
-Nfine = 288
-Nfreq = 2^3
+library(stats)
+library(dplyr)
+library(ggplot2)
+library(gurobi)
+library(CVXR)
+library(dplyr)
+library(expm)
+library(patchwork)
+library(pracma)
+#Nfine = 288 # 24 hr with 5 minute discretization
+Nfine = 2^6 # 24 hr with 10 minute discretization
+Nfreq = 2^4
 Nmeas = 16 
 
 tau   = (0:Nfine)/Nfine       
@@ -15,8 +24,8 @@ fvec  = seq(from=fmin,to=fmax,length.out=Nfreq)
 L=matrix(NA,nrow=0,ncol=Nfine)
 
 min_dx  = 1 #floor(Nfine*5/24/60) # min lattice spacing, no tighter than once/5 minutes
-min_lat = floor(Nmeas/3)# min number of points in lattice
-max_lat = floor(2*Nmeas/3)# max number of points in lattice
+min_lat = 4#floor(Nmeas/3)# min number of points in lattice
+max_lat = min_lat#floor(2*Nmeas/3)# max number of points in lattice
 
 for (npts in c(min_lat:max_lat)){
   dx = min_dx
@@ -41,11 +50,9 @@ w=colSums(L)
 L=Constant(L)
 w=Constant(w)
 dim(Lnum)
-```
 
-```{r}
 x            = Variable(dim(L)[2],boolean=T)
-constraints  = list( sum(x) <= 4, t(w)%*%x == Nmeas)
+constraints  = list( sum(x) == 4, t(w)%*%x == Nmeas)
 
 
 start=Sys.time()
