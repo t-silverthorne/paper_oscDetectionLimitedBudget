@@ -1,0 +1,15 @@
+Package: samplingPaper
+Title: Code supporting the paper "Oscillation detection with a limited sampling budget"
+Version: 0.0.0.9000
+Authors@R: 
+    person("Turner", "Silverthorne", , "turner.silverthorne@utoronto.ca", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-6135-2523"))
+Description: This package contains: 
+  (1) a package for cosinor power optimization via convex programming
+  (2) code necessary for generating figures in the main paper
+  In the future, these will be available separately.
+License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
+    license
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
