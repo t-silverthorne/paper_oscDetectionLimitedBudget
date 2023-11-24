@@ -212,7 +212,7 @@ library(MetaCycle)
 
 Nrep = 1e3
 sc_type  = 'seq'
-Nmeasloc = 24 
+Nmeasloc = 16 
 tvec = df_PDES %>% filter(sched==sc_type,Nmeas==Nmeasloc) %>% {.$time} 
 
 # simulate data
