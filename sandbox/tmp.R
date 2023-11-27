@@ -1,1 +1,0 @@
-objective_vector=c(t(bvec)%*%x-norm2(A12list[[1]]%*%x,t(bvec)%*%x-norm2(A12list[[2]]%*%x,t(bvec)%*%x-norm2(A12list[[3]]%*%x,t(bvec)%*%x-norm2(A12list[[4]]%*%x,t(bvec)%*%x-norm2(A12list[[5]]%*%x,t(bvec)%*%x-norm2(A12list[[6]]%*%x,t(bvec)%*%x-norm2(A12list[[7]]%*%x,t(bvec)%*%x-norm2(A12list[[8]]%*%x,t(bvec)%*%x-norm2(A12list[[9]]%*%x,t(bvec)%*%x-norm2(A12list[[10]]%*%x)
