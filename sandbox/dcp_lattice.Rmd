@@ -43,6 +43,10 @@ for (npts in c(min_lat:max_lat)){
     dx = dx +1 # dont shift by arbitrarily small amounts
   }
 }
+t(L)
+```
+
+```{r}
 # TODO add pruning of L matrix
 L=t(L)
 Lnum=L

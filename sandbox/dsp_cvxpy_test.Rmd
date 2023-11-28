@@ -16,19 +16,11 @@ py_config()
 
 # for open-source MIQP, need to use conda to install so that you get SCIPOPTSUITE too
 
-conda_install(packages = 'pyscipopt',
-              channel = 'conda-forge',
-              envname='oscDetectPaper'
-              )
+conda_install(envname='oscDetectPaper',channel = 'conda-forge',packages = 'pyscipopt')
 
 conda_install('scipy',envname = 'oscDetectPaper')
-conda_install('cvxpy==1.3.1',envname = 'oscDetectPaper',pip=T) # using newest version with dsp throws error
-conda_install('dsp-cvxpy',envname = 'oscDetectPaper',pip = T)
-conda_install('mosek',channel='mosek',envname='oscDetectPaper')
-#conda_install('coin-or-cbc',envname='oscDetectPaper')
-#conda_install('coincbc',channel='conda-forge',envname='oscDetectPaper')
-conda_install('cylp',envname = 'oscDetectPaper',pip = T)
-
+conda_install('cvxpy==1.3.1',envname = 'oscDetectPaper') # using newest version throws error
+conda_install('dsp-cvxpy',envname = 'oscDetectPaper')
 py_config()
 
 # currently unused
@@ -53,17 +45,16 @@ obj = dsp.MinimizeMaximize(f)
 
 constraints = [x >= 0, cp.sum(x) == 1, y >= 0, cp.sum(y) == 1]
 prob = dsp.SaddlePointProblem(obj, constraints)
-prob.solve(solver='GUROBI',verbose=True)  # solves the problem
+prob.solve()  # solves the problem
 
-#prob.value  # 1.6666666666666667
-#x.value  # array([0.66666667, 0.33333333])
-#y.value  # array([0.33333333, 0.66666667])
+prob.value  # 1.6666666666666667
+x.value  # array([0.66666667, 0.33333333])
+y.value  # array([0.33333333, 0.66666667])
 ```
 
 
-Test of MIQP with gurobi backend
 ```{python}
-Nfine = int(1e2)
+Nfine = int(5)
 Nfreq = int(4)
 x     = cp.Variable(Nfine,integer=True)
 y     = cp.Variable(Nfreq,integer=True)
@@ -71,32 +62,15 @@ y     = cp.Variable(Nfreq,integer=True)
 A1     = np.random.rand(Nfine,Nfine)
 b      = np.random.rand(Nfine)
 A2     = np.random.rand(Nfine,Nfine)
-
 obj    = cp.Minimize(cp.sum_squares( A1 @ x - b))
 
 prob   = cp.Problem(obj)
-prob.solve(solver='GUROBI',reoptimize=True,verbose=True)
-prob.status
-print(x.value)
-sum(x.value)
+prob.solve()
+#prob.status
+#print(x.value)
 ```
 
 
-Test of DSP
 ```{python}
-# Creating variables
-x = cp.Variable(50)
-
-# Creating local variables
-y_loc = dsp.LocalVariable(50)
-
-# Convex in x, concave in y_loc
-f = dsp.saddle_inner( cp.quad_form(x, y_loc)
-
-# maximizes over y_loc
-G = dsp.saddle_max(f, [y_loc >= 0, cp.sum(y_loc) == 1])
-prob = cp.Problem(cp.Minimize(G), [x >= 0, cp.sum(x) == 1])
-prob.solve(solver='GUROBI',reoptimize=True,verbose=True)
-
+from pyscipopt import Model
 ```
-

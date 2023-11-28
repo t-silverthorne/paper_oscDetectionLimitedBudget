@@ -2,6 +2,10 @@
 .Rhistory
 .Rapp.history
 
+report/*
+metaout/*
+gurobi.log
+temp.csv
 .html
 
 # Session Data files

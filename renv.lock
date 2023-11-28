@@ -692,17 +692,6 @@
       ],
       "Hash": "b29cf3031f49b04ab9c852c912547eef"
     },
-    "gurobi": {
-      "Package": "gurobi",
-      "Version": "10.0-3",
-      "Source": "Local",
-      "RemoteType": "local",
-      "RemoteUrl": "/Library/gurobi1003/macos_universal2/R/gurobi_10.0-3_R_4.2.0.tgz",
-      "Requirements": [
-        "slam"
-      ],
-      "Hash": "a62a344c48d654d537664fb3b7aabfde"
-    },
     "here": {
       "Package": "here",
       "Version": "1.0.1",
