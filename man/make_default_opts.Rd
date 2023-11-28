@@ -2,7 +2,7 @@
 % Please edit documentation in R/make_default_opts.R
 \name{make_default_opts}
 \alias{make_default_opts}
-\title{Generate default optimization options}
+\title{Generate default options for convex power optimization}
 \usage{
 make_default_opts(prob_size = "small")
 }

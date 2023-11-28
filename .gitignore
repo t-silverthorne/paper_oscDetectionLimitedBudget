@@ -6,7 +6,7 @@ report/*
 metaout/*
 gurobi.log
 temp.csv
-.html
+*.html
 
 # Session Data files
 .RData

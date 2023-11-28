@@ -24,3 +24,11 @@ Gurobi backend in python is currently unused
 
 SCIPOPTSUITE needs to be installed externally so that pyscipopt will install in python and you can then used cvxpy to do MIQP (Gurobi does not appear to handle this conic formulation)
 
+
+
+Need to use pip to get most dependencies, but this messes up SCIP. 
+
+You can get SCIP to compile, on mac may need to pass compiler flag cmake .. -DAUTOBUILD=on
+Compilation didn't work
+https://github.com/conda-forge/scipoptsuite-feedstock using conda to get scipoptsuite
+

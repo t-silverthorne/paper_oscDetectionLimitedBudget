@@ -1,4 +1,4 @@
-#' Generate default optimization options
+#' Generate default options for convex power optimization
 #' 
 #' @description
 #' \code{make_default_opts()} generates optimization options for small medium or large problems.
