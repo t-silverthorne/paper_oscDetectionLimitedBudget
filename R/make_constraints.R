@@ -12,20 +12,22 @@
 #' 
 #' @author Turner Silverthorne
 make_constraints=function(x,Lmat,bvec,opts){
+  Nm = Constant(opts$Nmeas)
   constraints=NaN
   if (opts$lattice_cstr == 'none'){
-    constraints  = list( sum(x) == opts$Nmeas)
+
+    constraints  = list( sum(x) == Nm)
   } else if (opts$lattice_cstr =='lineq'){
     L   = Constant(Lmat) # convert to CVXR class
     b   = bvec-1         # shift trick necessary for constraint
     b   = Constant(b)    # convert to CVXR class
     mla = Constant(opts$max_lat_active) # convert to CVXR class
-    constraints = list(sum(x)==opts$Nmeas,sum(pos(L%*%x - b))<=mla) #TODO: decide if ineq or eq is easier
+    constraints = list(sum(x)==Nm,sum(pos(L%*%x - b))<=mla) #TODO: decide if ineq or eq is easier
   }
   else if (opts$lattice_cstr == 'cfun'){
     w   = Constant(bvec)
     mla = Constant(opts$max_lat_active) # convert to CVXR class
-    constraints  = list( sum(x) <= mla, t(w)%*%x == opts$Nmeas) #TODO: decide if ineq or eq is easier 
+    constraints  = list( sum(x) <= mla, t(w)%*%x == Nm) #TODO: decide if ineq or eq is easier 
   }
   return(constraints) 
 }

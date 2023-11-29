@@ -31,7 +31,6 @@
 #' 
 #' @author Turner Silverthorne
 
-#TODO: expand documentation to contain all outputs of opts
 make_default_opts = function(prob_size='small'){
   opts = list( 
     min_dx         = 1, 
