@@ -24,10 +24,10 @@ run_sa_power=function(Aquad,opts,Lmat=NULL){
     }
   }
   
-  rands     = runif(opts$num_iter)
-  Temp_rate = .99
-  Tnow        = 100 
-  
+  rands        = runif(opts$num_iter)
+  cooling_rate = .9999
+  #Tinit        = 100
+  Tnow         = Tinit 
   x = rep(0,opts$Nfine)
   # initialize state 
   if (opts$lattice_cstr=='none'){
@@ -36,10 +36,12 @@ run_sa_power=function(Aquad,opts,Lmat=NULL){
     stop('Simulated annealing with lattice constraints has not been implemented yet')
   }
   ii=1
-  Sx=-cfun_sim_anneal_pwr(x,Aquad,opts)
+  Sx=cfun_sim_anneal_pwr(x,Aquad,opts)
   while (ii<opts$num_iter+1){
     if (ii %% floor(opts$num_iter/20) == 0){
-      print(paste0('Completed: ', toString(100*ii/opts$num_iter),' perc of SA run.'))
+      print(paste0('Completed: ', toString(100*ii/opts$num_iter),' perc of SA run. Temp: ', toString(Tnow)))
+      #Tnow  = Tinit*.65
+      #Tinit = Tnow
     }
     y = x
     
@@ -48,14 +50,15 @@ run_sa_power=function(Aquad,opts,Lmat=NULL){
     y[swap_on]  = 1
     y[swap_off] = 0
     
-    Sy=-cfun_sim_anneal_pwr(y,Aquad,opts)      # eval cost fun of candidate state
+    Sy=cfun_sim_anneal_pwr(y,Aquad,opts)      # eval cost fun of candidate state
     alpha = min(exp(-(Sy-Sx)/Tnow),1)         # acceptance prob
     
+    Tnow = Tnow*cooling_rate
     if (rands[ii]<alpha){
       x=y
     }
-    Sx=-cfun_sim_anneal_pwr(x,Aquad,opts)
+    Sx=cfun_sim_anneal_pwr(x,Aquad,opts)
     ii=ii+1
   }
-  return(-Sx) 
+  return(Sx) 
 }

@@ -6,7 +6,7 @@
 cfun_sim_anneal_pwr=function(x,Amat,opts){
   if (opts$costfun_type == 'Linfty'){
     if ('list' %in% class(Aquad)){
-      return(min(unlist(lapply(Amat,function(A){t(x)%*%A%*%x}))))
+      return(max(unlist(lapply(Amat,function(A){t(x)%*%A%*%x}))))
     }else{
       stop("For Linfty cost fun, Aquad should be a list of matrices not a single matrix")
     }
