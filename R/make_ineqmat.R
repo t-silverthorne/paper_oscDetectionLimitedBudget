@@ -1,4 +1,4 @@
-#' Generate lattice constraints for convex power optimization
+#' Generate constraints for lattice-constrained power maximization
 #'  
 #' @description
 #' This function generates a matrix of linear constraints that ensure the optimal design can be 

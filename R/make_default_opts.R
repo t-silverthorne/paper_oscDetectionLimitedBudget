@@ -67,7 +67,6 @@ make_default_opts = function(prob_size='small'){
     opts=opts
   }else {
     stop("Unknown problem name, use one of the known names")
-    opts = NaN
   }
   return(opts)
 }

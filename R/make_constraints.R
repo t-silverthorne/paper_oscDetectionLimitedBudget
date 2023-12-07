@@ -15,7 +15,6 @@ make_constraints=function(x,Lmat,bvec,opts){
   Nm = Constant(opts$Nmeas)
   constraints=NaN
   if (opts$lattice_cstr == 'none'){
-
     constraints  = list( sum(x) == Nm)
   } else if (opts$lattice_cstr =='lineq'){
     L   = Constant(Lmat) # convert to CVXR class
