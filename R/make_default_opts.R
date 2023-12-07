@@ -41,6 +41,7 @@ make_default_opts = function(prob_size='small'){
     lattice_cstr   = 'none', # none, cfun, lineq
     costfun_type   = 'L1'
     ) 
+  
   if (prob_size=='small'){
     opts$Nfine   = 64
     opts$Nfreq   = 8 
@@ -62,7 +63,10 @@ make_default_opts = function(prob_size='small'){
     opts$min_lat = 6 
     opts$max_lat = 6 
     opts$num_iter= 1e8
-  }else{
+  } else if (prob_size=='partial_test'){
+    opts=opts
+  }else {
+    stop("Unknown problem name, use one of the known names")
     opts = NaN
   }
   return(opts)

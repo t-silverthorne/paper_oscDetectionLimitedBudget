@@ -19,6 +19,9 @@
 #' 
 #' @author Turner Silverthorne
 make_ineqmat = function(opts){
+  warning('The output of this function is only useful for enforcing lattice constraints. For lattice constraint
+  optimization, you most likely want to use simulated annealing. It is not very efficient to use convex
+          programming for this type of problem')
   Lmat = NaN
   if (opts$lattice_cstr=='none'){
     Lmat=NULL
