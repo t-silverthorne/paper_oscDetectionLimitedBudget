@@ -4,7 +4,7 @@
 \alias{make_default_opts}
 \title{Generate default options for convex power optimization}
 \usage{
-make_default_opts(prob_size = "small")
+make_default_opts(prob_size = "small", solver_type = "simulanneal")
 }
 \arguments{
 \item{prob_size}{size of problem, either small, medium, or large}
@@ -12,8 +12,11 @@ make_default_opts(prob_size = "small")
 \value{
 \code{opts} a list containing the following optimization options:
 
+\code{solver_type} can be cvxr, simulanneal, (not implemented) ctslocal
+
 related to optimization solver:
 \itemize{
+\item \code{opts$solver_type} record user-specified \code{solver_type} for downstream functions
 \item \code{opts$verbose} turn on/off intermediate output from Gurobi (\code{TRUE} by default)
 \item \code{opts$lattice_cstr} decide if you want to constrain design space to only integer
 combinations of certain sub-lattices  (\code{'none'} by default)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/make_ineqmat.R
 \name{make_ineqmat}
 \alias{make_ineqmat}
-\title{Generate lattice constraints for convex power optimization}
+\title{Generate constraints for lattice-constrained power maximization}
 \usage{
 make_ineqmat(opts)
 }

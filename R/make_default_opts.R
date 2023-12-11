@@ -6,8 +6,10 @@
 #' 
 #' @param prob_size size of problem, either small, medium, or large
 #' @return \code{opts} a list containing the following optimization options:
+#' @return \code{solver_type} can be cvxr, simulanneal, (not implemented) ctslocal
 #' 
 #' related to optimization solver:
+#' * \code{opts$solver_type} record user-specified \code{solver_type} for downstream functions
 #' * \code{opts$verbose} turn on/off intermediate output from Gurobi (\code{TRUE} by default) 
 #' * \code{opts$lattice_cstr} decide if you want to constrain design space to only integer
 #'                        combinations of certain sub-lattices  (\code{'none'} by default)
@@ -31,16 +33,18 @@
 #' 
 #' @author Turner Silverthorne
 
-make_default_opts = function(prob_size='small'){
+make_default_opts = function(prob_size='small',solver_type='simulanneal'){
   opts = list( 
     min_dx         = 1, 
     max_lat_active = 5, 
     verbose        = T, 
     fmin           = 1, 
     fmax           = 24,
-    lattice_cstr   = 'none', # none, cfun, lineq
-    costfun_type   = 'L1'
+    lattice_cstr   = 'none', # none, cfun, lineq, sa_lattice
+    costfun_type   = 'L1',
+    solver_type    = solver_type
     ) 
+  
   if (prob_size=='small'){
     opts$Nfine   = 32 
     opts$Nfreq   = 8 
@@ -62,8 +66,22 @@ make_default_opts = function(prob_size='small'){
     opts$min_lat = 6 
     opts$max_lat = 6 
     opts$num_iter= 1e8
-  }else{
-    opts = NaN
+  } else if (prob_size=='partial_test'){
+    opts=opts
+  }else {
+    stop("Unknown problem name, use one of the known names")
+  }
+ 
+  #TODO document how min and max number of lattices should be handled differently in simulated annealing 
+  if (opts$solver_type=='simulanneal'){
+    opts$min_active_lats = 1
+    opts$max_active_lats = 'adapt' # not hard coded in case Nmeas changes 
+    opts$min_lat         = 4
+    opts$max_lat         = 'Nmeas' # not hard coded in case Nmeas changes
+  } else if (opts$solver_type=='ctslocal'){
+    stop('Requested a solver that has not been implemented yet')
+  } else{
+    stop('Unknown solver requested')
   }
   return(opts)
 }
