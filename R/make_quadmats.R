@@ -46,7 +46,7 @@ make_quadmats = function(Lmat,opts){
     Amlist[[ii]]=Amat
   }
 
-  # need to conjugate Amlist by Lmat if putting lattice constraints in cost function
+  # need to conjugate Amlist by Lmat if lattice constraints are in cost function
   if (opts$lattice_cstr=='cfun'){
     for (ii in c(1:length(Amlist))){
       Amlist[[ii]] = t(Lmat)%*%Amlist[[ii]]%*%Lmat
@@ -60,6 +60,7 @@ make_quadmats = function(Lmat,opts){
     for (ii in c(1:length(Amlist))){
       Aquad = Aquad + Amlist[[ii]]/Nfreq
     }
+    Aquad=Constant(Aquad)
   }else if(opts$costfun_type=='Linfty'){
     for (ii in c(1:length(Amlist))){
       Amlist[[ii]]=Constant(Amlist[[ii]])

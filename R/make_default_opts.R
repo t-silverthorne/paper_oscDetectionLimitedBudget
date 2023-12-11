@@ -42,7 +42,7 @@ make_default_opts = function(prob_size='small'){
     costfun_type   = 'L1'
     ) 
   if (prob_size=='small'){
-    opts$Nfine   = 64
+    opts$Nfine   = 32 
     opts$Nfreq   = 8 
     opts$Nmeas   = 16 
     opts$min_lat = 4 
