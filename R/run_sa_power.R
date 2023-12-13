@@ -50,7 +50,7 @@ run_sa_power=function(Aquad,opts,Lmat=NULL){
         Tinit = Tnow
       }
     }
-    y = sa_propfunction(x,opts)
+    y = sa_propfunction(opts,x)
     
     Sy=sa_cfunpwr(y,Aquad,opts)      # eval cost fun of candidate state
     alpha = min(exp(-(Sy-Sx)/Tnow),1)         # acceptance prob

@@ -15,8 +15,15 @@
 sa_randpar=function(n){
   P      = list()
   m      = n
-  emat   = sa_eulermat(m) 
-  states = lapply(emat,function(x){x[1:2]})
-  probs  = unlist(lapply(emat,function(x){x[3]}))
-  sample(states,1,FALSE,probs)
+  while (m>0){
+    emat   = sa_eulermat(m) 
+    states = lapply(emat,function(x){x[1:2]})
+    probs  = unlist(lapply(emat,function(x){x[3]}))
+    state = sample(states,1,FALSE,probs)
+    dd=state[[1]][1]
+    jj=state[[1]][2]
+    P=append(P,replicate(jj,{dd}))
+    m=m-jj*dd
+  }
+  return(unlist(P))
 }
