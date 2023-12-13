@@ -19,7 +19,7 @@
 #' the original L' lattices.
 #' 
 #' @author Turner Silverthorne
-sa_propfunction=function(x,opts){
+sa_propfunction=function(opts,x){
   if (opts$lattice_cstr=='none'){
     y           = x
     swap_on     = sample(which(x==0),1)       # proposed state differs from x at one index
@@ -28,6 +28,14 @@ sa_propfunction=function(x,opts){
     y[swap_off] = 0
   } else if(opts$lattice_cstr=='sa_lattice'){
     stop("sa_lattice transition function has not been implemented yet")
+    
+    # random subset of current state
+    
+    # random partition
+    
+    # random lattice for each element of partition
+    
+    # update current lattice
   } else {
     stop('choice of lattice constraint not recognized, are you using CVXR option by mistake')
   }

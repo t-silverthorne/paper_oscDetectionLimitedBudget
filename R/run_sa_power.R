@@ -22,11 +22,13 @@ run_sa_power=function(Aquad,opts,Lmat=NULL){
       warning('You are running simulated annealing, Aquad should not be a CVXR constant')
     }
   }
-  
+ 
+  epochs       = F 
   rands        = runif(opts$num_iter)
   cooling_rate = .9999
   Tinit        = 100
   Tnow         = Tinit 
+  
   # initialize state 
   if (opts$lattice_cstr=='none'){
     x = rep(0,opts$Nfine)
@@ -36,13 +38,17 @@ run_sa_power=function(Aquad,opts,Lmat=NULL){
   } else { 
     stop('Unrecognized lattice constraint. Did you forget to change from CVXR options?')
   }
+  
+  # run annealing   
   ii=1
   Sx=sa_cfunpwr(x,Aquad,opts)
   while (ii<opts$num_iter+1){
     if (ii %% floor(opts$num_iter/20) == 0){
       print(paste0('Completed: ', toString(100*ii/opts$num_iter),' perc of SA run. Temp: ', toString(Tnow)))
-      #Tnow  = Tinit*.65
-      #Tinit = Tnow
+      if (epochs){
+        Tnow  = Tinit*.65
+        Tinit = Tnow
+      }
     }
     y = sa_propfunction(x,opts)
     
