@@ -27,6 +27,10 @@ sa_propfunction=function(x,opts){
     y[swap_on]  = 1
     y[swap_off] = 0
   } else if(opts$lattice_cstr=='sa_lattice'){
+    # randomly select subset of lattices to repopulate
+    # random partition of the total number of points in those lattices
+    # random lattices consistent with this partition
+    
     stop("sa_lattice transition function has not been implemented yet")
   } else {
     stop('choice of lattice constraint not recognized, are you using CVXR option by mistake')
