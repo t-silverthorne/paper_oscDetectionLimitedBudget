@@ -1,8 +1,8 @@
 test_that("global opts always same", {
   # check problem size does not change global options
-  opts_ref=make_default_opts(prob_size = 'partial_test')
+  opts_ref=make_default_opts(prob_size = 'partial_test','cvxr')
   for (psize in c('small','medium','large')){
-    opts=make_default_opts(prob_size = 'small')
+    opts=make_default_opts(prob_size = 'small','cvxr')
     expect_equal(list(opts$min_dx,
                       opts$max_lat_active,
                       opts$verbose,
@@ -25,10 +25,11 @@ test_that('unknown problem name gives error',{
   expect_error(make_default_opts(prob_size='huge'),"Unknown problem name, use one of the known names")
 })
 
-test_that('problem sizes nest as expected',{
-  opts_small = make_default_opts(prob_size = 'small')
-  opts_med   = make_default_opts(prob_size = 'medium')
-  opts_large = make_default_opts(prob_size = 'large')
+test_that('CVXR problem sizes nest as expected',{
+  stype = 'cvxr' 
+  opts_small = make_default_opts(prob_size = 'small',stype)
+  opts_med   = make_default_opts(prob_size = 'medium',stype)
+  opts_large = make_default_opts(prob_size = 'large',stype)
   
   expect_lte(opts_small$Nfine,opts_med$Nfine)
   expect_lte(opts_small$Nfreq,opts_med$Nfreq)

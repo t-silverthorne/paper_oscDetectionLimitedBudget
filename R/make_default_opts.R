@@ -77,10 +77,10 @@ make_default_opts = function(prob_size='small',solver_type='simulanneal'){
     opts$min_active_lats = 1
     opts$max_active_lats = 'adapt' # not hard coded in case Nmeas changes 
     opts$min_lat         = 4
-    opts$max_lat         = 'Nmeas' # not hard coded in case Nmeas changes
+    opts$max_lat         = 'adapt' # not hard coded in case Nmeas changes
   } else if (opts$solver_type=='ctslocal'){
     stop('Requested a solver that has not been implemented yet')
-  } else{
+  } else if (opts$solver_type!='cvxr'){
     stop('Unknown solver requested')
   }
   return(opts)
