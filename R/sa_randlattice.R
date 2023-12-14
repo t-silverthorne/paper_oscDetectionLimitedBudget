@@ -1,4 +1,5 @@
 sa_randlattice=function(n,opts){
+  Nfine = opts$Nfine
   x     = replicate(Nfine,0)
  
   dx    = sample(1:floor(Nfine/n),1) #TODO: clarify assumption that entire lattice must fit in simulation 

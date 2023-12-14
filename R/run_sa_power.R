@@ -31,8 +31,7 @@ run_sa_power=function(Aquad,opts,Lmat=NULL){
   
   # initialize state 
   if (opts$lattice_cstr=='none'){
-    x = rep(0,opts$Nfine)
-    x[sample(c(1:opts$Nfine),opts$Nmeas,T)]=1
+    x = sa_propfunction(opts,x=NULL) # random initialization 
   } else if (opts$lattice_cstr=='sa_lattice'){
     x = generate_random_lattice(opts,x=NULL)
   } else { 
