@@ -29,22 +29,23 @@
 #'  \item \code{opts$min_dx} smallest lattice spacing 
 #'  \item \code{opts$max_lat_active} maximum number of lattices that can be used in constructing optimal solution
 #'  \item \code{opts$verbose maximum} number of lattices that can be used in constructing optimal solution
-#'  \item \code{opts$no_overlap} boolean enforcing if lattices are required to not overlap with one another 
+#'  \item \code{opts$enforce_overlap} for simulated annealing prop function, enforce if lattices are required 
+#'  to not overlap with one another 
 #' }
 #' 
 #' @author Turner Silverthorne
 
 make_default_opts = function(prob_size='small',solver_type='simulanneal'){
   opts = list( 
-    min_dx         = 1, 
-    max_lat_active = 5, 
-    verbose        = T, 
-    fmin           = 1, 
-    fmax           = 24,
-    lattice_cstr   = 'none', # none, cfun, lineq, sa_lattice
-    costfun_type   = 'L1',
-    solver_type    = solver_type,
-    no_overlap     = T
+    min_dx              = 1, 
+    max_lat_active      = 5, 
+    verbose             = T, 
+    fmin                = 1, 
+    fmax                = 24,
+    lattice_cstr        = 'none', # none, cfun, lineq, sa_lattice
+    costfun_type        = 'L1',
+    solver_type         = solver_type,
+    enforce_overlap     = 'ignore' 
     ) 
   
   if (prob_size=='small'){

@@ -59,11 +59,11 @@ sa_randpar=function(n,opts=NULL,parent_size=NULL){
       if(1+parent_size > opts$max_active_lats){
         stop('No feasible partition: you must increase max_active_lats') 
       }
-      if (opts$max_lat*opts$max_active_lats < n){
+      if (opts$max_lat*(opts$max_active_lats-parent_size) < n){
         stop('Problem is infeasible: increase number of allowed lattices and/or 
         max number of allowed points in lattice')
       }
-      if (opts$min_lat*opts$min_active_lats > n){
+      if (opts$min_lat*(opts$min_active_lats-parent_size) > n){
         stop('Problem is infeasible: decrease min number of allowed lattices and/or 
           min number of allowed points in lattice')
       }

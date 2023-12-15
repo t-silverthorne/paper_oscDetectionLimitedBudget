@@ -32,7 +32,6 @@ sa_propfunction=function(opts,x=NULL){
       y[swap_on]  = 1
       y[swap_off] = 0
     }
-    #TODO: add initialization
   } else if(opts$lattice_cstr=='sa_lattice'){
     if (is.null(x)){
       x           = list()
@@ -47,12 +46,20 @@ sa_propfunction=function(opts,x=NULL){
     }
     part = sa_randpar(nsamps,opts,parent_size) 
     
-    #TODO check that lattices dont overlap 
-    xnew = list()
-    for (pp in c(1:length(part))){
-      xnew[[pp]] = sa_randlattice(part[pp],opts)
+    #TODO check that lattices do not overlap 
+    
+    overlap_cond_met = F
+    while(overlap_cond_met == F){
+      # generate a new uniform lattice for each term in partition
+      xnew = list()
+      for (pp in c(1:length(part))){
+        xnew[[pp]] = sa_randlattice(part[pp],opts)
+      }
+      
+      # note: if opts$enforce_overlap == 'ignore', the next line always returns TRUE 
+      overlap_cond_met = sa_test_for_overlap(xnew,x,inds,opts) 
     }
-    xnew 
+    
     
     #TODO update current lattice
     if (length(x)==0){
@@ -61,7 +68,7 @@ sa_propfunction=function(opts,x=NULL){
       y = append(x[!(c(1:length(x)) %in% inds)],xnew) 
     }
   } else {
-    stop('choice of lattice constraint not recognized, are you using CVXR option by mistake')
+    stop('choice of lattice constraint not recognized, are you using CVXR option by mistake?')
   }
   return(y)
 }

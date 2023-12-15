@@ -51,7 +51,7 @@ test_that('warning for redundant options',{
 
 ######
 
-test_that('errors for infeasible lattice constraint',{
+test_that('errors for infeasible lattice constraint (too many pts, no parent)',{
   opts=list(min_active_lats = 1,
               max_active_lats = 10, 
               min_lat         = 5,
@@ -63,6 +63,41 @@ test_that('errors for infeasible lattice constraint',{
   expect_error(sa_randpar(1,opts),'Number of points to be partitioned')
 })
 
+test_that('errors for infeasible lattice constraint (too many pts, with parent)',{
+  opts=list(min_active_lats = 1,
+              max_active_lats = 60, 
+              min_lat         = 1,
+              max_lat         = 2)
+  
+  # check error when opts provided and enforced
+  opts$lattice_cstr = 'sa_lattice'
+  expect_error(sa_randpar(101,opts,parent_size=10),'Problem is infeasible: increase')
+})
+
+
+test_that('errors for infeasible lattice constraint (too few pts, no parent)',{
+  opts=list(min_active_lats = 2,
+              max_active_lats = 10, 
+              min_lat         = 2,
+              max_lat         = 10)
+  
+  # check error when opts provided and enforced
+  opts$lattice_cstr = 'sa_lattice'
+  expect_error(sa_randpar(3,opts),'Problem is infeasible: decrease')
+  
+})
+
+test_that('errors for infeasible lattice constraint (too few pts, with parent)',{
+  opts=list(min_active_lats = 7,
+              max_active_lats = 10, 
+              min_lat         = 2,
+              max_lat         = 10)
+  
+  # check error when opts provided and enforced
+  opts$lattice_cstr = 'sa_lattice'
+  expect_error(sa_randpar(3,opts,5),'Problem is infeasible: decrease')
+  
+})
 
 test_that('errors for infeasible lattice constraint with parent size',{
   opts=list(min_active_lats = 1,
