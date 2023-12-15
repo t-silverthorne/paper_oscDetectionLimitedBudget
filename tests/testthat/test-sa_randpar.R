@@ -95,3 +95,11 @@ test_that('generated partions obey lattice constraints',{
             lattice_cstr    = 'sa_lattice')
   expect_equal(sa_randpar(opts$min_lat,opts),opts$min_lat)
 })
+
+test_that('error non-numeric constraints supplied',{
+  opts=make_default_opts('small')
+  opts$lattice_cstr = 'sa_lattice'
+  expect_error(sa_randpar(10,opts),'Non-numeric lattice')
+  expect_error(sa_randpar(10,opts,5),'Non-numeric lattice')
+  expect_error(sa_randpar(10,opts,15),'Non-numeric lattice')
+})

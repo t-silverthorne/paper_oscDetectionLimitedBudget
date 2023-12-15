@@ -17,10 +17,22 @@ sa_randpar=function(n,opts=NULL,parent_size=NULL){
     lattice_cstr='none'
   }else if(opts$lattice_cstr %in% c('none','sa_lattice')){
     lattice_cstr=opts$lattice_cstr
+   
+    if (opts$lattice_cstr =='sa_lattice'){
+      if (! (is.numeric(opts$max_active_lats) &
+             is.numeric(opts$min_active_lats) &
+             is.numeric(opts$min_lat) &
+             is.numeric(opts$max_lat)) ){
+        stop('Non-numeric lattice constraints provided in opts. Check 
+             max_active_lats, min_active_lats, min_lat, max_lat')
+      }
+    } 
+    
   }else{
     stop('Unrecognized lattice constraint')
   }
-  
+ 
+   
   if (is.null(parent_size)){  # unpack parent_size
     parent_size = 0
   }

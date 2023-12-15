@@ -35,12 +35,6 @@ sa_propfunction=function(opts,x=NULL){
     #TODO: add initialization
   } else if(opts$lattice_cstr=='sa_lattice'){
     if (is.null(x)){
-      min_al = opts$min_active_lats
-      if (opts$max_active_lats=='adapt'){
-        max_al = floor(opts$Nmeas/opts$min_lat)
-      }else{
-        stop('unrecognized opts$max_active_lats')
-      }
       x           = list()
       nsamps      = opts$Nmeas
       parent_size = NULL
@@ -51,14 +45,12 @@ sa_propfunction=function(opts,x=NULL){
       nsamps = xp %>% lapply(function(x){sum(x)}) %>% unlist() %>% sum()
       parent_size = length(x[!(c(1:length(x)) %in% inds)])
     }
-    part = sa_randpar(nsamps,opts,parent_size) #TODO: check partition is allowable
+    part = sa_randpar(nsamps,opts,parent_size) 
     
-    #TODO random lattice for each element of partition
+    #TODO check that lattices dont overlap 
     xnew = list()
     for (pp in c(1:length(part))){
-      # random shift
       xnew[[pp]] = sa_randlattice(part[pp],opts)
-      # random spacing
     }
     xnew 
     
