@@ -20,5 +20,8 @@ make_ineqrhs=function(Lmat,opts){
     bvec = rowSums(Lmat)
   }else if (opts$lattice_cstr=='none'){
     bvec = NULL
+  }else{
+    stop('Unrecognized opts$lattice_cstr')
   }
+  return(bvec)
 }

@@ -39,6 +39,8 @@ related to lattice construction (only relevant if \code{use_lattice==T}:
 \item \code{opts$min_dx} smallest lattice spacing
 \item \code{opts$max_lat_active} maximum number of lattices that can be used in constructing optimal solution
 \item \code{opts$verbose maximum} number of lattices that can be used in constructing optimal solution
+\item \code{opts$enforce_overlap} for simulated annealing prop function, enforce if lattices are required
+to not overlap with one another
 }
 }
 \description{

@@ -16,14 +16,16 @@
 #' 
 #' @author Turner Silverthorne
 sa_lat2state=function(x,opts){
-  if (opts$lattice_cstr!=sa_lattice){
-    warning('You are using the simulated annealing
-            lattice to state function on an optimization problem
-            without lattice constraints.')
+  if (class(x)!='list'){
+    stop('Input lattice should be a list')
+  }
+  if (opts$lattice_cstr!='sa_lattice'){
+    stop('sa_lat2state should only be called when opts$lattice_cstr==sa_lattice')
   }
   y = rep(0,opts$Nfine)
   for (ii in 1:length(x)){
-    y[x[[ii]]]=y[x[[ii]]]+1
+    xloc = x[[ii]]
+    y = y + xloc
   }
   return(y)
 }

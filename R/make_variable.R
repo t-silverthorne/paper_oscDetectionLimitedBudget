@@ -18,11 +18,12 @@
 #' 
 #' @author Turner Silverthorne
 make_variable=function(opts,Lmat=NULL){
-  x=NaN
   if (opts$lattice_cstr=='none' |opts$lattice_cstr=='lineq' ){
     x=Variable(opts$Nfine,boolean=T)
   }else if (opts$lattice_cstr=='cfun'){
     x=Variable(dim(Lmat)[2],boolean=T)
+  }else{
+    stop('Unrecognized opts$lattice_cstr')
   }
   return(x)
 }
