@@ -46,7 +46,7 @@ sa_propfunction=function(opts,x=NULL){
     }
     part = sa_randpar(nsamps,opts,parent_size) 
     
-    
+    #TODO print solver exit reason for better handling of overlap
     overlap_cond_met = F
     while(overlap_cond_met == F){
       # generate a new uniform lattice for each term in partition
