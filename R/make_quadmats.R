@@ -60,11 +60,11 @@ make_quadmats = function(opts,Lmat=NULL){
     for (ii in c(1:length(Amlist))){
       Aquad = Aquad + Amlist[[ii]]/Nfreq #TODO: should this be converted to CVXR Constant
     }
-    if (opts$solver_type=='cvx'){
+    if (opts$solver_type=='cvxr'){
       Aquad=Constant(Aquad)
     }
   }else if(opts$costfun_type=='Linfty'){
-    if (opts$solver_type=='cvx'){
+    if (opts$solver_type=='cvxr'){
       for (ii in c(1:length(Amlist))){
         Amlist[[ii]]=Constant(Amlist[[ii]])
       }

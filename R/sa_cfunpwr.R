@@ -4,18 +4,21 @@
 #' @author Turner Silverthorne
 
 sa_cfunpwr=function(x,Amat,opts){
+  if (opts$solver_type != 'simulanneal'){
+    stop('Wrong solver type, when using sa_cfunpwr, must use simulanneal')
+  }
   if (opts$lattice_cstr%in%c('sa_lattice','none')){
     if (opts$lattice_cstr =='sa_lattice'){
       x=sa_lat2state(x,opts) 
     } 
     if (opts$costfun_type == 'Linfty'){
-      if ('list' %in% class(Aquad)){
+      if ('list' %in% class(Amat)){
         return(max(unlist(lapply(Amat,function(A){t(x)%*%A%*%x}))))
       }else{
         stop("For Linfty cost fun, Aquad should be a list of matrices not a single matrix")
       }
     }else if(opts$costfun_type=='L1'){
-      if ('list' %in% class(Aquad)){
+      if ('list' %in% class(Amat)){
         stop("For L1 cost fun, Aquad should be a single matrix not a list of matrices")
       }else{
         return(t(x)%*%Amat%*%x)

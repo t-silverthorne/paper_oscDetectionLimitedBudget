@@ -1,0 +1,26 @@
+N    = 12;
+f    = 10*rand;
+t    = sort(rand(N,1));
+cvec = cos(2*pi*f*t);
+svec = sin(2*pi*f*t);
+
+min(eig([cvec'*cvec cvec'*svec; cvec'*svec svec'*svec])) % min eig FIM
+
+
+a11 = cvec.*cvec;
+a12 = cvec.*svec;
+a22 = svec.*svec;
+
+A1  = 0.5*(a11*a22' + a22*a11') - a12*(a12');
+A2  = a11*a11' + a22*a22' - a11*a22' - a22*a11' + 4*a12*(a12');
+eig(A1)
+eig(A2)
+
+
+mu=rand(N,1);
+
+sum(mu)^2- 4*mu'*A1*mu
+mu'*A2*mu
+
+%%x'*(u*v' + v*u')*x 
+%x'*(2*u*v')*x 

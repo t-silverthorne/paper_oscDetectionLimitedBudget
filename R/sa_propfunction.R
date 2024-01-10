@@ -46,7 +46,6 @@ sa_propfunction=function(opts,x=NULL){
     }
     part = sa_randpar(nsamps,opts,parent_size) 
     
-    #TODO check that lattices do not overlap 
     
     overlap_cond_met = F
     while(overlap_cond_met == F){
