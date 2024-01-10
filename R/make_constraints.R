@@ -13,7 +13,6 @@
 #' @author Turner Silverthorne
 make_constraints=function(x,Lmat,bvec,opts){
   Nm = Constant(opts$Nmeas)
-  constraints=NaN
   if (opts$lattice_cstr == 'none'){
     constraints  = list( sum(x) == Nm)
   } else if (opts$lattice_cstr =='lineq'){
@@ -27,6 +26,8 @@ make_constraints=function(x,Lmat,bvec,opts){
     w   = Constant(bvec)
     mla = Constant(opts$max_lat_active) # convert to CVXR class
     constraints  = list( sum(x) <= mla, t(w)%*%x == Nm) #TODO: decide if ineq or eq is easier 
+  } else {
+    stop('opts$lattice_cstr not recgonized')    
   }
   return(constraints) 
 }

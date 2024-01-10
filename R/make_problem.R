@@ -17,6 +17,9 @@
 #'  
 #' @author Turner Silverthorne
 make_problem=function(x,Aquad,csts,opts){
+  if (opts$solver_type!='cvxr'){
+    stop('make_problem should only be called when opts$solver_type==cvxr')
+  }
   prob = NaN
   if (opts$costfun_type=='L1'){ # L1 uses average of quadratic forms
   
@@ -30,7 +33,8 @@ make_problem=function(x,Aquad,csts,opts){
            }),collapse=',')
     strp=paste0('prob=Problem(Minimize(max_elemwise(',big_str,')),csts)')
     eval(parse(text=strp))
-    
-  }
+  }else(
+    stop('opts$costfun_type not recognized')
+  )
   return(prob)
 }
