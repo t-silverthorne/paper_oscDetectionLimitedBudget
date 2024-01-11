@@ -43,11 +43,13 @@ run_sa_power=function(Aquad,opts){
   Sx=sa_cfunpwr(x,Aquad,opts)
   while (ii<opts$num_iter+1){
     if (ii %% ceiling(opts$num_iter/20) == 0){
-      print(paste0('Completed: ',
-                   toString(100*ii/opts$num_iter),
-                   ' perc of SA run. Temp: ',
-                   toString(Tnow),
-                   ' fval: ',toString(Sx)))
+      if (opts$verbose){
+        print(paste0('Completed: ',
+                     toString(100*ii/opts$num_iter),
+                     ' perc of SA run. Temp: ',
+                     toString(Tnow),
+                     ' fval: ',toString(Sx)))
+      }
       if (epochs){
         Tnow  = Tinit*.65
         Tinit = Tnow

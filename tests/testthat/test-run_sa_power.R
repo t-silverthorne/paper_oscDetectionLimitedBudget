@@ -17,7 +17,8 @@ test_that('error handling for run_sa_power',{
 test_that("sa_power fun eval L1 and Linfty", {
   opts = make_default_opts(prob_size='small',
                            solver_type='simulanneal')
-  
+ 
+  opts$verbose =F  
   cft = c('L1','Linfty')
   
   for (cft in cft){

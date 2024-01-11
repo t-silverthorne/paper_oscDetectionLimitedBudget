@@ -16,6 +16,9 @@
 #' * \code{opts$costfun_type} either \code{'L1'} which corresponds to averaging over frequencies
 #'                        or \code{'Linfty'} which corresponds to maximizing power at worst case frequency
 #' * \code{opts$num_iter} iteration cutoff for GUROBI, value depends on \code{prob_size} input
+#' * \code{opts$verbose} do you want intermittent output for simulated annealing, default \code{FALSE} 
+#' * \code{opts$MIPGapAbs}only relevant for disciplined convex programming [run_cvxr_power()].
+#' Sets termination threshold based on gap between relaxed and integer constrained problems
 #' 
 #' related to time and frequency discretization
 #' * \code{opts$Nfine} number of candidate points to include when discretizing time
@@ -45,7 +48,9 @@ make_default_opts = function(prob_size='small',solver_type='simulanneal'){
     lattice_cstr        = 'none', # none, cfun, lineq, sa_lattice
     costfun_type        = 'L1',
     solver_type         = solver_type,
-    enforce_overlap     = 'ignore' 
+    enforce_overlap     = 'ignore', 
+    verbose             = F,
+    MIPGapAbs           = 1e-2
     ) 
   
   if (prob_size=='small'){
