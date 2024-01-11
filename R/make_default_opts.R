@@ -15,7 +15,8 @@
 #'                        combinations of certain sub-lattices  (\code{'none'} by default)
 #' * \code{opts$costfun_type} either \code{'L1'} which corresponds to averaging over frequencies
 #'                        or \code{'Linfty'} which corresponds to maximizing power at worst case frequency
-#' * \code{opts$num_iter} iteration cutoff for GUROBI, value depends on \code{prob_size} input
+#' * \code{opts$num_iter} iteration cutoff for [run_sa_power()], irrelevant for [run_cvxr_power()] 
+#' * \code{opts$time_limit} time cutoff for [run_cvxr_power()]
 #' * \code{opts$verbose} do you want intermittent output for simulated annealing, default \code{FALSE} 
 #' * \code{opts$MIPGapAbs}only relevant for disciplined convex programming [run_cvxr_power()].
 #' Sets termination threshold based on gap between relaxed and integer constrained problems
@@ -60,6 +61,7 @@ make_default_opts = function(prob_size='small',solver_type='simulanneal'){
     opts$min_lat = 4 
     opts$max_lat = 4 
     opts$num_iter= 1e6
+    opts$time_limit = 5
   }else if (prob_size=='medium'){
     opts$Nfine   = 144 
     opts$Nfreq   = 16 
@@ -67,6 +69,7 @@ make_default_opts = function(prob_size='small',solver_type='simulanneal'){
     opts$min_lat = 6 
     opts$max_lat = 6 
     opts$num_iter= 1e7
+    opts$time_limit = 60
   }else if (prob_size=='large'){
     opts$Nfine   = 288 
     opts$Nfreq   = 32 
@@ -74,6 +77,7 @@ make_default_opts = function(prob_size='small',solver_type='simulanneal'){
     opts$min_lat = 6 
     opts$max_lat = 6 
     opts$num_iter= 1e8
+    opts$time_limit = 5*60
   } else if (prob_size=='partial_test'){
     opts=opts
   }else {

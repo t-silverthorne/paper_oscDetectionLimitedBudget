@@ -1,7 +1,7 @@
 library(CVXR)
 test_that("cvxr for L1 Linfty runs, no lattice cstr", {
   opts              = make_default_opts(solver_type = 'cvxr',
-                                        prob_size = 'small')
+                                        prob_size = 'medium')
   opts$lattice_cstr = 'none'
   Lmat              = make_ineqmat(opts)
   bvec              = make_ineqrhs(Lmat,opts)
@@ -11,9 +11,10 @@ test_that("cvxr for L1 Linfty runs, no lattice cstr", {
   prob              = make_problem(x,Aquad,csts,opts)
   
   opts$costfun_type = 'L1'
-  opts$verbose      = F
+  opts$verbose      = T
   opts$MIPGapAbs    = 1e-2
-  opts$num_iter     = 1e7
+  opts$num_iter     = 1e5
+  run_cvxr_power(prob,opts)
   res=run_cvxr_power(prob,opts)
   expect_gte(res$value,0)
   

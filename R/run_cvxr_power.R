@@ -9,14 +9,22 @@
 #' 
 #' @param prob a convex programming problem constructed using [make_problem()]
 #' @param opts optimization options, for instance from [make_default_opts()]
-#' 
-#' @return disciplined convex programming result
+#' \itemize{
+#' \item \code{opts$verbose} boolean for if you want solver to display progress 
+#' \item \code{opts$time_limit} time limit for gurobi solver in units of seconds
+#' \item \code{opts$MIPGapAbs} threshold for terminanting solver, measures gap between
+#' convex relaxation of problem and the actual integer constrained programming problem
+#' }
+#'
+#' @return disciplined convex programming result, obtained by calling [CVXR::solve()]
 #' 
 #' @author Turner Silverthorne
 run_cvxr_power=function(prob,opts){
   #start    = Sys.time()
-  result   = CVXR::solve(prob,verbose=opts$verbose,num_iter=opts$num_iter,
-                   MIPGapAbs=opts$MIPGapAbs)
+  #TimeLimit  PreSolve=0,
+  #TODO: configure PreSolve options instead of always using default
+  result   = CVXR::solve(prob,verbose=opts$verbose,num_iter=1e9,
+                         TimeLimit=opts$time_limit,MIPGapAbs=opts$MIPGapAbs)
   #end      = Sys.time()
   return(result)
 }
