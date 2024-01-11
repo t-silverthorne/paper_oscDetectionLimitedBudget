@@ -5,6 +5,7 @@
 #                 'The output of this function is only useful for enforcing lattice constraints.*')
 #})
 
+library(CVXR)
 test_that('Lmat has more rows than columns',{
   opts = make_default_opts(prob_size = 'small',solver_type='cvxr')
   opts$min_lat = 3

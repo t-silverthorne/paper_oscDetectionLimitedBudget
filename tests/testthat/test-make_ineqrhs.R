@@ -1,3 +1,9 @@
+library(CVXR)
+test_that('error for unrecognized',{
+  opts=list(lattice_cstr='foo')
+  expect_error(make_ineqrhs(NULL,opts),'Unrec')
+})
+
 test_that("correct ineqrhs val", {
   opts=make_default_opts(solver='cvxr')
   opts$lattice_cstr='cfun'

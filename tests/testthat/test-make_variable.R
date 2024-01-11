@@ -1,5 +1,5 @@
+library(CVXR)
 test_that("same size var for lineq or none", {
-  library(CVXR)
   opts1=make_default_opts(solver_type='cvxr')
   opts2=make_default_opts(solver_type='cvxr')
   opts1$lattice_cstr='none'

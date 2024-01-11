@@ -1,4 +1,4 @@
-devtools::load_all('.')
+library(CVXR)
 test_that('error handling for run_sa_power',{
   opts = make_default_opts(prob_size='small',
                            solver_type='cvxr')

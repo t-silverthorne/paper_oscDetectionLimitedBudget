@@ -1,3 +1,4 @@
+library(CVXR)
 test_that("lattice addition works", {
   x1  = c(1,0,1,0,0)
   x2  = c(0,1,1,0,1)

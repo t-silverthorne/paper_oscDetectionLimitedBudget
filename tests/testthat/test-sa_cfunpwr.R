@@ -1,3 +1,4 @@
+library(CVXR)
 test_that("sa_cfunpwr handles expected errors", {
   x    = NULL
   Amat = NULL

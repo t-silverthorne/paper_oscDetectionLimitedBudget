@@ -1,3 +1,4 @@
+library(CVXR)
 test_that("naive test: Emat[:,1]*Emat[:,2] <= m", {
   m = sample(c(5:10),1) 
   Emat = sa_eulermat(m)

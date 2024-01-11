@@ -1,3 +1,4 @@
+library(CVXR)
 test_that("check uniform sampling for small n", {
   # expect at most 3% deviation from unif distribution freqs
   n=sample(5:8,1)

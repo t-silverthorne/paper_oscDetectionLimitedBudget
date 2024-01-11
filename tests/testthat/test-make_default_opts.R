@@ -1,3 +1,4 @@
+library(CVXR)
 test_that("global opts always same", {
   # check problem size does not change global options
   opts_ref=make_default_opts(prob_size = 'partial_test','cvxr')
