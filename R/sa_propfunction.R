@@ -39,6 +39,8 @@ sa_propfunction=function(opts,x=NULL){
       parent_size = NULL
     }else{
       #TODO add optional weighting for this
+      #inds = sa_sample_inds(length(x),opts)
+      #n_lat_to_replace = sample(1:length(x),1)
       inds   = sample(c(1:length(x)),sample(1:length(x),1)) # choose how many lattices to update
       xp     = x[inds]
       nsamps = xp %>% lapply(function(x){sum(x)}) %>% unlist() %>% sum()
