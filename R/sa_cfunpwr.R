@@ -5,7 +5,7 @@
 
 sa_cfunpwr=function(x,Amat,opts){
   if (opts$solver_type != 'simulanneal'){
-    stop('Wrong solver type, when using sa_cfunpwr, must use simulanneal')
+    stop('Wrong solver type, when using sa_cfunpwr, must use opts$solver_type=cvxr')
   }
   if (opts$lattice_cstr%in%c('sa_lattice','none')){
     if (opts$lattice_cstr =='sa_lattice'){

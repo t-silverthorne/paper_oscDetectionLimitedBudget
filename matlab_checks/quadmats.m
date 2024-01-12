@@ -3,42 +3,39 @@ N     = 5;
 Nfreq = 3;
 fmin  = 1;
 fmax  = 24;
-Amlist = getAmlist(N,Nfreq,fmin,fmax);
+Amlist = make_quadmats(opts);
 
 Amlist(:,:,1)
 Amlist(:,:,2)
 Amlist(:,:,3)
 
 %% L1 test
-N     = 8;
-Nfreq = 64;
-fmin  = 1;
-fmax  = 24;
-Amlist = getAmlist(N,Nfreq,fmin,fmax);
+opts=struct();
+opts.N     = 8;
+opts.Nfreq = 64;
+opts.fmin  = 1;
+opts.fmax  = 24;
+Amlist = make_quadmats(opts);
 
-sum(Amlist,3)
+mean(Amlist,3)
 
-function  Amlist = getAmlist(N,Nfreq,fmin,fmax)
-% make tvec
-tvec=(0:N)/N;
+function  Amlist = make_quadmats(opts)
+N=opts.N;Nfreq=opts.Nfreq;fmin=opts.fmin;fmax=opts.fmax;% unpack
+
+tvec=(0:N)/N;% make tvec
 tvec=tvec(1:end-1);
 length(tvec);
 
-% make fvec
-fvec = linspace(fmin,fmax,Nfreq);
+fvec = linspace(fmin,fmax,Nfreq); % make fvec
 fvec = reshape(fvec,1,1,length(fvec));
 tvec = reshape(tvec,length(tvec),1);
 
-% to tensor
-cvec = cos(2*pi*tvec.*fvec);
+cvec = cos(2*pi*tvec.*fvec);% to tensor
 svec = sin(2*pi*tvec.*fvec);
 
-% intermediate matrices
-a11 = cvec.*cvec;
+a11 = cvec.*cvec;% intermediate matrices
 a12 = cvec.*svec;
 a22 = svec.*svec;
-
-% page transpose
 a11T = pagetranspose(a11);
 a12T = pagetranspose(a12);
 a22T = pagetranspose(a22);
