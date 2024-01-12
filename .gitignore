@@ -58,3 +58,4 @@ rsconnect/
 actual_paper/*
 
 rdev_cheatsheet.txt
+*/*.asv
