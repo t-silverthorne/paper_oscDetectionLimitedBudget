@@ -37,6 +37,12 @@
 #'  to not overlap with one another 
 #' }
 #' 
+#' related to simulated annealing proposal function
+#' \itemize{
+#' \item\code{opts$lprop_method} sets weights for distribution for sampling sub lattices (uniform, linear, exp), 
+#' see [sa_sample_inds()] and [sa_propfunction()]
+#' }
+#' 
 #' @author Turner Silverthorne
 
 make_default_opts = function(prob_size='small',solver_type='simulanneal'){
@@ -90,6 +96,7 @@ make_default_opts = function(prob_size='small',solver_type='simulanneal'){
     opts$max_active_lats = 'adapt' # not hard coded in case Nmeas changes 
     opts$min_lat         = 4
     opts$max_lat         = 'adapt' # not hard coded in case Nmeas changes
+    opts$lprop_method    = 'uniform'
   } else if (opts$solver_type=='ctslocal'){
     stop('Requested a solver that has not been implemented yet')
   } else if (opts$solver_type!='cvxr'){
