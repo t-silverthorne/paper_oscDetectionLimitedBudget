@@ -15,7 +15,7 @@
 #' @return statistical power for given parameters
 #' 
 #' @author Turner Silverthorne
-getPower <- function(t,param,alpha=.05){
+eval_exact_power <- function(t,param,alpha=.05){
 # return power of one-frequency cosinor model
   Amp    = param[['Amp']];
   freq   = param[['freq']];

@@ -1,18 +1,4 @@
 # basic utils related to power analysis used throughout project
-
-getPower <- function(t,param,alpha=.05){
-# return power of one-frequency cosinor model
-  Amp    = param[['Amp']];
-  freq   = param[['freq']];
-  acro   = param[['acro']];
-  N      = length(t)
-  
-  cvec   = Amp*cos(2*pi*freq*t-acro);
-  lambda = as.numeric(t(cvec)%*%cvec)
-  
-  f0     = qf(p=1-alpha,df1=2,df2=N-3)
-  return(1 - pf(q=f0,df1=2,df2=N-3,ncp=lambda))
-}
 getPower_acrovec <- function(t,param,acrovec,alpha=.05){
 # loop previous
   powervec = rep(NaN,length(acrovec))

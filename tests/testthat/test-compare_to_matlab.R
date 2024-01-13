@@ -76,8 +76,19 @@ test_that('L1/Linfty cost function evaluation',{
 })
 
 test_that('exact power comparison',{
-  
+  t       = c(0,0.127,0.8,0.83)
+  param   = list(Amp=3,freq=2.7,acro=pi)
+  pwr     = eval_exact_power(t,param)
+  pwr_ref =  0.155486657218106
+  expect_equal(pwr,pwr_ref)
 }) 
+
+
 test_that('R power vs Monte Carlo',{
-  
+  Nmc=1e6
+  t          = c(0:10)/10 
+  param      = list(Amp=2,freq=2.7,acro=pi)
+  pwr_exact  = eval_exact_power(t,param)
+  pwr_mc     = eval_montecarlo_power(t,param,Nmc,alpha=.05)
+  expect_equal(pwr_exact,pwr_mc,tolerance = 1e-3)
 })
