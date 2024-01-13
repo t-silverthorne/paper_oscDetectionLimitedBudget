@@ -48,3 +48,36 @@ test_that("quadmats take correct value L1", {
   
   expect_equal(Amat,Aref)
 })
+
+test_that('L1/Linfty cost function evaluation',{
+  opts = make_default_opts(prob_size='small',
+                           solver_type='simulanneal')
+  opts$Nfine = 2^4
+  opts$Nfreq = 2^6
+  opts$Nmeas = 4
+  opts$fmin  = 1
+  opts$fmax  = 24
+  x          = c(0,1,0,0,0,0,1,0,1,0,0,0,0,0,1,0)
+  
+  opts$costfun_type = 'L1'
+  Amat       = make_quadmats(opts)
+  L1_val     = sa_cfunpwr(x,Amat,opts) 
+  L1_val2    = t(x)%*%Amat%*%x
+  L1_ref     = 4.075165128996483 # from matlab_checks/cfun_eval.m
+  expect_equal(L1_val,L1_val2)
+  expect_equal(L1_val[1],L1_ref)
+  
+  opts$costfun_type = 'Linfty'
+  Amat       = make_quadmats(opts)
+  Linfty_val     = sa_cfunpwr(x,Amat,opts) 
+  Linfty_ref     = 16 # from matlab_checks/cfun_eval.m
+  expect_equal(Linfty_val,Linfty_ref)
+  
+})
+
+test_that('exact power comparison',{
+  
+}) 
+test_that('R power vs Monte Carlo',{
+  
+})

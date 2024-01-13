@@ -22,7 +22,11 @@ related to optimization solver:
 combinations of certain sub-lattices  (\code{'none'} by default)
 \item \code{opts$costfun_type} either \code{'L1'} which corresponds to averaging over frequencies
 or \code{'Linfty'} which corresponds to maximizing power at worst case frequency
-\item \code{opts$num_iter} iteration cutoff for GUROBI, value depends on \code{prob_size} input
+\item \code{opts$num_iter} iteration cutoff for \code{\link[=run_sa_power]{run_sa_power()}}, irrelevant for \code{\link[=run_cvxr_power]{run_cvxr_power()}}
+\item \code{opts$time_limit} time cutoff for \code{\link[=run_cvxr_power]{run_cvxr_power()}}
+\item \code{opts$verbose} do you want intermittent output for simulated annealing, default \code{FALSE}
+\item \code{opts$MIPGapAbs}only relevant for disciplined convex programming \code{\link[=run_cvxr_power]{run_cvxr_power()}}.
+Sets termination threshold based on gap between relaxed and integer constrained problems
 }
 
 related to time and frequency discretization
@@ -41,6 +45,12 @@ related to lattice construction (only relevant if \code{use_lattice==T}:
 \item \code{opts$verbose maximum} number of lattices that can be used in constructing optimal solution
 \item \code{opts$enforce_overlap} for simulated annealing prop function, enforce if lattices are required
 to not overlap with one another
+}
+
+related to simulated annealing proposal function
+\itemize{
+\item\code{opts$lprop_method} sets weights for distribution for sampling sub lattices (uniform, linear, exp),
+see \code{\link[=sa_sample_inds]{sa_sample_inds()}} and \code{\link[=sa_propfunction]{sa_propfunction()}}
 }
 }
 \description{

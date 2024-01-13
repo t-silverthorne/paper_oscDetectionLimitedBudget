@@ -4,14 +4,12 @@
 \alias{run_sa_power}
 \title{Simulated annealing routine for lattice constraints in power maximization}
 \usage{
-run_sa_power(Aquad, opts, Lmat = NULL)
+run_sa_power(Aquad, opts)
 }
 \arguments{
 \item{Aquad}{the matrix}
 
 \item{opts}{options}
-
-\item{Lmat}{constraints}
 }
 \value{
 simulated annealing result
