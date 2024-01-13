@@ -19,6 +19,7 @@
 #' @return disciplined convex programming result, obtained by calling [CVXR::solve()]
 #' 
 #' @author Turner Silverthorne
+#' @export
 run_cvxr_power=function(prob,opts){
   #start    = Sys.time()
   #TimeLimit  PreSolve=0,

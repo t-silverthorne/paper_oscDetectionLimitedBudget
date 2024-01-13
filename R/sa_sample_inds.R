@@ -23,6 +23,7 @@
 #' @return a list of indices which represent the randomly sampled lattices.
 #' 
 #' @author Turner Silverthorne
+#' @export
 sa_sample_inds = function(m,opts){
   if (opts$lprop_method=='uniform'){
     ksamp = sample(c(1:m),1)

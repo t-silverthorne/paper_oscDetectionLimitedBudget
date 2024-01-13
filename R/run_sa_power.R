@@ -9,7 +9,7 @@
 #' @return simulated annealing result
 #'
 #' @author Turner Silverthorne
-
+#' @export
 run_sa_power=function(Aquad,opts){
   if (!is.null(attributes(class(Aquad)))){
     if (attr(class(Aquad),'package')=='CVXR'){

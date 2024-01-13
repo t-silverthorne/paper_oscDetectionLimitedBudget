@@ -1,7 +1,7 @@
 #' Helper function for sa_propfunction
 #'
 #' @author Turner Silverthorne
-
+#' @export
 sa_test_for_overlap=function(xnew,x,inds,opts){
   if(opts$enforce_overlap =='ignore'){
     overlap_cond_met=T

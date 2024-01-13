@@ -16,6 +16,7 @@
 #'  *  See [CVXR::Problem()] for more details on this datatype.
 #'  
 #' @author Turner Silverthorne
+#' @export
 make_problem=function(x,Aquad,csts,opts){
   if (opts$solver_type!='cvxr'){
     stop('make_problem should only be called when opts$solver_type==cvxr')

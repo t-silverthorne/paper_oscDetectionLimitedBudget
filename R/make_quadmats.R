@@ -19,7 +19,7 @@
 #' downstream maximin convex programming. 
 #' 
 #' @author Turner Silverthorne
-
+#' @export
 make_quadmats = function(opts,Lmat=NULL){
   Nfine   = opts$Nfine
   Nfreq   = opts$Nfreq

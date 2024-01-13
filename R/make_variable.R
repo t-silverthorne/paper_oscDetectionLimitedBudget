@@ -17,6 +17,7 @@
 #' @return \code{x} binary [CVXR::Variable] to be used as the decision variable in CVXR programming.
 #' 
 #' @author Turner Silverthorne
+#' @export
 make_variable=function(opts,Lmat=NULL){
   if (opts$lattice_cstr=='none' |opts$lattice_cstr=='lineq' ){
     x=Variable(opts$Nfine,boolean=T)

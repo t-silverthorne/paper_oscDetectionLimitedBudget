@@ -11,6 +11,7 @@
 #' @return \code{constraints} a list of constraints to be included when [make_problem()] constructs the optimization problem.
 #' 
 #' @author Turner Silverthorne
+#' @export
 make_constraints=function(x,Lmat,bvec,opts){
   Nm = Constant(opts$Nmeas)
   if (opts$lattice_cstr == 'none'){

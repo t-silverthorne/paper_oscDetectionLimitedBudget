@@ -19,6 +19,7 @@
 #' the original L' lattices.
 #' 
 #' @author Turner Silverthorne
+#' @export
 sa_propfunction=function(opts,x=NULL){
   if (opts$lattice_cstr=='none'){
     if (is.null(x)){

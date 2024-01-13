@@ -5,6 +5,7 @@
 #' sampling random partitions of a given integer using a combinatorial identity of Euler.
 #' 
 #' @author Turner Silverthorne
+#' @export
 sa_eulermat = function(m){
   Pmat = list()
   pvec = sa_enumpar(m)

@@ -12,6 +12,7 @@
 #' * if \code{opts$lattice_cstr=='cfun'} then \code{bvec} is the \code{rowSums} of \code{Lmat}
 #' 
 #' @author Turner Silverthorne
+#' @export
 make_ineqrhs=function(Lmat,opts){
   bvec=NaN
   if (opts$lattice_cstr=='cfun'){

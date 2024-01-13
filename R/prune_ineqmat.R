@@ -18,6 +18,7 @@
 #' To avoid this, we remove redundant rows from the matrix
 #' 
 #' @author Turner Silverthorne
+#' @export
 prune_ineqmat=function(){
   
 }

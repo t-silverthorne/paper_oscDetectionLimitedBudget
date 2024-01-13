@@ -5,6 +5,7 @@
 #' 
 #' 
 #' @author Turner Silverthorne
+#' @export
 sa_enumpar=function(N){
   pvec=replicate(N+1,NaN)
   for (n in c(0:N)){

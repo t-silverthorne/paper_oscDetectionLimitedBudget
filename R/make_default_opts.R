@@ -44,7 +44,7 @@
 #' }
 #' 
 #' @author Turner Silverthorne
-
+#' @export
 make_default_opts = function(prob_size='small',solver_type='simulanneal'){
   opts = list( 
     min_dx              = 1, 

@@ -1,3 +1,15 @@
+#' Random lattice for simulated annealing
+#'
+#' @description
+#' Generates a random binary lattice for the simulated annealing transition function.
+#' See [run_sa_power()] for details. When there are lattice constraints, a more
+#' complicated lattice proposal function is called in [sa_propfunction()].
+#'  
+#' @param n number of measurements
+#' @param opts$Nfine coarseness of binary lattice see [make_default_opts()]
+#' 
+#' @author Turner Silverthorne
+#' @export
 sa_randlattice=function(n,opts){
   Nfine = opts$Nfine
   x     = replicate(Nfine,0)

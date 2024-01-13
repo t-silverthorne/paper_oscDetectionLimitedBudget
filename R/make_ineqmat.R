@@ -18,6 +18,7 @@
 #' incldued here only for benchmarking and reference.
 #' 
 #' @author Turner Silverthorne
+#' @export
 make_ineqmat = function(opts){
   #warning('The output of this function is only useful for enforcing lattice constraints in convex programming. It is not very efficient to use convex
   #        programming for this type of problem')

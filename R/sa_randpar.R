@@ -12,6 +12,7 @@
 #' @return a uniformly random partition of \code{n}. 
 #' 
 #' @author Turner Silverthorne
+#' @export
 sa_randpar=function(n,opts=NULL,parent_size=NULL){
   if (is.null(opts)){  # unpack options
     lattice_cstr='none'
