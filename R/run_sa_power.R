@@ -24,6 +24,7 @@ run_sa_power=function(Aquad,opts){
     }
   }
  
+  #TODO: make this user determined
   epochs       = F 
   rands        = runif(opts$num_iter)
   cooling_rate = .999
