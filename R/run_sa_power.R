@@ -27,7 +27,7 @@ run_sa_power=function(Aquad,opts){
   #TODO: make this user determined
   epochs       = F 
   rands        = runif(opts$num_iter)
-  cooling_rate = .999
+  cooling_rate = .95
   Tinit        = 100
   Tnow         = Tinit 
   
@@ -46,10 +46,10 @@ run_sa_power=function(Aquad,opts){
     if (ii %% ceiling(opts$num_iter/20) == 0){
       if (opts$verbose){
         print(paste0('Completed: ',
-                     toString(100*ii/opts$num_iter),
+                     toString(round(100*ii/opts$num_iter,2)),
                      ' perc of SA run. Temp: ',
-                     toString(Tnow),
-                     ' fval: ',toString(Sx)))
+                     toString(round(Tnow,2)),
+                     ' fval: ',toString(round(Sx,4))))
       }
       if (epochs){
         Tnow  = Tinit*.65
