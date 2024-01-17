@@ -1,10 +1,8 @@
 gc()
 library(devtools)
-library(gurobi)
-library(CVXR)
 load_all('.')
 
-test=F
+test=T
 # how many batches of simulated annealing 
 if (test){
   ens_size = 10 

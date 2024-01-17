@@ -32,3 +32,12 @@ You can get SCIP to compile, on mac may need to pass compiler flag cmake .. -DAU
 Compilation didn't work
 https://github.com/conda-forge/scipoptsuite-feedstock using conda to get scipoptsuite
 
+
+
+Updated Gurobi install instructions:
+1. Download gurobi
+2. Get license
+3. Put license in /opt/gurobi/ directory
+4. Follow R specific instructions to install R package
+5. Update .profile so that dynamic library loading works with Gurobi.
+
