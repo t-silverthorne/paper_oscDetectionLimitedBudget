@@ -20,10 +20,10 @@ Aquad=make_quadmats(opts)
 
 statime=Sys.time()
 if (opts$solver_type=='cvxr'){
-  x=make_variable(opts)
-  csts=make_constraints(x,NULL,NULL,opts)
-  prob=make_problem(x,Aquad,csts,opts)
-  xopt=run_cvxr_power(prob,opts)
+  x    = make_variable(opts)
+  csts = make_constraints(x,NULL,NULL,opts)
+  prob = make_problem(x,Aquad,csts,opts)
+  xopt = run_cvxr_power(prob,opts)
 }else{
   xopt=run_sa_power(Aquad,opts)
 }

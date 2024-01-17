@@ -1,15 +1,10 @@
-```{r}
 gc()
 library(devtools)
 library(gurobi)
 library(CVXR)
 load_all('.')
-```
 
-# Optimal designs - no lattice constraint 
-
-## Simulated annealing
-```{r}
+test=T
 # how many batches of simulated annealing 
 if (test){
   ens_size = 10 
@@ -27,7 +22,7 @@ opts$Nfreq        = 2^10
 opts$costfun_type = 'Linfty'
 opts$verbose      = F
 if (test){
-  opts$num_iter     = 150
+  opts$num_iter     = 15
 }else{
   opts$num_iter     = 1e3
 }
@@ -45,32 +40,4 @@ for (ii in c(1:ens_size)){
   mt_opt_sa    = tau[xopt$xval==1]
   sa_sols[ii,] = mt_opt_sa
 }
-saveRDS(sa_sols,'results/sa_sols.RDS')
-```
-
-## DCP
-```{r}
-opts$solver_type = 'cvxr'
-opts$Nfreq       = 2^8 #2^7 is cap so far, want to max this before out of memory in pre-solve
-opts$verbose     = T
-if (test){
-  opts$time_limit  = 5 # units of seconds
-}else{
-  opts$time_limit  = 60*60*24*3 #  3 days 
-}
-
-x     = make_variable(opts)
-csts  = make_constraints(x,NULL,NULL,opts)
-Aquad = make_quadmats(opts)
-prob  = make_problem(x,Aquad,csts,opts)
-xopt  = run_cvxr_power(prob,opts)
-
-mt_opt_cvxr = tau[xopt$xval==1]
-
-saveRDS(cvxr_sol,'results/cvxr_sol.RDS')
-```
-
-```{r}
-cvxr_sol
-```
-
+saveRDS(sa_sols,paste0('results/sa_sols_','_Nm_',toString(opts$Nmeas),'.RDS'))
