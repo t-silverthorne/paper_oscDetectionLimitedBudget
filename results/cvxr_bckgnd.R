@@ -4,7 +4,7 @@ library(gurobi)
 library(CVXR)
 load_all('.')
 
-test              = T
+test              = F
 
 opts              = make_default_opts(prob_size='medium',solver_type='cvxr')
 opts$Nfine        = 12*24 # 5 minute intervals 
