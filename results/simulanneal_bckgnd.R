@@ -29,12 +29,13 @@ sa_sols = replicate(ens_size*opts$Nmeas, {NaN})
 sa_sols = matrix(sa_sols,nrow=ens_size,ncol=opts$Nmeas)
 
 Aquad=make_quadmats(opts)
+tau          = c(0:opts$Nfine)/opts$Nfine       
+tau          = tau[1:(length(tau)-1)] 
 
 for (ii in c(1:ens_size)){
   print(toString(ii))
   xopt         = run_sa_power(Aquad,opts)
-  tau          = c(0:opts$Nfine)/opts$Nfine       
-  tau          = tau[1:(length(tau)-1)] 
+
   mt_opt_sa    = tau[xopt$xval==1]
   sa_sols[ii,] = mt_opt_sa
 }
