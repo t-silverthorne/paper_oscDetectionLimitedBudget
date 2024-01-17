@@ -1,4 +1,5 @@
 addpath('utils')
+
 alpha = .05;
 Nmeas = 16;
 fmin  = 1;
@@ -6,14 +7,14 @@ fmax  = 24;
 Nf    = 2^9;
 Nacro = 2^8;
 Amp   = 1.5;
-mt=(0:Nmeas)/Nmeas;
-mt=mt(1:end-1);
-freqs=linspace(fmin,fmax,Nf);
-acros=linspace(0,2*pi,Nacro+1);
-acros=acros(1:end-1);
-mt     = reshape(mt,[length(mt) 1 1 1]);
-acros  = reshape(acros,[1 1 length(acros) 1]);
-freqs  = reshape(freqs,[1 1 1 length(freqs)]);
+mt    = (0:Nmeas)/Nmeas;
+mt    = mt(1:end-1);
+freqs = linspace(fmin,fmax,Nf);
+acros = linspace(0,2*pi,Nacro+1);
+acros = acros(1:end-1);
+mt    = reshape(mt,[length(mt) 1 1 1]);
+acros = reshape(acros,[1 1 length(acros) 1]);
+freqs = reshape(freqs,[1 1 1 length(freqs)]);
 
 
 eval_worst_power(mt,freqs,acros,Amp,alpha)

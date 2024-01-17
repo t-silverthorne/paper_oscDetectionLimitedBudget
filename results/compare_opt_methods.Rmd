@@ -1,0 +1,41 @@
+```{r}
+gc()
+library(devtools)
+library(gurobi)
+library(CVXR)
+load_all('.')
+```
+
+# Simulated annealing
+```{r}
+opts=make_default_opts(prob_size='medium',solver_type='simulanneal')
+
+opts$Nfine = 12*24 # 5 minute intervals 
+opts$Nmeas = 16
+opts$fmin  = 1
+opts$fmax  = 24
+opts$Nfreq = 2^10 
+opts$costfun_type = 'Linfty'
+opts$verbose=T
+opts$num_iter=150
+
+Aquad=make_quadmats(opts)
+
+statime=Sys.time()
+xopt=run_sa_power(Aquad,opts)
+
+endtime=Sys.time()
+endtime-statime
+
+tau       = c(0:opts$Nfine)/opts$Nfine       
+tau       = tau[1:(length(tau)-1)] 
+
+mt_opt    = tau[xopt$xval==1]
+```
+
+# DCP
+```{r}
+
+
+
+```

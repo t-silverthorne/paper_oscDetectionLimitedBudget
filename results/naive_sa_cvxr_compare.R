@@ -1,22 +1,32 @@
 gc()
 library(devtools)
+library(gurobi)
+library(CVXR)
 load_all('.')
-opts=make_default_opts(prob_size='medium',solver_type='simulanneal')
+opts=make_default_opts(prob_size='medium',solver_type='cvxr')
 
 opts$Nfine = 1e3
 opts$Nmeas = 16
 opts$fmin  = 1
 opts$fmax  = 24
-opts$Nfreq = 2^9
+opts$Nfreq = 2^8 # 2^9 for simulated annealing
 opts$costfun_type = 'Linfty'
 opts$verbose=T
 opts$num_iter=150
+opts$time_limit=60*30 # only relevant for cvxr
 
 rm(Aquad)
 Aquad=make_quadmats(opts)
 
 statime=Sys.time()
-xopt=run_sa_power(Aquad,opts)
+if (opts$solver_type=='cvxr'){
+  x=make_variable(opts)
+  csts=make_constraints(x,NULL,NULL,opts)
+  prob=make_problem(x,Aquad,csts,opts)
+  xopt=run_cvxr_power(prob,opts)
+}else{
+  xopt=run_sa_power(Aquad,opts)
+}
 endtime=Sys.time()
 endtime-statime
 
