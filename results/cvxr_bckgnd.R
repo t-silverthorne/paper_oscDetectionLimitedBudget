@@ -4,7 +4,7 @@ library(gurobi)
 library(CVXR)
 load_all('.')
 
-test              = F
+test              = T
 
 opts              = make_default_opts(prob_size='medium',solver_type='cvxr')
 opts$Nfine        = 12*24 # 5 minute intervals 
@@ -12,7 +12,7 @@ opts$Nmeas        = 16
 opts$fmin         = 1
 opts$fmax         = 24
 opts$costfun_type = 'Linfty'
-opts$Nfreq        = 2^9 #want to max this before out of memory in pre-solve
+opts$Nfreq        = 2^2 #want to max this before out of memory in pre-solve
 opts$verbose      = T
 if (test){
   opts$time_limit  = 5 # units of seconds
@@ -22,6 +22,8 @@ if (test){
 
 x     = make_variable(opts)
 csts  = make_constraints(x,NULL,NULL,opts)
+#csts[[length(csts)+1]]= x>=0
+
 Aquad = make_quadmats(opts)
 prob  = make_problem(x,Aquad,csts,opts)
 xopt  = run_cvxr_power(prob,opts)
@@ -31,6 +33,6 @@ tau          = c(0:opts$Nfine)/opts$Nfine
 tau          = tau[1:(length(tau)-1)] 
 cvxr_sol     = tau[xopt$getValue(objet = x)==1]
 
-saveRDS(cvxr_sol,paste0('results/cvxr_sol_','_Nm_',toString(opts$Nmeas),'.RDS'))
-saveRDS(xopt,paste0('results/cvxr_xopt_','_Nm_',toString(opts$Nmeas),'.RDS'))
-saveRDS(opts,paste0('results/cvxr_opts_','_Nm_',toString(opts$Nmeas),'.RDS'))
+#saveRDS(cvxr_sol,paste0('results/cvxr_sol_','_Nm_',toString(opts$Nmeas),'.RDS'))
+#saveRDS(xopt,paste0('results/cvxr_xopt_','_Nm_',toString(opts$Nmeas),'.RDS'))
+#saveRDS(opts,paste0('results/cvxr_opts_','_Nm_',toString(opts$Nmeas),'.RDS'))
