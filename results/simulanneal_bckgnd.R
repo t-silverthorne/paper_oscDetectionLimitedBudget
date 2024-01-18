@@ -2,7 +2,7 @@ gc()
 library(devtools)
 load_all('.')
 
-test=T
+test=F
 # how many batches of simulated annealing 
 if (test){
   ens_size = 10 
