@@ -16,7 +16,7 @@ unif_col = 'black'
 ```{r}
 opts       = make_default_opts(prob_size='medium',solver_type='cvxr')
 opts$Nfine = 12*24 # 5 minute intervals 
-opts$Nmeas = 16
+opts$Nmeas = 16 
 opts$fmin  = 1
 opts$fmax  = 24
 
@@ -115,8 +115,8 @@ am@optimizer %>% unique()
 
 fmin = opts$fmin
 fmax= opts$fmax
-Nf    = 2^4
-Nacro = 2^4
+Nf    = 2^6
+Nacro = 2^6
 freqs = seq(from=fmin,to=fmax,length.out=Nf)
 acros = seq(from=0,to=2*pi,length.out=Nacro+1)
 acros = acros[1:Nacro]
@@ -124,7 +124,7 @@ acros = acros[1:Nacro]
 # define cost function 
 for (ii in c(1:dim(am)[1])){
   mt=am[ii,]
-  Amps=seq(from=1,to=2,by=.1)
+  Amps=seq(from=1/2,to=4,by=.1)
   pwr=lapply(Amps,function(amp){
     pars  = expand.grid(Amp=amp,freq=freqs,acro=acros)
     worst_power = function(mt){
