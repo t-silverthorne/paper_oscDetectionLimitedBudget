@@ -5,7 +5,7 @@ test_that("function evaluates", {
   Nacro = 2^6
   Nmeas = 12 
   Amp   = 1.6
-  ctrl = list(verbose=T,smooth=F)
+  ctrl = list(verbose=F,smooth=F)
   uu=wrap_optimsa(Nmeas,fmin,fmax,Nf,Nacro,Amp)
   par(mfrow=c(1,2))
   plot(-uu$Sout,type='l')
