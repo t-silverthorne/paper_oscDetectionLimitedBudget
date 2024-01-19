@@ -26,7 +26,8 @@ sa_cfun = @(x) 1-eval_worst_power(x,freqs,acros,Amp,alpha);
 options = optimoptions(@simulannealbnd,'MaxIterations',1000);
 
 num_ens = 1e2;
-for ii=1:num_ens
+Amat = NaN(num_ens,Nmeas);
+parfor ii=1:num_ens
     x0=rand(Nmeas,1);
     x=simulannealbnd(sa_cfun,x0,zeros(Nmeas,1),ones(Nmeas,1),options);
     Amat(ii,:)=x'
