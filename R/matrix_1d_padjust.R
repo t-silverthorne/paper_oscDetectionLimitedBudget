@@ -19,9 +19,21 @@
 #' @author Turner Silverthorne
 #' @export
 matrix_1d_padjust=function(pdat,dim,pmethod){
-  qdat=apply(pdat,MARGIN=dim,FUN=function(x){
-    p.adjust(x,method=pmethod)
-  })
-  if (dim==1){qdat=t(qdat)}
+  qdat=NaN*pdat
+  
+  #TODO: could write more concisely using apply() but this gave cryptic rann errors
+  if (dim==1){ 
+    for (ii in c(1:dim(pdat)[1])){
+      qdat[ii,] = p.adjust(pdat[ii,],method=pmethod) 
+    }
+  }
+  
+  if (dim==2){
+    for (ii in c(1:dim(pdat)[2])){
+      qdat[,ii] = p.adjust(pdat[,ii],method=pmethod) 
+    }
+  }
+    
+  
   return(qdat)
 }

@@ -24,8 +24,10 @@ make_simulated_data=function(mt,Nmc,Amin,Amax,fmin,fmax){
   am@acro = runif(Nmc,min=0,max=2*pi)
 
   acromat = am@acro%*%matrix(replicate(length(mt),{1}),ncol=length(mt))
+  Ampmat =  am@Amp%*%matrix(replicate(length(mt),{1}),ncol=length(mt))
   epsmat  = matrix(rnorm(Nmc*length(mt)),nrow=Nmc)
-  am[,]   = cos(2*pi*am@freq%*%t(mt)-acromat) +epsmat 
+  am[,]   = Ampmat*cos(2*pi*am@freq%*%t(mt)-acromat)
+  am[,]   = am[,]+epsmat 
   am$time = mt
   return(am)
 }

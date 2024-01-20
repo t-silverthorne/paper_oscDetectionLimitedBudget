@@ -16,7 +16,7 @@
 #' \item \code{pvalues} pvalue obtained for harmonic regression at each frequency
 #' regression. 
 #' \item \code{amps} amplitude estimates for each frequency
-#' \item \code{acros} acrophase estimates for each frequency
+#' \item \code{acros} acrophase estimates for each frequency, in units of radians
 #' }
 #' The individual harmonic regressions are performed using the 
 #' [rowCosinor()] function.
@@ -25,13 +25,13 @@
 #' @export
 freqsweep_regr=function(mt,Xdat,fmin,fmax,Nfreq,return_type){
   freqs=seq(from=fmin,to=fmax,length.out=Nfreq)
-  pv_am_global  = NULL
+  pv_am_global   = NULL
   amp_am_global  = NULL
   acro_am_global = NULL
   for (ii in c(1:length(freqs))){
     freq=freqs[[ii]]
     
-    rc  = rowCosinor(Xdat,mt,freq)
+    rc  = rowCosinor(Xdat,mt,per=1/freq)
     pv_am =rc %>% {.$pvalue} %>% 
       matrix(nrow=Nmc) %>% as.annmatrix()
     amp_am =rc %>% {.$amplitude/2} %>% 

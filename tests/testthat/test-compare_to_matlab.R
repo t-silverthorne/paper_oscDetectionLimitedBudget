@@ -85,13 +85,13 @@ test_that('exact power comparison',{
 
 
 test_that('R power vs Monte Carlo',{
-  Nmc=1e4
+  Nmc=1e3
   t          = c(0:11)/11
   t          = t[1:10]
   param      = list(Amp=1.8,freq=2.3,acro=pi/3)
   pwr_exact  = eval_exact_power(t,param)
   pwr_mc=0
-  nrep=50
+  nrep=1e3
   for (ii in c(1:nrep)){
     pwr_mc     = pwr_mc+eval_montecarlo_power(t,param,Nmc,alpha=.05)
   }
