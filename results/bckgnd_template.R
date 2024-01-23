@@ -114,7 +114,7 @@ for (Nmeas_now in c(20:20)){
                           )
       tstamp = now() %>% toString() %>% str_replace(' ','___')
       fname  = paste0(outdir,tstamp,'_cvxr_Nmeas_',toString(Nmeas_now))
-      saveRDS(xopt[[1]],paste0(fname,'_solution.RDS'))
+      # saveRDS(xopt[[1]],paste0(fname,'_solution.RDS'))
       saveRDS(opts,paste0(fname,'_opts.RDS'))
       
     }

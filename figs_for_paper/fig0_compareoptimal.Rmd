@@ -5,25 +5,39 @@ library(patchwork)
 library(ggplotify)
 load_all('.')
 
-sa_m_col = '#F57600'# matlab simul anneal 
-sa_R_col = '#0073e6'# R simul anneal
-cvxr_col = '#5BA300'# R cvxr color
-unif_col = 'black'
+
+get_legend <- function(p) {
+   tmp <- ggplot_gtable(ggplot_build(p))
+   leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+   legend <- tmp$grobs[[leg]]
+   legend
+}
+
 
 ```
 
 # Load data
-```{r}
-opts       = make_default_opts(prob_size='medium',solver_type='cvxr')
-opts$Nfine = 12*24 # 5 minute intervals 
-opts$Nmeas = 16 
-opts$fmin  = 1
-opts$fmax  = 24
 
-ens_size = 100
-sa_m       = runif(opts$Nmeas*ens_size) %>% matrix(nrow=ens_size,ncol=opts$Nmeas)
-sa_R       = runif(opts$Nmeas*ens_size) %>% matrix(nrow=ens_size,ncol=opts$Nmeas)
-cvxr       = runif(opts$Nmeas*1) %>% matrix(nrow=1,ncol=opts$Nmeas)
+Resulting sa_m, sa_R, cvxr_sol correspond to measurement times and not indices
+```{r}
+# load simulated annealing options
+opts_sa       = readRDS('results/output/batch_2024-01-21___11:53:23.358679/2024-01-21___12:44:03.298656_simulanneal_Nmeas_20_opts.RDS') 
+
+# load simulated annealing results
+sa_m       = read.csv('results/output/batch_2024-01-21___11:53:23.358679/sa_sols.txt',header = F) 
+sa_R       = readRDS('results/output/batch_2024-01-21___11:53:23.358679/2024-01-21___12:44:03.298656_simulanneal_Nmeas_20_solution.RDS') 
+
+
+# load cvxr options and results
+opts       = readRDS('results/output/batch_2024-01-21___11:53:23.358679/2024-01-21___12:24:20.100879_cvxr_Nmeas_20_opts.RDS') 
+cvxr_raw       = readRDS('results/output/batch_2024-01-21___11:53:23.358679/2024-01-21___12:24:20.100879_cvxr_Nmeas_20_solution.RDS') 
+
+cvxr_raw=cvxr_raw[[1]] #with better saving, will not be necessary
+
+tau          = c(0:opts$Nfine)/opts$Nfine       
+tau          = tau[1:(length(tau)-1)] 
+
+cvxr_sol     = matrix(tau[cvxr_raw==1] ,nrow=1)
 
 ```
 
@@ -47,44 +61,81 @@ opt_name_list = c(sa_m_name,
 
 opt_name_factor = factor(opt_name_list,levels=opt_name_list)
 
-ens_size_list = c(ens_size,ens_size,1)
-for (jj in 1:3){
-  for (ii in 1:ens_size_list[jj]){
-    if (jj<3){pos=ii-ens_size/2}else{pos=0}
-    df=rbind(df,data.frame(t=runif(opts$Nmeas),batch=pos,optimizer=opt_name_factor[jj]))
-  }
+# convert measurement times into dataframe
+df=data.frame()
+for (ii in c(1:dim(sa_m)[1])){
+  df = rbind(df,data.frame(time=as.vector(t(sa_m[ii,])),
+                batch=ii,
+                optimizer=opt_name_factor[[1]]))
+}
+for (ii in c(1:dim(sa_R)[1])){
+  df = rbind(df,data.frame(time=as.vector(t(sa_R[ii,])),
+                batch=ii,
+                optimizer=opt_name_factor[[2]]))
+}
+for (ii in c(1:dim(cvxr_sol)[1])){
+  df = rbind(df,data.frame(time=as.vector(t(cvxr_sol[ii,])),
+                batch=ii,
+                optimizer=opt_name_factor[[3]]))
 }
 dfmt=df
 
 #TODO: turn off y label and ticks
-p1=df %>% ggplot(aes(x=t,y=batch,color=optimizer))+geom_point()+
-  facet_wrap(~optimizer,nrow=3)+
+p1=df %>% ggplot(aes(x=time,y=batch,color=as.factor(optimizer)))+geom_point()+
+  facet_wrap(~as.factor(optimizer),nrow=3)+
   scale_color_manual(values=colors)+theme(legend.position='bottom')
-
+p1
 ```
 
 
 # Histogram of costfun values
 ```{r}
-df1=data.frame(Jx=rnorm(1000,mean=-1,sd=1),optimizer=sa_m_name)
-df2=data.frame(Jx=rnorm(1000,mean=1,sd=2),optimizer=sa_R_name)
-df3=data.frame(Jx=1.5,optimizer=cvxr_name)
-df=rbind(df1,df2,df3)
+Aquad = make_quadmats(opts_sa)
+df    = data.frame()
 
+# loop over each type of solver
+solver_list = list(sa_m,sa_R,cvxr_sol)
+for (jj in c(1:length(solver_list))){
+  sol_loc = solver_list[[jj]]
+  Jx =NULL 
+  for (ii in c(1:dim(sol_loc)[1])){
+    if (jj==1){ # more complicated since Matlab output is not quantized
+      inds=NULL
+      for (kk in c(1:length(sa_m[ii,]))){
+        inds[kk] = which.min(abs(tau-sa_m[ii,kk]))
+      }
+      gr=as.numeric(c(1:length(tau)) %in% inds)
+    }else{# convert back to binary vector
+      gr=as.numeric(tau %in% sol_loc[ii,])
+    }
+    if (sum(gr)==opts$Nmeas){
+      Jx[ii]=sa_cfunpwr(gr,Aquad,opts_sa)  
+    }else{
+      Jx[ii]=NA 
+    }
+  }
+  df=rbind(df,data.frame(Jx=Jx,optimizer=opt_name_factor[[jj]]))
+}
+
+## add uniform to grid
+#t_unif = c(0:opts$Nmeas)/opts$Nmeas
+#t_unif = t_unif[1:(length(t_unif)-1)]
+#
+#inds=NULL
+#for (kk in c(1:opts_sa$Nmeas)){
+#  inds[kk] = which.min(abs(tau-t_unif[kk]))
+#}
+#tau_unif = as.numeric(c(1:opts$Nfine)%in%inds)
+#Jx=sa_cfunpwr(matrix(tau_unif,nrow=opts$Nfine),Aquad,opts_sa)
+ 
 #TODO: better x label
 p2=df[df$optimizer%in% c(sa_m_name,sa_R_name),] %>% 
   ggplot(aes(x=Jx,fill=optimizer))+
   geom_histogram(position='identity',alpha=.9)+
-  geom_vline(xintercept = 1.5,color=colors[names(colors)==cvxr_name]) +
+  geom_vline(xintercept = df[df$optimizer==cvxr_name,]$Jx,
+             color=colors[names(colors)==cvxr_name]) +
   scale_fill_manual(values=colors)
-
-get_legend <- function(p) {
-   tmp <- ggplot_gtable(ggplot_build(p))
-   leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
-   legend <- tmp$grobs[[leg]]
-   legend
-}
-
+p2
 
 ```
 
@@ -92,47 +143,39 @@ get_legend <- function(p) {
 # Power cross sections
 ```{r}
 library(annmatrix)
-#eval_exact_power()
 
-am=annmatrix(matrix(runif(opts$Nmeas*ens_size*2),
-                 nrow=2*ens_size,ncol=opts$Nmeas),
-             rann=list(
-               optimizer=rep(c(sa_m_name,sa_R_name),each=ens_size)))
-am$mt='mt'
+# convert to annmatrix for plotting
+am_sa_R  = annmatrix(sa_R,
+                     rann=list(optimizer=rep(sa_R_name,dim(sa_R)[1])))
 
-t_unif = c(0:opts$Nmeas)/opts$Nmeas
-t_unif = t_unif[1:(length(t_unif)-1)]
+am_sa_m  = annmatrix(sa_m,
+                     rann=list(optimizer=rep(sa_m_name,dim(sa_m)[1])))
+
 am_unif =as.annmatrix(matrix(t_unif,nrow=1))
 am_unif@optimizer=c('uniform')
-am_unif$mt='mt'
 
-am_cvxr=as.annmatrix(matrix(runif(opts$Nmeas),nrow=1))
+am_cvxr=as.annmatrix(matrix(cvxr_sol,nrow=1))
 am_cvxr@optimizer=c(cvxr_name)
+
+am_sa_R$mt='mt'
+am_sa_m$mt='mt'
+am_unif$mt='mt'
 am_cvxr$mt='mt'
 
-am=rbind(am,am_unif,am_cvxr)
-am@optimizer %>% unique()
+am=rbind(am_unif,am_cvxr,am_sa_R,am_sa_m)
 
-fmin = opts$fmin
-fmax= opts$fmax
-Nf    = 2^6
-Nacro = 2^6
+fmin  = opts$fmin
+fmax  = opts$fmax
+Nf    = 2^9
 freqs = seq(from=fmin,to=fmax,length.out=Nf)
 acros = seq(from=0,to=2*pi,length.out=Nacro+1)
 acros = acros[1:Nacro]
 
-# define cost function 
 for (ii in c(1:dim(am)[1])){
   mt=am[ii,]
-  Amps=seq(from=1/2,to=4,by=.1)
+  Amps=seq(from=1/2,to=4,by=.5)
   pwr=lapply(Amps,function(amp){
-    pars  = expand.grid(Amp=amp,freq=freqs,acro=acros)
-    worst_power = function(mt){
-      min(apply(pars,1,function(x){eval_exact_power(t=mt,param=x)}))
-    }
-    worst_power(mt)
-  }) %>% unlist()
-  
+    return(min(apply(matrix(freqs),1,function(frq){worst_power_svd(mt,amp,frq)})))}) %>% unlist()
   amloc=annmatrix(matrix(pwr,nrow=1),
                cann=list(Amp=Amps),
                rann=list(optimizer=am@''[ii,]))
@@ -142,26 +185,22 @@ for (ii in c(1:dim(am)[1])){
     Ampam=rbind(Ampam,amloc)
   }
 }
-```
 
-
-
-```{r}
-Ampam %>% stack() %>% head()
 Ampam@id = c(1:dim(Ampam)[1])
 Ampam@amopacity = ifelse(Ampam@optimizer%in%c(sa_R_name,sa_m_name),.1,1 )
 #Ampam@am_width = ifelse(Ampam@optimizer%in%c(sa_R_name,sa_m_name),.01,.02)
-sizes=c(sa_R_name  = .1,
-         sa_m_name = .1,
-         cvxr_name = 10,
-         'uniform' = 10)
+```
+
+```{r}
+
 p3=Ampam[Ampam@optimizer %in% c(sa_R_name,sa_m_name),] %>% stack() %>% 
   ggplot(aes(x=Amp,y=value,color=optimizer,group=id))+
-  geom_line(alpha=.5,size=.1)+
+  geom_line(alpha=.05,size=.5)+
   scale_color_manual(values=colors)
 
 p3=p3+geom_line(data=stack(Ampam[!(Ampam@optimizer %in% c(sa_R_name,sa_m_name)),]),
-             aes(x=Amp,y=value,color=optimizer,group=id),alpha=1,size=2)
+             aes(x=Amp,y=value,color=optimizer,group=id),alpha=1,size=1.5)
+p3
 ```
 
 
@@ -169,13 +208,16 @@ p3=p3+geom_line(data=stack(Ampam[!(Ampam@optimizer %in% c(sa_R_name,sa_m_name)),
 theme_set(theme_bw())
 leg=get_legend(p1)
 
-#TODO: higher resolution for panel C, make this option
 #TODO: turn off legend title
 #TODO: common legend, use same aesthetic throughout legend (i.e. color box)
 #TODO: font scaling and image spacing
+em = ggplot()
+
+source('plotConfig.R')
 pcomp=as.ggplot(
-  {(p1+(p2/p3))+
+  {(em/(p1+(p2/p3)) +plot_layout(heights=c(1,1.5)))+
       plot_annotation(tag_levels='A') & 
-      theme(legend.position='none')})
+      theme(legend.position='none') })
 (pcomp/leg)+plot_layout(heights=c(8,1))
+ggsave(paste0(overleaf_plot_directory,"fig_pipeline.png"), width = 7, height =7)
 ```
