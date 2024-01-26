@@ -10,7 +10,7 @@ test_that("fast method matches slow", {
   
   v1=min(apply(as.matrix(acros),1,function(acro){
     param$acro=acro
-    return(eval_exact_power(mt,param,alpha))
+    return(eval_exact_power(mt,param,alpha=.05))
     }))
   
   v2=costfun_svdpower(mt,param$freq,param$Amp,alpha=.05)

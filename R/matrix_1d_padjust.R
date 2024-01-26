@@ -13,7 +13,7 @@
 #'  \item if \code{dim==2}, each column is treated as a collection of hypothesis tests for which
 #'  a set of q-values should be computed
 #' }
-#' @param pmethod adjustment method, passed to [stats::padjust(method=pmethod)]
+#' @param pmethod adjustment method, passed to [stats::p.adjust()]
 #' 
 #' @return matrix of q-values
 #' @author Turner Silverthorne

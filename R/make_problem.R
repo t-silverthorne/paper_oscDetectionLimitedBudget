@@ -18,13 +18,18 @@
 #' @author Turner Silverthorne
 #' @export
 make_problem=function(x,Aquad,opts){
-  Nm   = Constant(opts$Nmeas)
-  csts = list( sum(x) == Nm)
-  big_str = paste(lapply(1:length(Aquad) %>% as.list(),
-         function(ind){
-           paste0('quad_form(x,Aquad[[',ind,']])')
-         }),collapse=',')
-  strp=paste0('prob=Problem(Minimize(max_elemwise(',big_str,')),csts)')
-  eval(parse(text=strp))
+  if(opts$lattice_cstr=='none' & opts$solver_type=='cvxr'){
+    Nm   = Constant(opts$Nmeas)
+    csts = list( sum(x) == Nm)
+    big_str = paste(lapply(1:length(Aquad) %>% as.list(),
+           function(ind){
+             paste0('quad_form(x,Aquad[[',ind,']])')
+           }),collapse=',')
+    strp=paste0('prob=Problem(Minimize(max_elemwise(',big_str,')),csts)')
+    eval(parse(text=strp))
+      
+  }else{
+    stop('unrecognized opts$lattice_str or opts$solver_type')
+  }
   return(prob)
 }
