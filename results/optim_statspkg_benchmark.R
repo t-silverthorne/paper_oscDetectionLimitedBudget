@@ -47,7 +47,7 @@ mt0 =runif(3)
 xopt=stats::optim(mt0,fn=cfun,gr=NULL,
                   #lower=lat2_lower,
                   #upper=lat2_upper,
-                  method='SANN',control=list(trace=6,REPORT=1,maxit=10))
+                  method='L-BFGS-B',control=list(trace=6,REPORT=1,maxit=2))
 end=Sys.time()
 end-start
 
