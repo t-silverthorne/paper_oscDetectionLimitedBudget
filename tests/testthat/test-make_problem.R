@@ -23,8 +23,3 @@ test_that("triggered if costfun_type wrong", {
   expect_error(make_problem(x,Aquad,csts,opts),'opts')
 })
 
-test_that("trigerred if costfun_type not recognized", {
-  expect_equal(2 * 2, 4)
-})
-
-#TODO: check computation manually

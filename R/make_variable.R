@@ -18,13 +18,7 @@
 #' 
 #' @author Turner Silverthorne
 #' @export
-make_variable=function(opts,Lmat=NULL){
-  if (opts$lattice_cstr=='none' |opts$lattice_cstr=='lineq' ){
-    x=Variable(opts$Nfine,boolean=T)
-  }else if (opts$lattice_cstr=='cfun'){
-    x=Variable(dim(Lmat)[2],boolean=T)
-  }else{
-    stop('Unrecognized opts$lattice_cstr')
-  }
+make_variable=function(opts){
+  x=Variable(opts$Nfine,boolean=T)
   return(x)
 }

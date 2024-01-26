@@ -45,31 +45,9 @@ make_quadmats = function(opts,Lmat=NULL){
     
     Amlist[[ii]]=Amat
   }
+  for (ii in c(1:length(Amlist))){
+    Amlist[[ii]]=Constant(Amlist[[ii]])
+  }
 
-  # need to conjugate Amlist by Lmat if lattice constraints are in cost function
-  if (opts$lattice_cstr=='cfun'){
-    for (ii in c(1:length(Amlist))){
-      Amlist[[ii]] = t(Lmat)%*%Amlist[[ii]]%*%Lmat
-    }
-  }
- 
-  # return either average of SPD matrices or list of SPD matrices
-  Aquad=NaN
-  if (opts$costfun_type=='L1'){
-    Aquad = 0
-    for (ii in c(1:length(Amlist))){
-      Aquad = Aquad + Amlist[[ii]]/Nfreq #TODO: should this be converted to CVXR Constant
-    }
-    if (opts$solver_type=='cvxr'){
-      Aquad=Constant(Aquad)
-    }
-  }else if(opts$costfun_type=='Linfty'){
-    if (opts$solver_type=='cvxr'){
-      for (ii in c(1:length(Amlist))){
-        Amlist[[ii]]=Constant(Amlist[[ii]])
-      }
-    }
-    Aquad=Amlist
-  }
-  return(Aquad)  
+  return(Amlist)  
 }
