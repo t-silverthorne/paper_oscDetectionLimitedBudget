@@ -21,53 +21,36 @@
 #' @author Turner Silverthorne
 #' @export
 sa_propfunction=function(opts,x=NULL){
-  if (opts$lattice_cstr=='none'){
-    if (is.null(x)){
-      x = rep(0,opts$Nfine)
-      x[sample(c(1:opts$Nfine),opts$Nmeas,F)]=1
-      y=x
-    }else{
-      y           = x
-      swap_on     = sample(which(x==0),1)       # proposed state differs from x at one index
-      swap_off    = sample(which(x>0),1)
-      y[swap_on]  = 1
-      y[swap_off] = 0
-    }
-  } else if(opts$lattice_cstr=='sa_lattice'){
-    if (is.null(x)){
-      x           = list()
-      nsamps      = opts$Nmeas
-      parent_size = NULL
-    }else{
-      inds = sa_sample_inds(length(x),opts)
-      xp     = x[inds]
-      nsamps = xp %>% lapply(function(x){sum(x)}) %>% unlist() %>% sum()
-      parent_size = length(x[!(c(1:length(x)) %in% inds)])
-    }
-    part = sa_randpar(nsamps,opts,parent_size) 
-    
-    #TODO print solver exit reason for better handling of overlap
-    overlap_cond_met = F
-    while(overlap_cond_met == F){
-      # generate a new uniform lattice for each term in partition
-      xnew = list()
-      for (pp in c(1:length(part))){
-        xnew[[pp]] = sa_randlattice(part[pp],opts)
-      }
-      
-      # note: if opts$enforce_overlap == 'ignore', the next line always returns TRUE 
-      overlap_cond_met = sa_test_for_overlap(xnew,x,inds,opts) 
+  if (is.null(x)){
+    x           = list()
+    nsamps      = opts$Nmeas
+    parent_size = NULL
+  }else{
+    inds = sa_sample_inds(length(x),opts)
+    xp     = x[inds]
+    nsamps = xp %>% lapply(function(x){sum(x)}) %>% unlist() %>% sum()
+    parent_size = length(x[!(c(1:length(x)) %in% inds)])
+  }
+  part = sa_randpar(nsamps,opts,parent_size) 
+  
+  #TODO print solver exit reason for better handling of overlap
+  overlap_cond_met = F
+  while(overlap_cond_met == F){
+    # generate a new uniform lattice for each term in partition
+    xnew = list()
+    for (pp in c(1:length(part))){
+      xnew[[pp]] = sa_randlattice(part[pp],opts)
     }
     
-    
-    #TODO update current lattice
-    if (length(x)==0){
-      y = xnew
-    }else{
-      y = append(x[!(c(1:length(x)) %in% inds)],xnew) 
-    }
-  } else {
-    stop('choice of lattice constraint not recognized, are you using CVXR option by mistake?')
+    # note: if opts$enforce_overlap == 'ignore', the next line always returns TRUE 
+    overlap_cond_met = sa_test_for_overlap(xnew,x,inds,opts) 
+  }
+  
+  #TODO update current lattice
+  if (length(x)==0){
+    y = xnew
+  }else{
+    y = append(x[!(c(1:length(x)) %in% inds)],xnew) 
   }
   return(y)
 }
