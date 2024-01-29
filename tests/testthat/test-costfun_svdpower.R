@@ -1,4 +1,4 @@
-test_that("fast method matches slow", {
+test_that("function evaluation, fast method matches slow", {
   param=list()
   param$Amp=2
   param$freq=2.1
