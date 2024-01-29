@@ -8,15 +8,15 @@ tfun_2lattice_svdpower_discrete=function(N1,dx1,N2,dx2,xshift2,Nfine,control){
       dshift2 = sample(c(-1,0,1),1) 
     
       if (dx1+ddx1 < 1 |(dx1+ddx1)*(N1-1)>Nfine){
-        dx1_new = dx1+ddx1 
-      }else{
         dx1_new = dx1-ddx1 
+      }else{
+        dx1_new = dx1+ddx1 
       }
       
       if (dx2+ddx2 < 1 |xshift2 + (dx2+ddx2)*(N2-1)>Nfine){
-        dx2_new = dx2+ddx2 
+        dx2_new = dx2-ddx2 
       }else{
-        dx2_new = dx2-ddx2  #TODO: check this is exhaustive
+        dx2_new = dx2+ddx2  #TODO: check this is exhaustive
       }
     
       if( xshift2 + dshift2>0 &(xshift2+dshift2 + (dx2_new)*(N2-1)<=Nfine)){
