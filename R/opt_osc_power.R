@@ -12,18 +12,18 @@
 #'  same as previous, in addition
 #'  control options necessary for specifying transition function 
 #' @author Turner Silverthorne
-opt_osc_power=function(mt0,freqs,Amp,control,nlattice_opts=NULL,alpha=.05){
+opt_osc_power=function(dvar0,freqs,Amp,control,
+                       nlattice_opts=NULL,alpha=.05,tau=NULL){
 if (control$costfun_choice=='svdpower'){
-  xout=solve_svdpower(mt0,freqs,Amp,control,alpha)
+  xout=solve_svdpower(dvar0,freqs,Amp,control,alpha)
+  return(xout)
 }else if(control$costfun_choice=='svdpower_2lattice'){
-  if(control$optim_method=='L-BFGS-B'){
-      
-  }else if(control$optim_method=='simul_anneal'){
-    
-  }else{stop('unknown control$optim_method')}
-
+  xout=solve_svdpower_2lattice(dvar0,freqs,Amp,control,alpha)
+  return(xout)
 }else if(control$costfun_choice=='svdpower_discrete'){
-
+  xinds = dvar0
+  xout  = solve_svdpower_discrete(xinds,tau,freqs,Amp,control,alpha)
+  return(xout)
 }else if(control$costfun_choice=='svdpower_2lattice__discrete'){
   if(control$optim_method=='simul_anneal'){
   }else{stop('unknown control$optim_method')}
