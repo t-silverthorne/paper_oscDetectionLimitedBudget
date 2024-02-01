@@ -7,12 +7,12 @@ test_that("function evaluation", {
   N1      = 8,
   N2      = 6)
 
-  control=list(costfun_choice='svdpower_2lattice_discrete',
-               optim_method='simul_anneal',
-               tfun_choice='reflecting-brownian',
-               trace=6,
-               REPORT=1,
-               maxit=50)
+  control=list(costfun_choice = 'svdpower_2lattice_discrete',
+               optim_method   = 'simul_anneal',
+               tfun_choice    = 'reflecting-brownian',
+               trace          = 6,
+               REPORT         = 1,
+               maxit          = 50)
   xout=opt_osc_power(dvar0=dvar0,freqs=freqs,Amp=Amp,control=control,tau=tau)
 
   expect_gt(xout$value,0)
