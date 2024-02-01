@@ -10,8 +10,25 @@ test_that("function eval", {
                tfun_choice ='single-flip',
                trace=1,
                REPORT=1,
-               maxit=1)
-  xout=opt_osc_power(mt0=xinds,freqs=freqs,Amp=Amp,control=control,tau=tau)
+               maxit=2)
+  xout=opt_osc_power(dvar0=xinds,freqs=freqs,Amp=Amp,control=control,tau=tau)
   expect_gt(xout$value,0)
   expect_lt(xout$value,1)
+  
+  library(CVXR)
+  library(gurobi)
+  control=list(costfun_choice='svdpower_discrete',
+               optim_method='cvxr',
+               trace=1,
+               REPORT=1,
+               maxit=1e9,time_limit=2,MIPGapAbs=.01,
+               cvxr_verbose=F,
+               costfun_type='Linfty',
+               fmin=1,fmax=24,Nfreq=8,
+               lattice_cstr='none',
+               Nfine=2^8,Nmeas=16)
+  xout=opt_osc_power(dvar0=xinds,freqs=freqs,Amp=Amp,control=control,tau=tau)
+  expect_gt(xout$value,0)
+  expect_lt(xout$value,1)
+  
 })

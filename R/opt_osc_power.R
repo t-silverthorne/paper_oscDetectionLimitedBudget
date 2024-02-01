@@ -24,11 +24,9 @@ if (control$costfun_choice=='svdpower'){
   xinds = dvar0
   xout  = solve_svdpower_discrete(xinds,tau,freqs,Amp,control,alpha)
   return(xout)
-}else if(control$costfun_choice=='svdpower_2lattice__discrete'){
-  if(control$optim_method=='simul_anneal'){
-  }else{stop('unknown control$optim_method')}
+}else if(control$costfun_choice=='svdpower_2lattice_discrete'){
+  solve_2lattice_svdpower_discrete(dvar0,freqs,tau,Amp,control,alpha)
 }else if(control$costfun_choice=='nlattice_power_discrete'){
-  if(control$optim_method=='simul_anneal'){
-  }else{stop('unknown control$optim_method')}
+  
 }else{stop('unknown control$costfun_choice')}
 }

@@ -15,8 +15,8 @@ solve_svdpower_2lattice=function(dvar0,freqs,Amp,control,alpha){
                                                alpha=alpha)}
   if(control$optim_method=='L-BFGS-B'){
     xopt=stats::optim(x0,fn=cfun,gr=NULL,
-                 lower=rep(0,length(mt0)),
-                 upper=rep(1,length(mt0)),
+                 lower=rep(0,length(x0)),
+                 upper=rep(1,length(x0)),
                  method='L-BFGS-B',
                  control=list(trace  = control$trace,
                               REPORT = control$REPORT,

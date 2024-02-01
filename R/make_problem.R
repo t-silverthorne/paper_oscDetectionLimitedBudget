@@ -18,7 +18,7 @@
 #' @author Turner Silverthorne
 #' @export
 make_problem=function(x,Aquad,opts){
-  if(opts$lattice_cstr=='none' & opts$solver_type=='cvxr'){
+  if(opts$lattice_cstr=='none' & opts$optim_method =='cvxr'){
     Nm   = Constant(opts$Nmeas)
     csts = list( sum(x) == Nm)
     big_str = paste(lapply(1:length(Aquad) %>% as.list(),
