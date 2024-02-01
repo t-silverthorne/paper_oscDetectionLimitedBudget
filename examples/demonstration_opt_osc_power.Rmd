@@ -1,0 +1,35 @@
+# Overview
+The purpose of this notebook is to illustrate how to use the solvers included in this package.
+
+All solvers are accessed using the opt_osc_power wrapper. They are split into 
+(1) Discrete versus continuous time
+(2) Presence of lattice constraints
+
+Item (1) is relevant if you only want to consider solutions that fall on a particular grid, for instance you cut a 24hr study into 5 minute intervals and only consider measurement times happening at those intervals.
+
+Item (2) is relevant if you want to find near-optimal designs that can be decomposed into unions of uniform grids. This is convenient for experiments that want a balance between high statistical power with ease of implementation.
+```{r}
+library(devtools)
+library(CVXR)
+library(gurobi)
+load_all()
+```
+
+# Continuous time solvers
+
+## No lattice constraints
+```{r}
+
+```
+
+## With lattice constraints
+```{r}
+
+```
+
+
+# Discrete time solvers
+
+## No lattice constraints
+
+## With lattice constraints

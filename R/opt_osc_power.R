@@ -28,7 +28,7 @@ if (control$costfun_choice=='svdpower'){
   xout=solve_2lattice_svdpower_discrete(dvar0,freqs,tau,Amp,control,alpha)
   return(xout)
 }else if(control$costfun_choice=='nlattice_power_discrete'){
-  stop("Currently not able to handle n-lattice constraints. No low-level simulated annealing routine implemented")
+  stop("Currently not able to handle n-lattice constraints. No simulated annealing routine implemented")
   #xout=solve_nlattice_power_discrete(Nfine,freqs,Amp,control,alpha)
   #return(xout)
 }else{stop('unknown control$costfun_choice')}
