@@ -9,8 +9,7 @@ solve_svdpower_discrete=function(xinds,tau,freqs,Amp,control,alpha){
                                REPORT = control$REPORT,
                                maxit  = control$maxit))
     return(xopt)
-  else if(control$optim_method=='cvxr'){
+  }else if(control$optim_method=='cvxr'){
    #TODO 
-  }
   }else{stop('unknown control$optim_method')}
 }
