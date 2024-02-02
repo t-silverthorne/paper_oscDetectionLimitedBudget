@@ -5,7 +5,8 @@ dx1=1
 dx2=1
 xshift2=50
 Nfine=200
-control=list(tfun_choice='reflecting-brownian')
+control=list(tfun_choice='unif-with-bdry-discrete')
+control$tscale=2
 expect_false(
   as.logical(anyDuplicated(xinds_from_lat1lat2_pars(N1,dx1,N2,dx2,xshift2)))
   )

@@ -1,13 +1,8 @@
 test_that("points stay inside lattice", {
-  control=list(tfun_choice='default')
-  control$mean_scale1=0
-  control$mean_scale2=0
-  control$mean_shift2=0
-  control$sd_scale1=.1
-  control$sd_scale2=.1
-  control$sd_shift2=.1
-  shift1=runif(1)
-  shift2=runif(1)
+  control=list(tfun_choice='unif-with-bdry')
+  control$tscale_unif_with_bdry=1/10
+  shift1=runif(1)/12
+  shift2=runif(1)/12
   scale1=runif(1)
   scale2=runif(1)
   N1=sample(c(8:12),1)

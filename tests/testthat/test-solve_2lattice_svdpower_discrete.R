@@ -9,7 +9,8 @@ test_that("function evaluation", {
 
   control=list(costfun_choice = 'svdpower_2lattice_discrete',
                optim_method   = 'simul_anneal',
-               tfun_choice    = 'reflecting-brownian',
+               tfun_choice    = 'unif-with-bdry-discrete',
+               tscale         = 2,
                trace          = 0,
                REPORT         = 1,
                maxit          = 50)
