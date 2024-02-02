@@ -14,8 +14,8 @@ test_that("function evaluation", {
                maxit=1)
   x0=c(shift1=shift1,shift2=shift2,scale1=scale1,scale2=scale2)
   xout=opt_osc_power(dvar0=list(x0=x0,lat1=lat1,lat2=lat2),freqs,Amp,control)
-  expect_gt(xout$value,0)
-  expect_lt(xout$value,1)
+  expect_gt(xout$fvalue,0)
+  expect_lt(xout$fvalue,1)
  
   control$optim_method ='simul_anneal' 
   control$maxit        = 5
@@ -28,7 +28,7 @@ test_that("function evaluation", {
   control$sd_shift2    = .1
   x0=c(shift1=shift1,shift2=shift2,scale1=scale1,scale2=scale2)
   xout=opt_osc_power(dvar0=list(x0=x0,lat1=lat1,lat2=lat2),freqs,Amp,control)
-  expect_gt(xout$value,0)
-  expect_lt(xout$value,1)
+  expect_gt(xout$fvalue,0)
+  expect_lt(xout$fvalue,1)
   
 })

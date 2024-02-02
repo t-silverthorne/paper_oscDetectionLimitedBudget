@@ -12,8 +12,8 @@ test_that("function eval", {
                REPORT=1,
                maxit=2)
   xout=opt_osc_power(dvar0=xinds,freqs=freqs,Amp=Amp,control=control,tau=tau)
-  expect_gt(xout$value,0)
-  expect_lt(xout$value,1)
+  expect_gt(xout$fvalue,0)
+  expect_lt(xout$fvalue,1)
   
   library(CVXR)
   library(gurobi)
@@ -28,7 +28,7 @@ test_that("function eval", {
                lattice_cstr='none',
                Nfine=2^8,Nmeas=16)
   xout=opt_osc_power(dvar0=xinds,freqs=freqs,Amp=Amp,control=control,tau=tau)
-  expect_gt(xout$value,0)
-  expect_lt(xout$value,1)
+  expect_gt(xout$fvalue,0)
+  expect_lt(xout$fvalue,1)
   
 })

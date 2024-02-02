@@ -14,23 +14,46 @@
 #' @author Turner Silverthorne
 opt_osc_power=function(dvar0=NULL,freqs,Amp=1,control,
                        nlattice_opts=NULL,alpha=.05,tau=NULL){
+require(lubridate)
+require(stringr)
+start_time=Sys.time()
 if (control$costfun_choice=='svdpower'){
-  xout=solve_svdpower(dvar0,freqs,Amp,control,alpha)
-  return(xout)
+  xout       = solve_svdpower(dvar0,freqs,Amp,control,alpha)
+  # output handling
+  fvalue     = xout$value
+  mtvalue    = xout$par
+  xindsvalue = NULL
 }else if(control$costfun_choice=='svdpower_2lattice'){
-  xout=solve_svdpower_2lattice(dvar0,freqs,Amp,control,alpha)
-  return(xout)
+  xout       = solve_svdpower_2lattice(dvar0,freqs,Amp,control,alpha)
+  # output handling
+  fvalue     = xout$value
+  mtvalue    = NULL#convert_2lattice_to_state(shift1,shift2,scale1,scale2,lat1,lat2) 
+  xindsvalue = NULL#xout$par 
 }else if(control$costfun_choice=='svdpower_discrete'){
-  xinds = dvar0
-  xout  = solve_svdpower_discrete(xinds,tau,freqs,Amp,control,alpha)
-  return(xout)
+  xinds      = dvar0
+  xout       = solve_svdpower_discrete(xinds,tau,freqs,Amp,control,alpha)
+  fvalue     = xout$value
+  mtvalue    = NULL#convert_2lattice_to_state(shift1,shift2,scale1,scale2,lat1,lat2) 
+  xindsvalue = NULL#xout$par 
 }else if(control$costfun_choice=='svdpower_2lattice_discrete'){
   xout=solve_2lattice_svdpower_discrete(dvar0,freqs,tau,Amp,control,alpha)
-  return(xout)
+  fvalue     = xout$value
+  mtvalue    = NULL#convert_2lattice_to_state(shift1,shift2,scale1,scale2,lat1,lat2) 
+  xindsvalue = NULL#xout$par 
 }else if(control$costfun_choice=='nlattice_power_discrete'){
   stop("Currently not able to handle n-lattice constraints. No simulated annealing routine implemented")
   #xout=solve_nlattice_power_discrete(Nfine,freqs,Amp,control,alpha)
   #return(xout)
-}else{stop('unknown control$costfun_choice')}
-  #TODO: add output processing of xout, user should have more control of relevant output
+}else{
+  stop('unknown control$costfun_choice')
+}
+  end_time = Sys.time()
+  tstamp   = lubridate::now() %>% toString() %>% str_replace(' ','___')
+  res_full = list(fvalue     = fvalue,
+       mtvalue    = mtvalue,
+       xindsvalue = xindsvalue,
+       timestamp  = tstamp,
+       runtime    = end_time-start_time,
+       optim_raw  = xout)
+  return(res_full)
 }

@@ -1,10 +1,15 @@
 reflecting_reshift_cts2lattice=function(shift,scale,rnd_shift,lat){
-  if (all(shift+rnd_shift+scale*lat >0) & all(shift+rnd_shift+scale*lat <1)){
-    shift_new=shift+rnd_shift
-  }else if(all(shift-rnd_shift+scale*lat >0) & all(shift-rnd_shift+scale*lat <1)){
-    shift_new=shift-rnd_shift
+  shift_prop  = shift + rnd_shift 
+  shift_propn = shift - rnd_shift
+  lat_prop    = shift_prop  + scale*lat 
+  lat_propn   = shift_propn + scale*lat
+  if (all( (lat_prop<=1) & (lat_prop>=0))){
+    shift=shift_prop
+  }else if(all( (lat_propn<=1) & (lat_propn>=0))){
+    shift=shift_propn
   }else{
-    shift_new=shift
+    stop('unable to transition')
   }
-  return(shift_new)
+  return(shift) 
 }
+  

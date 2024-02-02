@@ -15,11 +15,33 @@ library(gurobi)
 load_all()
 ```
 
+
+```{r}
+Nmeas=16
+Nfreq=2^8
+freqs=seq(from=1,to=24,length.out=Nfreq)
+maxit_global=10
+
+#Nomenclature: cts/disc | lat/arb | bfgs/dcp/sa 
+Amp_global=2
+```
 # Continuous time solvers
 
 ## No lattice constraints
 ```{r}
+dvar0= c(1:Nmeas)/Nmeas - 1/Nmeas
+control=list(costfun_choice='svdpower',
+             optim_method='L-BFGS-B',
+             trace=6,#normally 6 if you want output
+             REPORT=1,
+             maxit=maxit_global)
+cts_arb_bfgs = opt_osc_power(dvar0=dvar0,freqs=freqs,control=control,Amp=Amp_global)
 
+control$optim_method='simul_anneal'
+control$tfun_choice='brownian'
+control$tfun_mean   = 0 
+control$tfun_sd     = .1
+cts_arb_sa   = opt_osc_power(dvar0=dvar0,freqs=freqs,control=control,Amp=Amp_global)
 ```
 
 ## With lattice constraints

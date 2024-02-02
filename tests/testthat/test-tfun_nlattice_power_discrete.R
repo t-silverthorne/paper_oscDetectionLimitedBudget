@@ -6,5 +6,6 @@ test_that("function evaluation", {
   opts$max_lat=10
   opts$min_lat=4
   control=list(tfun_choice='default')
-  expect_equal(length(tfun_nlattice_power_discrete(control,NULL,opts)),4)
+  control=c(control,opts)
+  expect_equal(length(tfun_nlattice_power_discrete(control,NULL)),4)
 })

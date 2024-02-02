@@ -8,18 +8,18 @@ test_that("function evaluation", {
                REPORT=1,
                maxit=1)
   uu=opt_osc_power(mt0,freqs,Amp,control)
-  expect_gt(uu$value,0)
-  expect_lt(uu$value,1)
+  expect_gt(uu$fvalue,0)
+  expect_lt(uu$fvalue,1)
   
   control=list(costfun_choice='svdpower',
                optim_method='simul_anneal',
-               tfun_choice = 'brownian',
+               tfun_choice = 'brownian-torus',
                tfun_mean   = 0, 
                tfun_sd     = .1, 
                trace=0,# make high if you want output
                REPORT=1,
                maxit=5)
   uu=opt_osc_power(mt0,freqs,Amp,control)
-  expect_gt(uu$value,0)
-  expect_lt(uu$value,1)
+  expect_gt(uu$fvalue,0)
+  expect_lt(uu$fvalue,1)
 })

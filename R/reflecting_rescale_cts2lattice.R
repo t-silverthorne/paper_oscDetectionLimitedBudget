@@ -1,14 +1,16 @@
 reflecting_rescale_cts2lattice=function(shift,scale,rnd_scale,lat){
-  if( (shift*(1+rnd_scale) > 0) & 
-      (all(shift+scale*(1+rnd_scale)*lat>0))&
-      (all(shift+scale*(1+rnd_scale)*lat<1))){
-    scale_new = scale*(1+rnd_scale)
-  }else if ( (shift*(1-rnd_scale) > 0) & 
-             (all(shift+scale*(1-rnd_scale)*lat>0))&
-             (all(shift+scale*(1-rnd_scale)*lat<1))){
-    scale_new = scale*(1-rnd_scale)
+  scale_prop  = scale+rnd_scale
+  scale_propn = scale-rnd_scale
+  lat_prop    = shift + scale_prop*lat 
+  lat_propn   = shift + scale_propn*lat
+  if (all( (lat_prop<=1) & (lat_prop>=0))){
+    scale=scale_prop
+  }else if(all( (lat_propn<=1) & (lat_propn>=0))){
+    stop('negative')
+    scale=scale_propn
   }else{
-    scale_new=shift
+    stop('unable to transition')
   }
-  return(scale_new)
+  return(scale) 
 }
+  
