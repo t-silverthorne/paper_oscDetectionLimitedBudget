@@ -28,25 +28,55 @@ Amp_global=2
 # Continuous time solvers
 
 ## No lattice constraints
+
+Simplest choice of cost function. Each decision variable corresponds to a measurement time in the unit intevral [0,1]. Solver maximizes power either using gradient-based method L-BFGS-B or via simulated annealing.
+
+The transition function for simulated annealing is Brownian motion on a torus, meaning that if a measurement time exits the left/right end-point of the interval, it reappears at the corresponding right/left endpoint. 
 ```{r}
-dvar0= c(1:Nmeas)/Nmeas - 1/Nmeas
-control=list(costfun_choice='svdpower',
+# BFGS
+dvar0   = c(1:Nmeas)/Nmeas - 1/Nmeas
+control = list(costfun_choice='svdpower',
              optim_method='L-BFGS-B',
              trace=6,#normally 6 if you want output
              REPORT=1,
-             maxit=maxit_global)
+             maxit=2)
 cts_arb_bfgs = opt_osc_power(dvar0=dvar0,freqs=freqs,control=control,Amp=Amp_global)
 
+# simulated annealing
 control$optim_method='simul_anneal'
-control$tfun_choice='brownian'
+control$tfun_choice='brownian-torus'
 control$tfun_mean   = 0 
 control$tfun_sd     = .1
 cts_arb_sa   = opt_osc_power(dvar0=dvar0,freqs=freqs,control=control,Amp=Amp_global)
 ```
 
 ## With lattice constraints
-```{r}
 
+Implementation of 2-lattice constraints: candidate solutions must be decomposable into a union of two uniform lattices. We parameterize the problem by specifying two uniform grids with points N1+N2=Nmeas, and then represent the state by the shift of grid2 relative to grid1 and the scale factor of each grid.
+
+Since all three decision variables (two scales and one shift) are continuous, the problem can be studied using L-BFGS-B. We also include a simulated annealing routine with a custom transition function. Here, the state parameters are updated by perturbation from a uniform random variable on a window whose size is chosen to ensure the updated lattice does not exit the unit interval.
+```{r}
+# BFGS
+control=list(costfun_choice='svdpower_2lattice',
+             optim_method='L-BFGS-B',
+             trace=6,
+             REPORT=1,
+             maxit=2)
+lat1=c(1:8)/8 -1/8
+lat2=lat1
+x0=c(shift1=0,shift2=0.5,scale1=.5,scale2=.5)
+xout=opt_osc_power(dvar0=list(x0=x0,lat1=lat1,lat2=lat2),freqs,Amp=Amp_global,control)
+
+# simulated annealing
+load_all()
+control$optim_method          = 'simul_anneal'
+control$maxit                 = 5
+control$tfun_choice           = 'unif-with-bdry'
+control$tscale_unif_with_bdry = 1/10
+x0=c(shift1=0,shift2=0.5,scale1=.5,scale2=.5)
+xout=opt_osc_power(dvar0=list(x0=x0,lat1=lat1,lat2=lat2),freqs,Amp=Amp_global,control)
+expect_gt(xout$fvalue,0)
+expect_lt(xout$fvalue,1)
 ```
 
 
@@ -54,4 +84,17 @@ cts_arb_sa   = opt_osc_power(dvar0=dvar0,freqs=freqs,control=control,Amp=Amp_glo
 
 ## No lattice constraints
 
+A uniform grid is constructed and fixed for the entire procedure. Then,
+
+```{r}
+# CVXR
+
+# simulated annealing
+
+```
 ## With lattice constraints
+
+```{r}
+# simulated annealing
+
+```

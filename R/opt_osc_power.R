@@ -27,8 +27,9 @@ if (control$costfun_choice=='svdpower'){
   xout       = solve_svdpower_2lattice(dvar0,freqs,Amp,control,alpha)
   # output handling
   fvalue     = xout$value
-  mtvalue    = NULL#convert_2lattice_to_state(shift1,shift2,scale1,scale2,lat1,lat2) 
-  xindsvalue = NULL#xout$par 
+  mtvalue    = convert_2lattice_to_state(shift1=dvar0$x0[['shift1']],shift2=xout$par[1],
+                                         scale1=xout$par[2],scale2=xout$par[3],dvar0$lat1,dvar0$lat2) 
+  xindsvalue = xout$par 
 }else if(control$costfun_choice=='svdpower_discrete'){
   xinds      = dvar0
   xout       = solve_svdpower_discrete(xinds,tau,freqs,Amp,control,alpha)
@@ -49,6 +50,8 @@ if (control$costfun_choice=='svdpower'){
 }
   end_time = Sys.time()
   tstamp   = lubridate::now() %>% toString() %>% str_replace(' ','___')
+  
+  # return optimizer output and optimization settings
   res_full = list(fvalue     = fvalue,
        mtvalue    = mtvalue,
        xindsvalue = xindsvalue,
