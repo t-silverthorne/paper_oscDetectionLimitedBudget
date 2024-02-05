@@ -37,7 +37,7 @@ if (control$costfun_choice=='svdpower'){
     xindsvalue = xout[[1]]
   }else if(control$optim_method=='simul_anneal'){
     fvalue     = xout$value
-    mtvalue    = tau[as.logical(xout$par)]
+    mtvalue    = tau[xout$par]
     xindsvalue = as.numeric(c(1:control$Nfine) %in% xout$par)
   }else{
     stop('unknown control$optim_method')
