@@ -1,4 +1,3 @@
-```{r}
 require(devtools)
 require(CVXR)
 require(gurobi)
@@ -9,7 +8,7 @@ load_all()
 # global settings
 gset = list(
 Nmeas             = 16,
-Nfreq             = 2^5,
+Nfreq             = 2^9,
 Nfine             = 288,
 trace_global      = 1,
 report_global     = 1,
@@ -135,7 +134,7 @@ amm=rbind(amm,extract_info_from_result(resu_disc_arb_cvxr,'disc_arb_cvxr'))
 
 for (ii in c(1:gset$nrep)){
   var0_cts_arb_sa   = runif(gset$Nmeas) 
-  var0_cts_lat_sa   = list(x0=c(shift2=runif(1),scale1=0.5,scale2=.5,shift1=0),
+  var0_cts_lat_sa   = list(x0=c(shift2=1/2/Nmeas,scale1=0.5,scale2=.5,shift1=0),
                            lat1 =NULL,lat2 =NULL) 
   var0_disc_arb_sa = sample(c(1:Nfine),Nmeas) 
   var0_disc_lat_sa = list(x0=c(dx1=1,dx2=1,xshift2=Nfine/2),N1=NULL,N2=NULL)
@@ -176,7 +175,17 @@ for (ii in c(1:gset$nrep)){
   amm=rbind(amm,extract_info_from_result(resu_disc_lat_sa$res_best,'disc_lat_sa',
                                          runtime_tot =resu_disc_lat_sa$time_tot))
 }
+saveRDS(amm,'temp_ammforvis.RDS')
 
-amm@'' %>% ggplot(aes(x=power,y=runtime,color=tag))+geom_point() 
-
-```
+head(amm)
+theme_set(theme_bw())
+amm@'' %>% ggplot(aes(x=power,y=runtime))+
+  geom_point(aes(shape=factor(lattice,c('arb','lat'),c('none','2-lattice')),
+                 color=factor(solver,c('cvxr','bfgs','sa'),c('DCP','BFGS','annealing'))),size=3)+
+  labs(shape='Lattice constraint',
+       color='Solver',
+        y='runtime [s]',
+        x='worst case power')+
+  facet_wrap(~factor(cts,c('cts','disc'),c('Continuous time','Discretised time (5 minute intervals)')),nrow=2)+
+  xlim(c(0,1))+
+  scale_color_manual(values=c('DCP'='red','BFGS'='blue','annealing'='cyan'))
