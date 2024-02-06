@@ -1,5 +1,5 @@
 #' Helper function returns smallest eigenvalue
 #' @export
-getMinEig <- function(Mat,param){
-  return(eigen(Mat,only.values=T) %>% {.$values} %>%  min())
+getMinEig <- function(Mat,is_symmetric=F){
+  return(eigen(Mat,only.values=T,symmetric = is_symmetric) %>% {.$values} %>%  min())
 }
