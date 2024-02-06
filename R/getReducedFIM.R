@@ -8,5 +8,10 @@ getReducedFIM <- function(t,param){
   Y = matrix(c(cos(2*pi*freq*t),
            sin(2*pi*freq*t)),
            nrow=2,byrow=T)
-  Y %*% t(Y)
+  M=Y %*% t(Y)
+  if (any(is.na(M))){
+    stop('NA value in FIM')
+  }else{
+    return(M)
+  }
 }

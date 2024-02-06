@@ -16,12 +16,12 @@ Nfine             = 288,
 trace_global      = 1,
 report_global     = 1,
 maxit_sa          = 100,
-maxit_bfgs        = 5, 
+maxit_bfgs        = 3, 
 Amp_global        = 2,
 timelimit_by_bfgs = T,
 Nmin_2lat         = 4,
 Nmax_2lat         = 12,
-nrep              = 10
+nrep              = 1
 )
 
 
@@ -43,8 +43,6 @@ extract_info_from_result=function(res,tag,Nmeas=gset$Nmeas,runtime_tot,...){
                               solver  = tagsp[[1]][3]),
             cann = data.frame(time=c(1:Nmeas))))
 }
-
-
 
 
 #multi_method_opt_osc_power=function(gset,...){
