@@ -1,14 +1,17 @@
 require(devtools)
+require(dplyr)
 require(CVXR)
 require(gurobi)
 require(annmatrix)
 require(ggplot2)
+require(lubridate)
+
 load_all()
 
 # global settings
 gset = list(
 Nmeas             = 16,
-Nfreq             = 2^9,
+Nfreq             = 2^8,
 Nfine             = 288,
 trace_global      = 1,
 report_global     = 1,
@@ -25,9 +28,10 @@ nrep              = 3
 extract_info_from_result=function(res,tag,Nmeas=gset$Nmeas,runtime_tot,...){
   tagsp=strsplit(tag,'_')
   if(hasArg('runtime_tot')){
-    runtime=runtime_tot
+    # lubridate ensures that units are always in seconds
+    runtime=runtime_tot %>% lubridate::as.duration() %>% as.numeric()
   }else{
-    runtime=as.numeric(res$runtime)
+    runtime=res$runtime %>% lubridate::as.duration() %>% as.numeric()
   }
   return(annmatrix(
                x = matrix(sort(res$mtvalue),nrow=1),
@@ -177,6 +181,7 @@ for (ii in c(1:gset$nrep)){
 }
 saveRDS(amm,'temp_ammforvis.RDS')
 
+amm=readRDS('temp_ammforvis.RDS')
 head(amm)
 theme_set(theme_bw())
 amm@'' %>% ggplot(aes(x=power,y=runtime))+
