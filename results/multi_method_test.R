@@ -5,23 +5,28 @@ require(gurobi)
 require(annmatrix)
 require(ggplot2)
 require(lubridate)
+require(stringr)
 
 load_all()
 
+tstamp = now() %>% toString() %>% str_replace(' ','___')
+outdir =paste0('results/output/batch_',tstamp,'/')
+dir.create(outdir)
+
 # global settings
 gset = list(
-Nmeas             = 16,
-Nfreq             = 2^8,
-Nfine             = 288,
-trace_global      = 1,
-report_global     = 1,
-maxit_sa          = 100,
-maxit_bfgs        = 3, 
-Amp_global        = 2,
-timelimit_by_bfgs = T,
-Nmin_2lat         = 4,
-Nmax_2lat         = 12,
-nrep              = 1
+  Nmeas             = 16,
+  Nfreq             = 2^8,
+  Nfine             = 288,
+  trace_global      = 1,
+  report_global     = 1,
+  maxit_sa          = 100,
+  maxit_bfgs        = 3, 
+  Amp_global        = 2,
+  timelimit_by_bfgs = T,
+  Nmin_2lat         = 4,
+  Nmax_2lat         = 12,
+  nrep              = 20
 )
 
 
@@ -177,18 +182,19 @@ for (ii in c(1:gset$nrep)){
   amm=rbind(amm,extract_info_from_result(resu_disc_lat_sa$res_best,'disc_lat_sa',
                                          runtime_tot =resu_disc_lat_sa$time_tot))
 }
-saveRDS(amm,'temp_ammforvis.RDS')
+saveRDS(amm,paste0(outdir,'amm_all.RDS'))
+saveRDS(gset,paste0(outdir,'global_settings.RDS'))
 
-amm=readRDS('temp_ammforvis.RDS')
-head(amm)
-theme_set(theme_bw())
-amm@'' %>% ggplot(aes(x=power,y=runtime))+
-  geom_point(aes(shape=factor(lattice,c('arb','lat'),c('none','2-lattice')),
-                 color=factor(solver,c('cvxr','bfgs','sa'),c('DCP','BFGS','annealing'))),size=2)+
-  labs(shape='Lattice constraint',
-       color='Solver',
-        y='runtime [s]',
-        x='worst case power')+
-  facet_wrap(~factor(cts,c('cts','disc'),c('Continuous time','Discretised time (5 minute intervals)')),nrow=2)+
-  xlim(c(0,1))+
-  scale_color_manual(values=c('DCP'='red','BFGS'='blue','annealing'='cyan'))
+if (make_plot){
+  theme_set(theme_bw())
+  amm@'' %>% ggplot(aes(x=power,y=runtime))+
+    geom_point(aes(shape=factor(lattice,c('arb','lat'),c('none','2-lattice')),
+                   color=factor(solver,c('cvxr','bfgs','sa'),c('DCP','BFGS','annealing'))),size=2)+
+    labs(shape='Lattice constraint',
+         color='Solver',
+          y='runtime [s]',
+          x='worst case power')+
+    facet_wrap(~factor(cts,c('cts','disc'),c('Continuous time','Discretised time (5 minute intervals)')),nrow=2)+
+    xlim(c(0,1))+
+    scale_color_manual(values=c('DCP'='red','BFGS'='blue','annealing'='cyan'))
+}
