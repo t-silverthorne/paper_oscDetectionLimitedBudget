@@ -16,12 +16,12 @@ Nfine             = 288,
 trace_global      = 1,
 report_global     = 1,
 maxit_sa          = 100,
-maxit_bfgs        = 3, 
+maxit_bfgs        = 5, 
 Amp_global        = 2,
 timelimit_by_bfgs = T,
 Nmin_2lat         = 4,
 Nmax_2lat         = 12,
-nrep              = 3
+nrep              = 10
 )
 
 
@@ -186,7 +186,7 @@ head(amm)
 theme_set(theme_bw())
 amm@'' %>% ggplot(aes(x=power,y=runtime))+
   geom_point(aes(shape=factor(lattice,c('arb','lat'),c('none','2-lattice')),
-                 color=factor(solver,c('cvxr','bfgs','sa'),c('DCP','BFGS','annealing'))),size=3)+
+                 color=factor(solver,c('cvxr','bfgs','sa'),c('DCP','BFGS','annealing'))),size=2)+
   labs(shape='Lattice constraint',
        color='Solver',
         y='runtime [s]',
