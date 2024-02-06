@@ -24,6 +24,7 @@
 #' @author Turner Silverthorne
 #' @export
 freqsweep_regr=function(mt,Xdat,fmin,fmax,Nfreq,return_type){
+  Nmc = dim(Xdat)[1]
   freqs=seq(from=fmin,to=fmax,length.out=Nfreq)
   pv_am_global   = NULL
   amp_am_global  = NULL
