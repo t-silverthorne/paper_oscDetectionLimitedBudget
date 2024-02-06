@@ -26,7 +26,7 @@ gset = list(
   timelimit_by_bfgs = T,
   Nmin_2lat         = 4,
   Nmax_2lat         = 12,
-  nrep              = 20
+  nrep              = 2
 )
 
 
@@ -138,6 +138,8 @@ resu_disc_arb_cvxr = opt_osc_power(dvar0  = NULL,
              Amp     = Amp_global,
              tau     = tau)
 amm=rbind(amm,extract_info_from_result(resu_disc_arb_cvxr,'disc_arb_cvxr'))
+rm(resu_disc_arb_cvxr)
+
 
 for (ii in c(1:gset$nrep)){
   var0_cts_arb_sa   = runif(gset$Nmeas) 
@@ -185,6 +187,7 @@ for (ii in c(1:gset$nrep)){
 saveRDS(amm,paste0(outdir,'amm_all.RDS'))
 saveRDS(gset,paste0(outdir,'global_settings.RDS'))
 
+make_plot=F
 if (make_plot){
   theme_set(theme_bw())
   amm@'' %>% ggplot(aes(x=power,y=runtime))+
