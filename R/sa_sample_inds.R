@@ -25,14 +25,14 @@
 #' @author Turner Silverthorne
 #' @export
 sa_sample_inds = function(m,opts){
-  if (opts$lprop_method=='uniform'){
+  if (opts$tfun_choice=='uniform'){
     ksamp = sample(c(1:m),1)
-  }else if(opts$lprop_method=='linear'){
+  }else if(opts$tfun_choice=='linear'){
     ksamp = sample(c(1:m),1,prob=c(m:1))
-  }else if(opts$lprop_method=='exp'){
+  }else if(opts$tfun_choice=='exp'){
     ksamp = sample(c(1:m),1,prob=2^(-c(1:m)))
   }else{
-    stop("Unrecognized opts$lprop_method")
+    stop("Unrecognized opts$tfun_choice")
   }
   return(sample(c(1:m),size=ksamp,replace=F))
 }

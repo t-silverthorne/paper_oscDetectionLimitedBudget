@@ -1,0 +1,2 @@
+results/output/batch** filter=lfs diff=lfs merge=lfs -text
+results/output/batch*/* filter=lfs diff=lfs merge=lfs -text

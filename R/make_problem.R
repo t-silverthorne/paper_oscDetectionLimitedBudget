@@ -17,25 +17,19 @@
 #'  
 #' @author Turner Silverthorne
 #' @export
-make_problem=function(x,Aquad,csts,opts){
-  if (opts$solver_type!='cvxr'){
-    stop('make_problem should only be called when opts$solver_type==cvxr')
-  }
-  prob = NaN
-  if (opts$costfun_type=='L1'){ # L1 uses average of quadratic forms
-  
-    prob    = Problem(Minimize(quad_form(x,Aquad)),csts)
-  
-  }else if (opts$costfun_type=='Linfty'){ # Linfty uses maximin formalism
-    
+make_problem=function(x,Aquad,opts){
+  if(opts$lattice_cstr=='none' & opts$optim_method =='cvxr'){
+    Nm   = Constant(opts$Nmeas)
+    csts = list( sum(x) == Nm)
     big_str = paste(lapply(1:length(Aquad) %>% as.list(),
            function(ind){
              paste0('quad_form(x,Aquad[[',ind,']])')
            }),collapse=',')
     strp=paste0('prob=Problem(Minimize(max_elemwise(',big_str,')),csts)')
     eval(parse(text=strp))
-  }else(
-    stop('opts$costfun_type not recognized')
-  )
+      
+  }else{
+    stop('unrecognized opts$lattice_str or opts$solver_type')
+  }
   return(prob)
 }

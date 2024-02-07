@@ -7,6 +7,12 @@ if (user == 'TurnerMac'){
   overleaf_plot_directory = '/home/turner/research/overleaf/rate_limited_sampling/figures/'
 }
 
+get_legend <- function(p) {
+   tmp <- ggplot_gtable(ggplot_build(p))
+   leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+   legend <- tmp$grobs[[leg]]
+   legend
+}
 control_labels <- function(plot, 
                            x_label = T, y_label = T, 
                            x_ticks = T, y_ticks = T,

@@ -1,0 +1,83 @@
+```{r}
+require(devtools)
+require(ggplot2)
+require(annmatrix)
+require(ggplotify)
+require(patchwork)
+load_all()
+amm=readRDS(file = 'results/output/batch_2024-02-06___13:48:44.021394/amm_all.RDS')
+```
+
+# Get highres power
+```{r}
+freqs_hd = seq(from=1,to=24,length.out=2^11)
+amm@power = NaN
+for (ii in c(1:dim(amm)[1])){
+  amm@power[ii] = costfun_svdpower(amm[ii,],freqs_hd,Amp=2,alpha=.05)
+}
+```
+
+# Plot best of each type
+2 lattice, arbitrary, discrete, uniform
+```{r}
+theme_set(theme_bw())
+amm@best='none'
+pmax=amm[amm@lattice=='lat',] %>% {.@power} %>% max()
+amm@best[amm@power==pmax & amm@lattice=='lat']='best_lattice'
+
+
+pmax=amm[amm@cts=='cts',] %>% {.@power} %>% max()
+amm@best[amm@power==pmax & amm@cts=='cts']='best_continuous'
+
+#pmax=amm[amm@cts=='disc',] %>% {.@power} %>% max()
+#amm@best[amm@power==pmax & amm@cts=='disc']='best_discrete'
+
+p1=amm[amm@best!='none',] %>% stack() %>%  ggplot(aes(x=value,y=ifelse(best=='best_lattice',1,-1)))+
+  geom_point(aes(shape=factor(lattice,c('arb','lat'),c('none','2-lattice')),
+                 color=factor(solver,c('cvxr','bfgs','sa'),c('DCP','BFGS','annealing'))),size=2)+
+  labs(shape='Lattice constraint',
+       color='Solver',
+        y=element_blank(),
+        x='time')+
+    scale_color_manual(values=c('DCP'='red','BFGS'='blue','annealing'='cyan'))+
+  ylim(c(-2,2))+theme(legend.position='none')
+p1
+```
+
+```{r}
+source('plotConfig.R')
+p2=amm@'' %>% ggplot(aes(x=power,y=runtime))+
+  geom_point(aes(shape=factor(lattice,c('arb','lat'),c('none','2-lattice')),
+                 color=factor(solver,c('cvxr','bfgs','sa'),c('DCP','BFGS','annealing'))),size=2)+
+  labs(shape='Lattice constraint',
+       color='Solver',
+        y='runtime [s]',
+        x='worst case power')+
+  facet_wrap(~factor(cts,c('cts','disc'),c('Continuous time','Discretised time (5 minute)')),nrow=2)+
+  xlim(c(0,1))+
+  scale_color_manual(values=c('DCP'='red','BFGS'='blue','annealing'='cyan'))
+
+leg=get_legend(p2+theme(legend.position='bottom',legend.box='vertical',legend.margin = margin()))
+p2=p2+theme(legend.position='none')
+```
+
+
+```{r}
+Ampvals=seq(from=1,to=5,by=.1)
+Nmeas=dim(amm)[2]
+
+mt=c(1:Nmeas)/Nmeas-1/Nmeas
+pwrvals=rep(NaN,length(Ampvals))
+for (ii in c(1:length(Ampvals))){
+  pwrvals[ii]=costfun_svdpower(mt,freqs_hd,Amp=Ampvals[ii])
+}
+am_unif=annmatrix(as.matrix(pwrvals),
+                  rann=data.frame(type='uniform'),
+                  cann=data.frame(amp=Ampvals))
+
+
+# add the power curve for each of the optimal designs
+
+pcomp=as.ggplot((p1|p2)+plot_annotation(tag_levels='A'))
+(pcomp/leg)+plot_layout(heights=c(7,1))
+```
