@@ -3,14 +3,12 @@ helper_unif_update_scale_discrete=function(scale,shift,Npts,tscale,Nfine){
     stop('invalid initial state')
   }else{
     sc_min = 1 
-    sc_max = (Nfine-shift-1)/(Npts-1) #TODO: verify you don't need floor here
-     
-    eps_n = min(floor(tscale/2),floor(scale-sc_min))
-    eps_p = min(floor(tscale/2),floor(sc_max-scale))
-    if (eps_n <0 | eps_p < 0){
-      stop('negative window')
-    } 
-    scale_new = sample(c((scale-eps_n):(scale+eps_p)),1)
+    sc_max = floor((Nfine-shift-1)/(Npts-1)) #TODO: verify you don't need floor here
+    
+    xL = max(sc_min,scale-floor(tscale/2))
+    xR = min(sc_max,scale+floor(tscale/2))
+    
+    scale_new = sample(c(xL:xR),1)
   }
   return(scale_new)
 }

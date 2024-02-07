@@ -9,25 +9,39 @@ require(stringr)
 
 load_all()
 
-tstamp = now() %>% toString() %>% str_replace(' ','___')
-outdir =paste0('results/output/batch_',tstamp,'/')
-dir.create(outdir)
+# current time (to nearest second)
 
 # global settings
 gset = list(
   Nmeas             = 16,
-  Nfreq             = 2^8,
+  Nfreq             = 2^6,
   Nfine             = 288,
   trace_global      = 1,
   report_global     = 1,
-  maxit_sa          = 100,
-  maxit_bfgs        = 3, 
+  maxit_sa          = 1e3,
+  maxit_bfgs        = 10, 
   Amp_global        = 2,
   timelimit_by_bfgs = T,
   Nmin_2lat         = 4,
   Nmax_2lat         = 12,
-  nrep              = 2
+  nrep              = 2,
+  regL1             = 0
 )
+
+# output directory
+tstamp = now() %>% toString() %>%
+  strsplit('\\.') %>% {.[[1]][1]} %>% 
+  str_replace(' ','__')
+dir.create(paste0('results/output/Nmeas',gset$Nmeas))
+outdir =paste0('results/output/Nmeas',gset$Nmeas,'/',
+               'Nfi_',gset$Nfine,
+               '_Nfr_',gset$Nfreq,
+               '_rL1_',gset$regL1,
+               '_msa_',gset$maxit_sa,
+               '_mbf_',gset$maxit_bfgs,
+               '_nrep_',gset$nrep,
+               '_batch_',tstamp)
+dir.create(outdir)
 
 
 extract_info_from_result=function(res,tag,Nmeas=gset$Nmeas,runtime_tot,...){
