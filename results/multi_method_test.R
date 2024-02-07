@@ -12,6 +12,7 @@ load_all()
 # current time (to nearest second)
 
 optim_now=function(gset){
+  gc()
   # output directory
   tstamp = now() %>% toString() %>%
     strsplit('\\.') %>% {.[[1]][1]} %>% 
@@ -211,7 +212,7 @@ for (Nmeas in seq(16,24,2)){
 }
 
 gset$Nfreq=2^8
-for (Nmeas in seq(16,24,2)){
+for (Nmeas in c(16,24)){
   gset$Nmeas=Nmeas 
   optim_now(gset)
 }
