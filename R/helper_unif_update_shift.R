@@ -2,7 +2,7 @@ helper_unif_update_shift=function(scale,shift,lat,tscale){
   if (any(scale*lat + shift <0)  | any(scale*lat + shift >1)){
     stop('invalid initial state')
   }else{
-    # TODO: check parameterization is consistent
+    # TODO: replace with simpler parameterization 
     lmin=min(lat)
     lmax=max(lat) 
    
