@@ -3,6 +3,7 @@ require(devtools)
 require(annmatrix)
 require(ggplot2)
 require(patchwork)
+require(parallel)
 load_all()
 
 # place-holders for now
@@ -102,7 +103,7 @@ apar$minPower= apar %>% apply(1,function(x){
 # Benchmark: worst-case FDR heatmap
 ```{r}
 load_all()
-Nmc=1e2
+Nmc=5e2
 Nacro=2^5
 Nfreq=2^5
 fmin=1
