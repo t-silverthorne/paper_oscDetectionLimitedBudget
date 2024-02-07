@@ -6,7 +6,6 @@ require(ggplotify)
 require(patchwork)
 load_all()
 amm=readRDS(file = 'results/output/batch_2024-02-06___13:48:44.021394/amm_all.RDS')
-
 ```
 
 # Get highres power

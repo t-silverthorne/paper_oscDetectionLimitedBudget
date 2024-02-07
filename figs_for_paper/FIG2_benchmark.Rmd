@@ -1,0 +1,149 @@
+```{r}
+require(devtools)
+require(annmatrix)
+require(ggplot2)
+require(patchwork)
+load_all()
+
+# place-holders for now
+Nmeas   = 16
+mt_unif = c(1:Nmeas)/Nmeas - 1/Nmeas
+mt_lat  = amm[amm@best=='best_lattice',] 
+mt_arb  = amm[amm@best=='best_continuous',] 
+
+am1=annmatrix(matrix(mt_unif,nrow = 1),data.frame(tag='uniform'))
+am2=annmatrix(matrix(mt_lat,nrow=1),data.frame(tag='2-lattice'))
+am3=annmatrix(matrix(mt_arb,nrow=1),data.frame(tag='arbitrary'))
+
+am1$time=c(1:Nmeas) # necessary for rbind
+am2$time=c(1:Nmeas) 
+am3$time=c(1:Nmeas)
+am = rbind(am1,am2,am3)
+
+```
+
+# Plot of actual sampling strategies
+```{r}
+am@tag = factor(am@tag,levels=c('uniform','2-lattice','arbitrary'))
+
+colors=c('arbitrary'        = '#F57600',
+         '2-lattice'        = '#0073e6',
+         'uniform'          = 'black')
+p1 =am %>% stack() %>% ggplot(aes(x=value,y=0,color=tag))+geom_point()+
+  facet_wrap(~tag)+scale_color_manual(values=colors)+
+  labs( y=element_blank(),
+        x='time',
+        color=element_blank())+
+  theme(
+    axis.text.y=element_blank(),
+    axis.ticks.y=element_blank(),
+    legend.position = 'bottom'
+  )+scale_x_continuous(breaks=seq(from=0,to=1,by=.5))
+
+
+```
+
+
+# Power heatmap
+```{r}
+amps  = seq(from=.5,to=1.5,by=.05)
+freqs = seq(from=1,to=24,by=.01)
+tag   = c('uniform','2-lattice','arbitrary')
+pars  = expand.grid(amp=amps,freq=freqs,tag=tag)
+pars$minPower= pars%>% apply(1,function(x){
+  if (x[['tag']]=='uniform'){
+    mt_loc=mt_unif
+  }else if(x[['tag']]=='2-lattice'){
+    mt_loc=mt_lat
+  }else if(x[['tag']]=='arbitrary'){
+    mt_loc=mt_arb
+  }
+    return(costfun_svdpower(mt=mt_loc,
+                            freqs=as.numeric(x[['freq']]),
+                            Amp = as.numeric(x[['amp']])))
+})
+dim(pars)
+p2=pars %>% ggplot(aes(x=amp,y=freq,fill=minPower))+geom_tile()+facet_wrap(~tag)+
+  scale_fill_viridis_c(limits=c(0,1))+
+  scale_x_continuous(breaks=seq(min(amps),max(amps),length.out=3))+
+  scale_y_continuous(breaks=seq(0,max(freqs),length.out=5))+
+  labs(fill = 'power',
+          y = 'frequency',
+          x = 'amplitude')
+p2
+```
+
+# optional: could plot power as a function of acrophase
+```{r}
+acros = seq(from=0,to=2*pi,length.out=2^6)
+freqs = c(1,12.5,23.5)
+amps  = c(1.25,2.5) 
+tag   = c('uniform','2-lattice','arbitrary')
+apar  = expand.grid(acro=acros,freq=freqs,amp=amps,tag=tag)
+apar$minPower= apar %>% apply(1,function(x){
+  if (x[['tag']]=='uniform'){
+    mt_loc=mt_unif
+  }else if(x[['tag']]=='2-lattice'){
+    mt_loc=mt_lat
+  }else if(x[['tag']]=='arbitrary'){
+    mt_loc=mt_arb
+  }
+    return(eval_exact_power(t=mt_loc,
+                            param=list(Amp=as.numeric(x[['amp']]),
+                                       acro=as.numeric(x[['acro']]),
+                                       freq=as.numeric(x[['freq']])
+                                  )
+                            )
+    )
+})
+
+```
+
+# Benchmark: FDR power estimate
+```{r}
+load_all()
+start=Sys.time()
+tags = c('uniform','2-lattice','arbitrary')
+fam=NULL
+for (tag in tags){
+  if (tag=='uniform'){
+    mt_loc=mt_unif
+  }else if(tag=='2-lattice'){
+    mt_loc=mt_lat
+  }else if(tag=='arbitrary'){
+    mt_loc=mt_arb
+  }
+  res = benchmark_fdr(mt=mt_loc,
+                Nmc=1e3,
+                fmin=1,fmax=23.9,Nfreq_regr_vals=c(2^5),
+                Ampvals=seq(from=1,to=3,by=.2),
+                true_freq_vals=seq(from=5,to=11,length.out=30),
+                pmethod='BY')
+  res$tag = tag
+  fam=rbind(fam,res)
+}
+end=Sys.time()
+dim(fam)
+head(fam)
+
+fam %>% ggplot(aes(x=Amp,y=pdetect_q,group=true_freq,color=true_freq))+geom_line()+facet_wrap(~tag,ncol=3)+scale_color_viridis_b()+ylim(c(0,1))
+end-start
+```
+
+
+# Benchmark: parameter accuracy
+```{r}
+
+```
+
+# Benchmark: Lomb-Scargle
+```{r}
+
+```
+
+# Combine figs
+```{r}
+( (p1+theme(legend.position = 'none'))/p2 ) +plot_annotation(tag_levels='A')
+
+
+```
