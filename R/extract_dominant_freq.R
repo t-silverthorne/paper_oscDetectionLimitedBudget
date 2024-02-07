@@ -1,4 +1,4 @@
-#' Get dominant frequency from regression output
+#' (Depracated) Get dominant frequency from regression output
 #' 
 #' @description
 #' Helper function for processing output of [freqsweep_regr()]. For each row,
@@ -17,6 +17,7 @@
 #' @author Turner Silverthorne
 #' @export
 extract_dominant_freq=function(pqvals,amps,acros){
+  stop('depracated')
   amp_est    = replicate(dim(pqvals)[1],{NaN})
   acro_est   = replicate(dim(pqvals)[1],{NaN})
   freq_est   = replicate(dim(pqvals)[1],{NaN})

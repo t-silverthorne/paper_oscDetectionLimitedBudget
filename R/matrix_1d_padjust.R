@@ -1,4 +1,4 @@
-#' Perform multiple test correction on rows or columns of a p-value matrix
+#' (Depracated) Perform multiple test correction on rows or columns of a p-value matrix
 #' 
 #' @description
 #' User chooses if multiple test correction should be performed row-wise or column-wise.
@@ -19,6 +19,7 @@
 #' @author Turner Silverthorne
 #' @export
 matrix_1d_padjust=function(pdat,dim,pmethod){
+  stop('depracated')
   qdat=NaN*pdat
   
   #TODO: could write more concisely using apply() but this gave cryptic rann errors

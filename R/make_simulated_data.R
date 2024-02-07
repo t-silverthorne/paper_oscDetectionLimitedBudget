@@ -1,4 +1,4 @@
-#' Generate simulated dataset with amplitude and freq uncertainty
+#' (Depracated) Generate simulated dataset with amplitude and freq uncertainty
 #' 
 #' @description
 #' Generated simulated dataset with uniformly random frequency and amplitude and 
@@ -18,6 +18,7 @@
 #' @author Turner Silverthorne  
 #' @export
 make_simulated_data=function(mt,Nmc,Amin,Amax,fmin,fmax){
+  stop("depracated")
   am      = as.annmatrix(matrix(replicate(Nmc*length(mt),{0}),nrow=Nmc,ncol=length(mt)))
   am@Amp  = runif(Nmc,min=Amin,max=Amax)
   am@freq = runif(Nmc,min=fmin,max=fmax)

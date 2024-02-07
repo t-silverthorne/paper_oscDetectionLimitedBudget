@@ -1,5 +1,6 @@
 benchmark_fdr=function(mt,Nmc,fmin,fmax,Ampvals,true_freq_vals,
                        Nfreq_regr_vals,pmethod){
+  stop('depracated')
   Nfreq_regr_vals %>% lapply(
     function(Nfreq_regr){
     true_freq_vals %>% lapply(

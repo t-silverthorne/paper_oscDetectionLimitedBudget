@@ -111,12 +111,14 @@ fmax=23.9
 benchmark_worst_fdr(mt_lat,Amp,f0,Nmc,Nacro,Nfreq,fmin,fmax)
 end-start
 
-amps  = seq(from=.5,to=1.5,length.out=2^2)
-freqs = seq(from=1,to=24,length.out=2^2)
+amps  = seq(from=1,to=3,length.out=2^5)
+freqs = seq(from=1,to=24,length.out=2^4)
 tag   = c('uniform','2-lattice','arbitrary')
 fdrs = expand.grid(amp=amps,freq=freqs,tag=tag)
+minFDR = replicate(dim(fdrs)[1],{NaN})
 start=Sys.time()
-fdrs$minFDR = fdrs %>% apply(1,function(x){
+minFDR= c(1:dim(fdrs)[1]) %>% as.list() %>% mclapply(function(ii){
+  x=fdrs[ii,]
   if (x[['tag']]=='uniform'){
     mt_loc=mt_unif
   }else if(x[['tag']]=='2-lattice'){
@@ -133,9 +135,10 @@ fdrs$minFDR = fdrs %>% apply(1,function(x){
                             fmin  = fmin,
                             fmax  = fmax)
            )
-})
+  }) %>% unlist()
 end=Sys.time()
 end-start
+fdrs$minFDR = minFDR
 p3=fdrs %>% ggplot(aes(x=amp,y=freq,fill=minFDR))+geom_tile()+facet_wrap(~tag)+
   scale_fill_viridis_c(limits=c(0,1))+
   scale_x_continuous(breaks=seq(min(amps),max(amps),length.out=3))+

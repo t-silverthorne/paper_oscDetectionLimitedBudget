@@ -1,4 +1,4 @@
-#' Independently fit cosinor models at all frequencies in a given range
+#' (Depracated) Independently fit cosinor models at all frequencies in a given range
 #' 
 #' @description
 #' Perform independent harmonic regressions at all frequencies in a given range. 
@@ -24,6 +24,7 @@
 #' @author Turner Silverthorne
 #' @export
 freqsweep_regr=function(mt,Xdat,fmin,fmax,Nfreq,return_type){
+  stop('Depracated')
   Nmc = dim(Xdat)[1]
   freqs=seq(from=fmin,to=fmax,length.out=Nfreq)
   pv_am_global   = NULL
