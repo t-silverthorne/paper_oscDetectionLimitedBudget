@@ -4,7 +4,7 @@ library(gurobi)
 library(CVXR)
 load_all('.')
 
-test              = T
+test              = F
 
 opts              = make_default_opts(prob_size='medium',solver_type='cvxr')
 opts$Nfine        = 12*24 # 5 minute intervals 
@@ -17,7 +17,7 @@ opts$verbose      = T
 if (test){
   opts$time_limit  = 10 # units of seconds
 }else{
-  opts$time_limit  = 60*60*24*3 #  3 days 
+  opts$time_limit  = 60*60*24*2 #  2 days 
 }
 
 x     = make_variable(opts)
