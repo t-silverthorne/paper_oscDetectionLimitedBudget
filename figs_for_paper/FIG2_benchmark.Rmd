@@ -99,7 +99,55 @@ apar$minPower= apar %>% apply(1,function(x){
 
 ```
 
-# Benchmark: FDR power estimate
+# Benchmark: worst-case FDR heatmap
+```{r}
+load_all()
+Nmc=1e2
+Nacro=2^5
+Nfreq=2^5
+fmin=1
+fmax=23.9
+
+benchmark_worst_fdr(mt_lat,Amp,f0,Nmc,Nacro,Nfreq,fmin,fmax)
+end-start
+
+amps  = seq(from=.5,to=1.5,length.out=2^2)
+freqs = seq(from=1,to=24,length.out=2^2)
+tag   = c('uniform','2-lattice','arbitrary')
+fdrs = expand.grid(amp=amps,freq=freqs,tag=tag)
+start=Sys.time()
+fdrs$minFDR = fdrs %>% apply(1,function(x){
+  if (x[['tag']]=='uniform'){
+    mt_loc=mt_unif
+  }else if(x[['tag']]=='2-lattice'){
+    mt_loc=mt_lat
+  }else if(x[['tag']]=='arbitrary'){
+    mt_loc=mt_arb
+  }
+    return(benchmark_worst_fdr(mt = mt_loc,
+                            f0    = as.numeric(x[['freq']]),
+                            Amp   = as.numeric(x[['amp']]),
+                            Nmc   = Nmc,
+                            Nacro = Nacro,
+                            Nfreq = Nfreq,
+                            fmin  = fmin,
+                            fmax  = fmax)
+           )
+})
+end=Sys.time()
+end-start
+p3=fdrs %>% ggplot(aes(x=amp,y=freq,fill=minFDR))+geom_tile()+facet_wrap(~tag)+
+  scale_fill_viridis_c(limits=c(0,1))+
+  scale_x_continuous(breaks=seq(min(amps),max(amps),length.out=3))+
+  scale_y_continuous(breaks=seq(0,max(freqs),length.out=5))+
+  labs(fill = 'FDR',
+          y = 'frequency',
+          x = 'amplitude')
+p3
+
+```
+
+# Benchmark: mean FDR power estimate
 ```{r}
 load_all()
 start=Sys.time()
