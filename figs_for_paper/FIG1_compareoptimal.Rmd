@@ -5,12 +5,12 @@ require(annmatrix)
 require(ggplotify)
 require(patchwork)
 load_all()
-amm=readRDS(file = 'results/output/batch_2024-02-06___13:48:44.021394/amm_all.RDS')
+amm=readRDS(file = 'results/output/Nmeas16/Nfi_288_Nfr_64_rL1_0_msa_1000_mbf_10_nrep_100_batch_2024-02-07__17:51:30amm_all.RDS')
 ```
 
 # Get highres power
 ```{r}
-freqs_hd = seq(from=1,to=24,length.out=2^11)
+freqs_hd = seq(from=1,to=24,length.out=2^9)
 amm@power = NaN
 for (ii in c(1:dim(amm)[1])){
   amm@power[ii] = costfun_svdpower(amm[ii,],freqs_hd,Amp=2,alpha=.05)
@@ -26,8 +26,8 @@ pmax=amm[amm@lattice=='lat',] %>% {.@power} %>% max()
 amm@best[amm@power==pmax & amm@lattice=='lat']='best_lattice'
 
 
-pmax=amm[amm@cts=='cts',] %>% {.@power} %>% max()
-amm@best[amm@power==pmax & amm@cts=='cts']='best_continuous'
+pmax=amm[amm@lattice!='lat' & amm@cts=='disc',] %>% {.@power} %>% max()
+amm@best[amm@power==pmax & amm@lattice!='lat' & amm@cts=='disc']='best_disc_free'
 
 #pmax=amm[amm@cts=='disc',] %>% {.@power} %>% max()
 #amm@best[amm@power==pmax & amm@cts=='disc']='best_discrete'
@@ -71,13 +71,13 @@ pwrvals=rep(NaN,length(Ampvals))
 for (ii in c(1:length(Ampvals))){
   pwrvals[ii]=costfun_svdpower(mt,freqs_hd,Amp=Ampvals[ii])
 }
-am_unif=annmatrix(as.matrix(pwrvals),
+am_unif=annmatrix(matrix(pwrvals,nrow=1),
                   rann=data.frame(type='uniform'),
                   cann=data.frame(amp=Ampvals))
 
-
 # add the power curve for each of the optimal designs
-
+require(ggplotify)
+require(patchwork)
 pcomp=as.ggplot((p1|p2)+plot_annotation(tag_levels='A'))
 (pcomp/leg)+plot_layout(heights=c(7,1))
 ```
