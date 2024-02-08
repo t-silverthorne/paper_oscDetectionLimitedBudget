@@ -18,15 +18,6 @@ optim_now=function(gset){
     strsplit('\\.') %>% {.[[1]][1]} %>% 
     str_replace(' ','__')
   dir.create(paste0('results/output/Nmeas',gset$Nmeas))
-  outdir =paste0('results/output/Nmeas',gset$Nmeas,'/',
-                 'Nfi_',gset$Nfine,
-                 '_Nfr_',gset$Nfreq,
-                 '_rL1_',gset$regL1,
-                 '_msa_',gset$maxit_sa,
-                 '_mbf_',gset$maxit_bfgs,
-                 '_nrep_',gset$nrep,
-                 '_batch_',tstamp)
-  dir.create(outdir)
   
   
   extract_info_from_result=function(res,tag,Nmeas=gset$Nmeas,runtime_tot,...){
@@ -129,6 +120,7 @@ optim_now=function(gset){
                                  tag='cts_lat_bfgs',
                                  runtime_tot=resu_cts_lat_bfgs$time_tot))
   }
+  print(amm@runtime)
   tlim = median(amm@runtime)
   
   print(paste0('CVXR: On run ',ii,' of ',1))
@@ -143,7 +135,7 @@ optim_now=function(gset){
   
   
   for (ii in c(1:gset$nrep)){
-    print(paste0('Annealing: On run ',ii,' of ',1))
+    print(paste0('Annealing: On run ',ii,' of ',gset$nrep))
     var0_cts_arb_sa   = runif(gset$Nmeas) 
     var0_cts_lat_sa   = list(x0=c(shift2=1/2/Nmeas,scale1=0.5,scale2=.5,shift1=0),
                              lat1 =NULL,lat2 =NULL) 
@@ -186,36 +178,50 @@ optim_now=function(gset){
     amm=rbind(amm,extract_info_from_result(resu_disc_lat_sa$res_best,'disc_lat_sa',
                                            runtime_tot =resu_disc_lat_sa$time_tot))
   }
-  saveRDS(amm,paste0(outdir,'amm_all.RDS'))
-  saveRDS(gset,paste0(outdir,'global_settings.RDS'))
+  if (gset$gset_save){
+    outdir =paste0('results/output/Nmeas',gset$Nmeas,'/',
+                   'Nfi_',gset$Nfine,
+                   '_Nfr_',gset$Nfreq,
+                   '_rL1_',gset$regL1,
+                   '_msa_',gset$maxit_sa,
+                   '_mbf_',gset$maxit_bfgs,
+                   '_nrep_',gset$nrep,
+                   '_batch_',tstamp)
+    saveRDS(amm,paste0(outdir,'amm_all.RDS'))
+    saveRDS(gset,paste0(outdir,'global_settings.RDS'))
+  }
 }
 
 # global settings
 gset = list(
   Nmeas             = 16,
-  Nfreq             = 2^6,
+  Nfreq             = 2,
   Nfine             = 288,
-  trace_global      = 0,
+  trace_global      = 1,
   report_global     = 1,
   maxit_sa          = 1e3,
-  maxit_bfgs        = 10, 
+  maxit_bfgs        = 100, 
   Amp_global        = 2,
   timelimit_by_bfgs = T,
   Nmin_2lat         = 4,
   Nmax_2lat         = 12,
-  nrep              = 100,
-  regL1             = 0
+  nrep              = 1,
+  regL1             = 0,
+  gset_save         = F
 )
-for (Nmeas in seq(16,24,2)){
-  gset$Nmeas=Nmeas 
-  optim_now(gset)
-}
 
-gset$Nfreq=2^8
-for (Nmeas in c(16,24)){
-  gset$Nmeas=Nmeas 
-  optim_now(gset)
-}
+optim_now(gset)
+
+#for (Nmeas in seq(16,24,2)){
+#  gset$Nmeas=Nmeas 
+#  optim_now(gset)
+#}
+#
+#gset$Nfreq=2^8
+#for (Nmeas in c(16,24)){
+#  gset$Nmeas=Nmeas 
+#  optim_now(gset)
+#}
 
 #make_plot=F
 #if (make_plot){

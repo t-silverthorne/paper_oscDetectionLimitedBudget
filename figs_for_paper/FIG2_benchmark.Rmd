@@ -4,17 +4,18 @@ require(annmatrix)
 require(ggplot2)
 require(patchwork)
 require(parallel)
+require(data.table)
 load_all()
 
 # place-holders for now
 Nmeas   = 16
 mt_unif = c(1:Nmeas)/Nmeas - 1/Nmeas
 mt_lat  = amm[amm@best=='best_lattice',] 
-mt_arb  = amm[amm@best=='best_continuous',] 
+mt_arb  = amm[amm@best=='best_free',] 
 
 am1=annmatrix(matrix(mt_unif,nrow = 1),data.frame(tag='uniform'))
 am2=annmatrix(matrix(mt_lat,nrow=1),data.frame(tag='2-lattice'))
-am3=annmatrix(matrix(mt_arb,nrow=1),data.frame(tag='arbitrary'))
+am3=annmatrix(matrix(mt_arb,nrow=1),data.frame(tag='best_disc_free'))
 
 am1$time=c(1:Nmeas) # necessary for rbind
 am2$time=c(1:Nmeas) 
@@ -25,9 +26,9 @@ am = rbind(am1,am2,am3)
 
 # Plot of actual sampling strategies
 ```{r}
-am@tag = factor(am@tag,levels=c('uniform','2-lattice','arbitrary'))
+am@tag = factor(am@tag,levels=c('uniform','2-lattice','best_disc_free'))
 
-colors=c('arbitrary'        = '#F57600',
+colors=c('best_disc_free'        = '#F57600',
          '2-lattice'        = '#0073e6',
          'uniform'          = 'black')
 p1 =am %>% stack() %>% ggplot(aes(x=value,y=0,color=tag))+geom_point()+
@@ -40,7 +41,7 @@ p1 =am %>% stack() %>% ggplot(aes(x=value,y=0,color=tag))+geom_point()+
     axis.ticks.y=element_blank(),
     legend.position = 'bottom'
   )+scale_x_continuous(breaks=seq(from=0,to=1,by=.5))
-
+p1
 
 ```
 
@@ -49,14 +50,14 @@ p1 =am %>% stack() %>% ggplot(aes(x=value,y=0,color=tag))+geom_point()+
 ```{r}
 amps  = seq(from=.5,to=1.5,by=.05)
 freqs = seq(from=1,to=24,by=.01)
-tag   = c('uniform','2-lattice','arbitrary')
+tag   = c('uniform','2-lattice','best_disc_free')
 pars  = expand.grid(amp=amps,freq=freqs,tag=tag)
 pars$minPower= pars%>% apply(1,function(x){
   if (x[['tag']]=='uniform'){
     mt_loc=mt_unif
   }else if(x[['tag']]=='2-lattice'){
     mt_loc=mt_lat
-  }else if(x[['tag']]=='arbitrary'){
+  }else if(x[['tag']]=='best_disc_free'){
     mt_loc=mt_arb
   }
     return(costfun_svdpower(mt=mt_loc,
@@ -74,57 +75,29 @@ p2=pars %>% ggplot(aes(x=amp,y=freq,fill=minPower))+geom_tile()+facet_wrap(~tag)
 p2
 ```
 
-# optional: could plot power as a function of acrophase
-```{r}
-acros = seq(from=0,to=2*pi,length.out=2^6)
-freqs = c(1,12.5,23.5)
-amps  = c(1.25,2.5) 
-tag   = c('uniform','2-lattice','arbitrary')
-apar  = expand.grid(acro=acros,freq=freqs,amp=amps,tag=tag)
-apar$minPower= apar %>% apply(1,function(x){
-  if (x[['tag']]=='uniform'){
-    mt_loc=mt_unif
-  }else if(x[['tag']]=='2-lattice'){
-    mt_loc=mt_lat
-  }else if(x[['tag']]=='arbitrary'){
-    mt_loc=mt_arb
-  }
-    return(eval_exact_power(t=mt_loc,
-                            param=list(Amp=as.numeric(x[['amp']]),
-                                       acro=as.numeric(x[['acro']]),
-                                       freq=as.numeric(x[['freq']])
-                                  )
-                            )
-    )
-})
-
-```
 
 # Benchmark: worst-case FDR heatmap
 ```{r}
 load_all()
-Nmc=5e2
+Nmc=1e2
 Nacro=2^5
 Nfreq=2^5
 fmin=1
 fmax=23.9
 
-benchmark_worst_fdr(mt_lat,Amp,f0,Nmc,Nacro,Nfreq,fmin,fmax)
-end-start
-
-amps  = seq(from=1,to=3,length.out=2^5)
+start=Sys.time()
+amps  = seq(from=1,to=3,length.out=2^4)
 freqs = seq(from=1,to=24,length.out=2^4)
-tag   = c('uniform','2-lattice','arbitrary')
+tag   = c('uniform','2-lattice','best_disc_free')
 fdrs = expand.grid(amp=amps,freq=freqs,tag=tag)
 minFDR = replicate(dim(fdrs)[1],{NaN})
-start=Sys.time()
 minFDR= c(1:dim(fdrs)[1]) %>% as.list() %>% mclapply(function(ii){
   x=fdrs[ii,]
   if (x[['tag']]=='uniform'){
     mt_loc=mt_unif
   }else if(x[['tag']]=='2-lattice'){
     mt_loc=mt_lat
-  }else if(x[['tag']]=='arbitrary'){
+  }else if(x[['tag']]=='best_disc_free'){
     mt_loc=mt_arb
   }
     return(benchmark_worst_fdr(mt = mt_loc,
@@ -155,14 +128,14 @@ p3
 ```{r}
 load_all()
 start=Sys.time()
-tags = c('uniform','2-lattice','arbitrary')
+tags = c('uniform','2-lattice','best_disc_free')
 fam=NULL
 for (tag in tags){
   if (tag=='uniform'){
     mt_loc=mt_unif
   }else if(tag=='2-lattice'){
     mt_loc=mt_lat
-  }else if(tag=='arbitrary'){
+  }else if(tag=='best_disc_free'){
     mt_loc=mt_arb
   }
   res = benchmark_fdr(mt=mt_loc,

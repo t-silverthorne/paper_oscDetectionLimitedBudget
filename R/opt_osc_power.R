@@ -13,26 +13,27 @@
 #'  control options necessary for specifying transition function 
 #' @author Turner Silverthorne
 opt_osc_power=function(dvar0=NULL,freqs,Amp=1,control,
-                       nlattice_opts=NULL,alpha=.05,tau=NULL){
+                       nlattice_opts=NULL,alpha=.05,tau=NULL,...){
 require(lubridate)
 require(stringr)
 start_time=Sys.time()
 if (control$costfun_choice=='svdpower'){
-  xout       = solve_svdpower(dvar0,freqs,Amp,control,alpha)
+  xout       = solve_svdpower(dvar0,freqs=freqs,Amp=Amp,control=control,alpha=alpha,...)
   fvalue     = xout$value
   mtvalue    = xout$par
   xindsvalue = NULL
 }else if(control$costfun_choice=='svdpower_2lattice'){
-  xout       = solve_svdpower_2lattice(dvar0,freqs,Amp,control,alpha)
+  xout       = solve_svdpower_2lattice(dvar0,freqs=freqs,Amp=Amp,control=control,alpha=alpha,...)
   fvalue     = xout$value
   mtvalue    = convert_2lattice_to_state(shift1=dvar0$x0[['shift1']],shift2=xout$par[1],
                                          scale1=xout$par[2],scale2=xout$par[3],dvar0$lat1,dvar0$lat2) 
   xindsvalue = xout$par 
 }else if(control$costfun_choice=='svdpower_discrete'){
   xinds      = dvar0
-  xout       = solve_svdpower_discrete(xinds,tau,freqs,Amp,control,alpha)
+  xout       = solve_svdpower_discrete(xinds=xinds,tau=tau,freqs=freqs,
+                                       Amp=Amp,control=control,alpha=alpha,...)
   if (control$optim_method=='cvxr'){
-    mtvalue    = tau[as.logical(xout[[1]])] 
+    mtvalue    = tau[as.logical(xout[[1]]>1-1e-6)] 
     fvalue     = 1-costfun_svdpower(mt=mtvalue,freqs=freqs,Amp=Amp) 
     xindsvalue = xout[[1]]
   }else if(control$optim_method=='simul_anneal'){
@@ -43,7 +44,8 @@ if (control$costfun_choice=='svdpower'){
     stop('unknown control$optim_method')
   }
 }else if(control$costfun_choice=='svdpower_2lattice_discrete'){
-  xout=solve_2lattice_svdpower_discrete(dvar0,freqs,tau,Amp,control,alpha)
+  xout=solve_2lattice_svdpower_discrete(dvar0=dvar0,freqs=freqs,
+                                        tau=tau,Amp=Amp,control=control,alpha=alpha,...)
   fvalue     = xout$value 
   mtvalue    = tau[xinds_from_lat1lat2_pars(N1=dvar0$N1,N2=dvar0$N2,
                                         dx1=xout$par[1],dx2=xout$par[2],

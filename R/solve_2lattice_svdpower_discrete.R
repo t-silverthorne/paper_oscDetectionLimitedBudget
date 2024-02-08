@@ -1,4 +1,4 @@
-solve_2lattice_svdpower_discrete=function(dvar0,freqs,tau,Amp,control,alpha){
+solve_2lattice_svdpower_discrete=function(dvar0,freqs,tau,Amp,control,alpha,...){
 x0      = dvar0[['x0']]
 N1      = dvar0[['N1']]
 N2      = dvar0[['N2']]
@@ -14,7 +14,7 @@ if (control$optim_method=='simul_anneal'){
       return(1-costfun_2lattice_svdpower_discrete(N1=N1,dx1=x[1],N2=N2,
                                                   dx2=x[2],xshift2=x[3],
                                                   tau=tau,freqs=freqs,
-                                                  Amp=Amp,alpha=alpha))
+                                                  Amp=Amp,alpha=alpha,...))
     }
   }
   tfun=function(x){

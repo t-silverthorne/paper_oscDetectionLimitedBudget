@@ -45,9 +45,6 @@ make_quadmats = function(opts,Lmat=NULL){
     
     Amlist[[ii]]=Amat
   }
-  for (ii in c(1:length(Amlist))){
-    Amlist[[ii]]=Constant(Amlist[[ii]])
-  }
 
   return(Amlist)  
 }

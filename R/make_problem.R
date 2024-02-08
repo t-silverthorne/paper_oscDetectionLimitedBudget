@@ -17,7 +17,15 @@
 #'  
 #' @author Turner Silverthorne
 #' @export
-make_problem=function(x,Aquad,opts){
+make_problem=function(x,Aquad,opts,regL1=0){
+  # get mean of quad mats and convert to CVXR type
+  Amean = 0
+  for (ii in c(1:length(Aquad))){
+    Amean = Amean + Aquad[[ii]]
+    Aquad[[ii]]=Constant(Aquad[[ii]])
+  }
+  Amean = Amean/length(Aquad)
+  Amean = Constant(Amean)
   if(opts$lattice_cstr=='none' & opts$optim_method =='cvxr'){
     Nm   = Constant(opts$Nmeas)
     csts = list( sum(x) == Nm)
@@ -25,9 +33,15 @@ make_problem=function(x,Aquad,opts){
            function(ind){
              paste0('quad_form(x,Aquad[[',ind,']])')
            }),collapse=',')
-    strp=paste0('prob=Problem(Minimize(max_elemwise(',big_str,')),csts)')
+    if (regL1==0){
+      strp=paste0('prob=Problem(Minimize(max_elemwise(',big_str,')),csts)')
+    }else if(regL1>0){
+      regL1 = Constant(regL1)  
+      strp=paste0('prob=Problem(Minimize(regL1*quad_form(x,Amean)+max_elemwise(',big_str,')),csts)')
+    }else{
+      stop('invalid regL1, must be non-negative')
+    }
     eval(parse(text=strp))
-      
   }else{
     stop('unrecognized opts$lattice_str or opts$solver_type')
   }
