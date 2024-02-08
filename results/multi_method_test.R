@@ -206,10 +206,10 @@ gset = list(
   nrep              = 100,
   regL1             = 0
 )
-for (Nmeas in seq(16,24,2)){
-  gset$Nmeas=Nmeas 
-  optim_now(gset)
-}
+#for (Nmeas in seq(16,24,2)){
+#  gset$Nmeas=Nmeas 
+#  optim_now(gset)
+#}
 
 gset$Nfreq=2^8
 for (Nmeas in c(16,24)){
