@@ -1,0 +1,313 @@
+```{r}
+require(devtools)
+require(ggplot2)
+require(annmatrix)
+require(ggplotify)
+require(patchwork)
+require(parallel)
+require(data.table)
+require(stringr)
+source('plotConfig.R')
+load_all()
+fnames = read.csv('figs_for_paper/fnames.csv',header = F)
+ammfile=fnames$V1[1]
+amm=readRDS(file = ammfile)
+fs_glob=9
+L1reg=0 # in future this will be read in from file
+theme_set(theme_bw())
+```
+
+# Fig 1: Comparison of solvers
+
+## Get highres power
+```{r}
+Nmeas=dim(amm)[2]
+freqs_hd = seq(from=1,to=24,length.out=2^9)
+amm@power = NaN
+for (ii in c(1:dim(amm)[1])){
+  amm@power[ii] = costfun_svdpower(amm[ii,],freqs_hd,Amp=2,alpha=.05)
+}
+```
+
+## Plot best of each type
+2 lattice, arbitrary, discrete, uniform
+```{r}
+amm@best='none'
+pmax=amm[amm@lattice=='lat',] %>% {.@power} %>% max()
+amm@best[amm@power==pmax & amm@lattice=='lat']='best_lattice'
+
+
+pmax=amm[amm@lattice!='lat' & amm@cts=='disc',] %>% {.@power} %>% max()
+amm@best[amm@power==pmax & amm@lattice!='lat' & amm@cts=='disc']='best_disc_free'
+
+p1=amm[amm@best!='none',] %>% stack() %>%  ggplot(aes(x=value,y=ifelse(best=='best_lattice',1,-1)))+
+  geom_point(aes(shape=factor(lattice,c('arb','lat'),c('none','2-lattice')),
+                 color=factor(solver,c('cvxr','bfgs','sa'),c('DCP','BFGS','annealing'))),size=2)+
+  labs(shape='Lattice constraint',
+       color='Solver',
+        y=element_blank(),
+        x='time')+
+    scale_color_manual(values=c('DCP'='red','BFGS'='blue','annealing'='cyan'))+
+  theme(legend.position='none',
+        axis.text.y=element_blank(),
+        strip.background=element_blank(),
+        text=element_text(size=fs_glob))+
+  xlim(c(0,1))+ylim(c(-2,2))
+p1
+```
+
+## Runtime vs performance
+```{r}
+p2=amm@'' %>% ggplot(aes(x=power,y=runtime))+
+  geom_point(aes(shape=factor(lattice,c('arb','lat'),c('none','2-lattice')),
+                 color=factor(solver,c('cvxr','bfgs','sa'),c('DCP','BFGS','annealing'))),size=1)+
+  labs(shape='Lattice constraint',
+       color='Solver',
+        y='runtime [s]',
+        x='worst case power')+
+  facet_wrap(~factor(cts,c('cts','disc'),c('Continuous time','Discretised time (5 minute)')),nrow=2)+
+  xlim(c(0,1))+
+  scale_color_manual(values=c('DCP'='red','BFGS'='blue','annealing'='cyan'))
+
+leg=get_legend(p2+theme(legend.position='bottom',
+                        legend.box='vertical',
+                        legend.margin = margin(),
+                        strip.background=element_blank(),
+                        text=element_text(size=fs_glob)
+                        ))
+p2=p2+theme(legend.position='none',
+            strip.background=element_blank(),
+            text=element_text(size=fs_glob))
+```
+
+## Power values
+```{r}
+amps=seq(from=0,to=3,by=.1)
+freqs_sparse=seq(from=1,to=24,by=1)
+tag   = c('uniform','best_disc_free','best_lattice')
+pars  = expand.grid(amp=amps,tag=tag)
+
+mt_unif = c(1:Nmeas)/Nmeas - 1/Nmeas
+mt_lat  = amm[amm@best=='best_lattice',] 
+mt_arb  = amm[amm@best=='best_disc_free',] 
+
+pars$minPower= pars%>% apply(1,function(x){
+  if (x[['tag']]=='uniform'){
+    mt_loc=mt_unif
+  }else if(x[['tag']]=='best_lattice'){
+    mt_loc=mt_lat
+  }else if(x[['tag']]=='best_disc_free'){
+    mt_loc=mt_arb
+  }
+    return(costfun_svdpower(mt=mt_loc,
+                            freqs=freqs_hd,
+                            Amp = as.numeric(x[['amp']]),
+                            reg=L1reg))
+})
+head(pars)
+```
+```{r}
+p3=pars %>% ggplot(aes(x=amp,y=minPower,color=tag,group=tag))+geom_line()+
+  scale_color_manual(values=c('best_lattice'='cyan','best_disc_free'='red',
+                              'uniform'='black'))+
+  labs( y='power',
+        x='amplitude')+
+  theme(legend.position = 'none',
+        strip.background=element_blank(),
+        text=element_text(size=fs_glob))+
+  scale_y_continuous(limits=c(0,1),breaks=c(0,1))
+p3
+# add the power curve for each of the optimal designs
+
+```
+
+```{r}
+pschem = as.ggplot(plot_spacer())+theme(
+  text=element_text(size=fs_glob))
+pcomp=as.ggplot((pschem/(p2| (p1/p3)))+
+                plot_annotation(tag_levels='A')+
+                  plot_layout(heights=c(2,3))
+                  )
+pcomp=pcomp+ggtitle(paste0('Nm=',Nmeas,' L1reg=',L1reg))
+F1=(pcomp/leg)+plot_layout(heights=c(9,1))
+F1=F1
+F1
+saveRDS(file=ammfile %>% str_replace('amm_all','fig1'),F1)
+```
+
+# Fig 2: Benchmarking 
+## Load designs
+```{r}
+mt_unif = c(1:Nmeas)/Nmeas - 1/Nmeas
+mt_lat  = amm[amm@best=='best_lattice',] 
+mt_arb  = amm[amm@best=='best_disc_free',] 
+
+am1=annmatrix(matrix(mt_unif,nrow = 1),data.frame(tag='uniform'))
+am2=annmatrix(matrix(mt_lat,nrow=1),data.frame(tag='2-lattice'))
+am3=annmatrix(matrix(mt_arb,nrow=1),data.frame(tag='arbitrary'))
+
+am1$time=c(1:Nmeas) # necessary for rbind
+am2$time=c(1:Nmeas) 
+am3$time=c(1:Nmeas)
+am = rbind(am1,am2,am3)
+```
+
+## Plot of actual sampling strategies
+```{r}
+am@tag = factor(am@tag,levels=c('uniform','2-lattice','arbitrary'))
+
+colors=c('arbitrary'        = '#F57600',
+         '2-lattice'        = '#0073e6',
+         'uniform'          = 'black')
+p1 =am %>% stack() %>% ggplot(aes(x=value,y=0,color=tag))+geom_point()+
+  facet_wrap(~tag)+scale_color_manual(values=colors)+
+  labs( y=element_blank(),
+        x='time',
+        color=element_blank())+
+  theme(
+    axis.text.y=element_blank(),
+    axis.ticks.y=element_blank(),
+    legend.position = 'none',       
+    strip.background=element_blank(),
+    text=element_text(size=fs_glob)
+  )+scale_x_continuous(limits=c(0,1),breaks=seq(from=0,to=1,by=.5))
+
+p1
+```
+
+
+## Power heatmap
+```{r}
+amps  = seq(from=.5,3,by=.1)
+freqs = seq(from=1,to=24,by=.01)
+tag   = c('uniform','2-lattice','arbitrary')
+pars  = expand.grid(amp=amps,freq=freqs,tag=tag)
+minPower = rep(NaN,dim(pars)[1])
+minPower =c(1:length(minPower)) %>% as.list() %>% lapply(
+  function(ii){
+    x=pars[ii,]
+    if (x[['tag']]=='uniform'){
+      mt_loc=mt_unif
+    }else if(x[['tag']]=='2-lattice'){
+      mt_loc=mt_lat
+    }else if(x[['tag']]=='arbitrary'){
+      mt_loc=mt_arb
+    }
+      return(costfun_svdpower(mt=mt_loc,
+                              freqs=as.numeric(x[['freq']]),
+                              Amp = as.numeric(x[['amp']])))
+  }
+)%>% unlist()
+pars$minPower=minPower
+
+p2=pars %>% ggplot(aes(x=amp,y=freq,fill=minPower))+geom_tile()+facet_wrap(~tag)+
+  scale_fill_viridis_c(limits=c(0,1))+
+  scale_x_continuous(breaks=seq(min(amps),max(amps),length.out=3))+
+  scale_y_continuous(breaks=seq(0,max(freqs),length.out=5))+
+  theme(strip.background=element_blank(),
+    text=element_text(size=fs_glob))+
+  labs(fill = 'power',
+          y = 'frequency',
+          x = 'amplitude')
+p2
+```
+
+
+## Benchmark: worst-case FDR heatmap
+```{r}
+load_all()
+Nmc=5e2
+Nacro=2^5
+Nfreq=2^5
+fmin=1
+fmax=23.9
+
+amps  = seq(from=.5,to=3,length.out=2^4)
+freqs = seq(from=1,to=24,length.out=2^4)
+tag   = c('uniform','2-lattice','arbitrary')
+fdrs = expand.grid(amp=amps,freq=freqs,tag=tag)
+minFDR = replicate(dim(fdrs)[1],{NaN})
+start=Sys.time()
+minFDR= c(1:dim(fdrs)[1]) %>% as.list() %>% mclapply(function(ii){
+  x=fdrs[ii,]
+  if (x[['tag']]=='uniform'){
+    mt_loc=mt_unif
+  }else if(x[['tag']]=='2-lattice'){
+    mt_loc=mt_lat
+  }else if(x[['tag']]=='arbitrary'){
+    mt_loc=mt_arb
+  }
+    return(benchmark_worst_fdr(mt = mt_loc,
+                            f0    = as.numeric(x[['freq']]),
+                            Amp   = as.numeric(x[['amp']]),
+                            Nmc   = Nmc,
+                            Nacro = Nacro,
+                            Nfreq = Nfreq,
+                            fmin  = fmin,
+                            fmax  = fmax)
+           )
+  }) %>% unlist()
+end=Sys.time()
+end-start
+fdrs$minFDR = minFDR
+p3=fdrs %>% ggplot(aes(x=amp,y=freq,fill=minFDR))+geom_tile()+facet_wrap(~tag)+
+  scale_fill_viridis_c(limits=c(0,1))+
+  scale_x_continuous(breaks=seq(min(amps),max(amps),length.out=3))+
+  scale_y_continuous(breaks=seq(0,max(freqs),length.out=5))+
+  labs(fill = 'FDR',
+          y = 'frequency',
+          x = 'amplitude')+
+  theme(strip.background=element_blank(),
+    text=element_text(size=fs_glob))
+p3
+
+```
+
+
+## Benchmark: parameter accuracy
+```{r}
+
+```
+
+## Benchmark: Lomb-Scargle
+```{r}
+
+```
+
+## Combine figs
+```{r}
+F2=( p1/p2/p3 )+ggtitle(paste0('Nm=',Nmeas,' L1reg=',0)) +plot_annotation(tag_levels='A')
+saveRDS(file=ammfile %>% str_replace('amm_all','fig2'),F2)
+```
+
+# Random
+## Benchmark: mean FDR power estimate
+```{r}
+#load_all()
+#start=Sys.time()
+#tags = c('uniform','2-lattice','arbitrary')
+#fam=NULL
+#for (tag in tags){
+#  if (tag=='uniform'){
+#    mt_loc=mt_unif
+#  }else if(tag=='2-lattice'){
+#    mt_loc=mt_lat
+#  }else if(tag=='arbitrary'){
+#    mt_loc=mt_arb
+#  }
+#  res = benchmark_fdr(mt=mt_loc,
+#                Nmc=1e3,
+#                fmin=1,fmax=23.9,Nfreq_regr_vals=c(2^5),
+#                Ampvals=seq(from=1,to=3,by=.2),
+#                true_freq_vals=seq(from=5,to=11,length.out=30),
+#                pmethod='BY')
+#  res$tag = tag
+#  fam=rbind(fam,res)
+#}
+#end=Sys.time()
+#dim(fam)
+#head(fam)
+#
+#fam %>% ggplot(aes(x=Amp,y=pdetect_q,group=true_freq,color=true_freq))+geom_line()+facet_wrap(~tag,ncol=3)+scale_color_viridis_b()+ylim(c(0,1))
+end-start
+```
