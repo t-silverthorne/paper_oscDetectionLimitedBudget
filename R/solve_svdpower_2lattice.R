@@ -10,7 +10,7 @@ solve_svdpower_2lattice=function(dvar0,freqs,Amp,control,alpha,...){
   scale2 = x0[['scale2']]
   
   x0 = c(shift2,scale1,scale2) 
-  cfun=function(x){1-costfun_2lattice_svdpower(shift1=0,shift2=x[1],scale1=x[2],
+  cfun=function(x){costfun_2lattice_svdpower(shift1=0,shift2=x[1],scale1=x[2],
                                                scale2=x[3],lat1,lat2,freqs,Amp,
                                                alpha=alpha,...)}
   if(control$optim_method=='L-BFGS-B'){

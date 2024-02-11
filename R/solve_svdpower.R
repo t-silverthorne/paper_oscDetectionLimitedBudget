@@ -1,5 +1,5 @@
 solve_svdpower=function(mt0,freqs,Amp,control,alpha,...){
-  cfun=function(mt){1-costfun_svdpower(mt,freqs,Amp,alpha=alpha,...)}
+  cfun=function(mt){costfun_svdpower(mt,freqs,Amp,alpha=alpha,...)}
   if(control$optim_method=='L-BFGS-B'){
     xopt=stats::optim(mt0,fn=cfun,gr=NULL,
                  lower=rep(0,length(mt0)),

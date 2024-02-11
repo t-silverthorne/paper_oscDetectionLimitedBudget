@@ -34,7 +34,7 @@ if (control$costfun_choice=='svdpower'){
                                        Amp=Amp,control=control,alpha=alpha,...)
   if (control$optim_method=='cvxr'){
     mtvalue    = tau[as.logical(xout[[1]]>1-1e-6)] 
-    fvalue     = 1-costfun_svdpower(mt=mtvalue,freqs=freqs,Amp=Amp) 
+    fvalue     = costfun_svdpower(mt=mtvalue,freqs=freqs,Amp=Amp) 
     xindsvalue = xout[[1]]
   }else if(control$optim_method=='simul_anneal'){
     fvalue     = xout$value

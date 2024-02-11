@@ -1,3 +1,4 @@
+require(devtools)
 test_that("L1 regularization has effect on continuous", {
   mt0=c(1:10)/10 - 1/10
   freqs=seq(from=1,to=24,length.out=24)

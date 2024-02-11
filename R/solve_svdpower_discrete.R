@@ -1,6 +1,6 @@
 solve_svdpower_discrete=function(xinds,tau,freqs,Amp,control,alpha,...){
   if(control$optim_method=='simul_anneal'){
-    cfun=function(xinds){1-costfun_svdpower_discrete(xinds,tau,freqs,Amp,alpha=alpha,...)}
+    cfun=function(xinds){costfun_svdpower_discrete(xinds,tau,freqs,Amp,alpha=alpha,...)}
     tfun=function(xinds){tfun_svdpower_discrete(xinds,length(tau),control)}
     xopt=stats::optim(xinds,fn=cfun,gr=tfun,
                   method='SANN',
