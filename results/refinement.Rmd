@@ -42,7 +42,7 @@ pmaster%>% ggplot(aes(x=Nfreq,y=nfval,group=id))+geom_line()+facet_wrap(cfun~reg
 ```{r}
 start=Sys.time()
 Nland=20
-Nfreq=2^6
+Nfreq=2^9
 Nmeas=16
 freqs=seq(from=1,to=24,length.out=Nfreq)
 logscale=F
@@ -58,7 +58,7 @@ if (logscale){
 N1vals=seq(from=floor(Nmeas/4),to=3*floor(Nmeas/4))
 
 pars=expand.grid(scale1=scale1,scale2=scale2,shift2=shift2,
-                 N1=N1vals,regL1=c(0,1))
+                 N1=N1vals,regL1=c(0))
 
 
 vals=c(1:dim(pars)[1]) %>% as.list() %>% mclapply(mc.cores=10,FUN=function(ii){

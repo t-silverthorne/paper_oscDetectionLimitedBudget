@@ -9,7 +9,6 @@ require(stringr)
 
 load_all()
 
-#TODO add regL1
 optim_now=function(gset){
   gc()
   # output directory
@@ -102,7 +101,9 @@ optim_now=function(gset){
     resu_cts_arb_bfgs = opt_osc_power(dvar0   = var0_cts_arb_bfgs, 
                                       control = ctrl_cts_arb_bfgs,
                                       freqs   = freqs_global,
-                                      Amp     = Amp_global)
+                                      Amp     = Amp_global,
+                                      cfuntype= 'ncp',
+                                      regL1   =gset$regL1)
     
     resu_cts_lat_bfgs = wrapper_sweep_lattice(opt_osc_power,
                                     Nvals    = c(gset$Nmin_2lat:gset$Nmax_2lat),
@@ -111,7 +112,9 @@ optim_now=function(gset){
                                     dvar0    = var0_cts_lat_bfgs,
                                     control  = ctrl_cts_lat_bfgs,
                                     freqs    = freqs_global,
-                                    Amp      = Amp_global)  
+                                    Amp      = Amp_global,
+                                    cfuntype= 'ncp',
+                                    regL1    = gset$regL1)  
     amm=rbind(amm,extract_info_from_result(resu_cts_arb_bfgs,'cts_arb_bfgs'))
     amm=rbind(amm,extract_info_from_result(
                                  res=resu_cts_lat_bfgs$res_best,
@@ -121,13 +124,14 @@ optim_now=function(gset){
   print(amm@runtime)
   tlim = median(amm@runtime)
   
-  print(paste0('CVXR: On run ',ii,' of ',1))
   ctrl_disc_arb_cvxr$time_limit=tlim
+  freqs_cvxr=seq(from=1,to=24,length.out=gset$nfreq_cvxr)
   resu_disc_arb_cvxr = opt_osc_power(dvar0  = NULL,
                control = ctrl_disc_arb_cvxr,
-               freqs   = freqs_global,
+               freqs   = freqs_cvxr,
                Amp     = Amp_global,
-               tau     = tau)
+               tau     = tau,
+               regL1   = gset$regL1)
   amm=rbind(amm,extract_info_from_result(resu_disc_arb_cvxr,'disc_arb_cvxr'))
   rm(resu_disc_arb_cvxr)
   
@@ -144,7 +148,9 @@ optim_now=function(gset){
     resu_cts_arb_sa = opt_osc_power(dvar0   = var0_cts_arb_sa,
                                     control = ctrl_cts_arb_sa,
                                     freqs   = freqs_global,
-                                    Amp     = Amp_global)
+                                    Amp     = Amp_global,
+                                    cfuntype= 'ncp',
+                                    regL1   = gset$regL1)
     resu_cts_lat_sa = wrapper_sweep_lattice(opt_osc_power,
                                     Nvals    = c(gset$Nmin_2lat:gset$Nmax_2lat),
                                     Nmeas    = Nmeas,
@@ -152,12 +158,16 @@ optim_now=function(gset){
                                     dvar0    = var0_cts_lat_sa,
                                     control  = ctrl_cts_lat_sa,
                                     freqs    = freqs_global,
-                                    Amp      = Amp_global) 
+                                    Amp      = Amp_global,
+                                    cfuntype= 'ncp',
+                                    regL1   = gset$regL1)
     resu_disc_arb_sa = opt_osc_power(dvar0  = var0_disc_arb_sa,
                                     control = ctrl_disc_arb_sa,
                                     freqs   = freqs_global,
                                     Amp     = Amp_global,
-                                    tau     = tau)
+                                    tau     = tau,
+                                    cfuntype= 'ncp',
+                                    regL1   = gset$regL1,)
     resu_disc_lat_sa = wrapper_sweep_lattice(opt_osc_power,
                                     Nvals    = c(gset$Nmin_2lat:gset$Nmax_2lat),
                                     Nmeas    = Nmeas,
@@ -166,7 +176,9 @@ optim_now=function(gset){
                                     control  = ctrl_disc_lat_sa,
                                     freqs    = freqs_global,
                                     Amp      = Amp_global,
-                                    tau      = tau)
+                                    tau      = tau,
+                                    cfuntype= 'ncp',
+                                    regL1   = gset$regL1)
   
     amm=rbind(amm,extract_info_from_result(resu_cts_arb_sa,'cts_arb_sa'))
     amm=rbind(amm,extract_info_from_result(resu_disc_arb_sa,'disc_arb_sa'))
@@ -193,7 +205,8 @@ optim_now=function(gset){
 # global settings
 gset = list(
   Nmeas             = 16,
-  Nfreq             = 64,
+  Nfreq             = 2^10,
+  nfreq_cvxr        = 2^8,
   Nfine             = 288,
   trace_global      = 1,
   report_global     = 1,
@@ -203,12 +216,12 @@ gset = list(
   timelimit_by_bfgs = T,
   Nmin_2lat         = 4,
   Nmax_2lat         = 12,
-  nrep              = 100,
-  regL1             = 1,
+  nrep              = 20,
+  regL1             = 0,
   gset_save         = T
 )
 
-for (Nmeas in seq(16,24,2)){
+for (Nmeas in seq(16)){
   gset$Nmeas=Nmeas 
   optim_now(gset)
 }
