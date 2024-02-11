@@ -9,8 +9,7 @@ require(stringr)
 
 load_all()
 
-# current time (to nearest second)
-
+#TODO add regL1
 optim_now=function(gset){
   gc()
   # output directory
@@ -59,8 +58,7 @@ optim_now=function(gset){
   
   ctrl_cts_arb_sa   = list(costfun_choice='svdpower',optim_method='simul_anneal',
               tfun_choice='brownian-torus',tfun_mean=0,tfun_sd=.1,
-              trace=trace_global,REPORT=report_global,maxit=maxit_sa)
-  
+              trace=trace_global,REPORT=report_global,maxit=maxit_sa) 
   ctrl_cts_lat_bfgs = list(costfun_choice='svdpower_2lattice',
               optim_method='L-BFGS-B',
               trace=trace_global,REPORT=report_global,maxit=maxit_bfgs)

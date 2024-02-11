@@ -13,7 +13,6 @@ fnames = read.csv('figs_for_paper/fnames.csv',header = F)
 ammfile=fnames$V1[1]
 amm=readRDS(file = ammfile)
 fs_glob=9
-L1reg=0 # in future this will be read in from file
 theme_set(theme_bw())
 
 # get global settings
