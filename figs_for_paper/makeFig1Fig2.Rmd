@@ -1,3 +1,30 @@
+
+# Setup for simulation
+```{r}
+run_simulation  = T # TODO: currently ignored
+save_simulation = T # TODO: currently ignored
+run_figures     = T
+save_figures    = T
+sparse_heatmap  = F
+mc_cores=10
+gset = list(
+  Nmeas             = 16,
+  Nfreq             = 2^10,
+  nfreq_cvxr        = 2^8,
+  Nfine             = 288,
+  trace_global      = 0,
+  report_global     = 1,
+  maxit_sa          = 1e2,#1e3,
+  maxit_bfgs        = 1,#10, 
+  timelimit_cvxr    = 60,
+  Amp_global        = NaN,
+  Nmin_2lat         = 4,
+  Nmax_2lat         = 12,
+  nrep              = 20,
+  regL1             = 0
+)
+```
+
 ```{r}
 require(devtools)
 require(ggplot2)
@@ -7,16 +34,230 @@ require(patchwork)
 require(parallel)
 require(data.table)
 require(stringr)
+require(CVXR)
 source('plotConfig.R')
 load_all()
-fnames = read.csv('figs_for_paper/fnames.csv',header = F)
-ammfile=fnames$V1[1]
-amm=readRDS(file = ammfile)
+
+freqs_global  = seq(from=1,to=24,length.out=gset$Nfreq)
+
+Nmeas         = gset$Nmeas
+Nfreq         = gset$Nfreq
+Nfine         = gset$Nfine        
+trace_global  = gset$trace_global  
+report_global = gset$report_global
+maxit_sa      = gset$maxit_sa
+maxit_bfgs    = gset$maxit_bfgs
+Amp_global    = gset$Amp_global
+
+tau = c(1:Nfine)/Nfine -1/Nfine
+# set up controls
+ctrl_cts_arb_bfgs = list(costfun_choice='svdpower', optim_method='L-BFGS-B',
+            trace=trace_global,REPORT=report_global,maxit=maxit_bfgs)
+
+ctrl_cts_arb_sa   = list(costfun_choice='svdpower',optim_method='simul_anneal',
+            tfun_choice='brownian-torus',tfun_mean=0,tfun_sd=.1,
+            trace=trace_global,REPORT=report_global,maxit=maxit_sa) 
+
+ctrl_cts_lat_bfgs = list(costfun_choice='svdpower_2lattice',
+            optim_method='L-BFGS-B',
+            trace=trace_global,REPORT=report_global,maxit=maxit_bfgs)
+
+ctrl_cts_lat_sa   = list(costfun_choice = 'svdpower_2lattice',
+            optim_method = 'simul_anneal',
+            tfun_choice  = 'unif-with-bdry',tscale_unif_with_bdry=1/10,
+            trace=trace_global,REPORT=report_global,maxit=maxit_sa)
+
+ctrl_disc_arb_sa =list(costfun_choice='svdpower_discrete',
+            optim_method='simul_anneal',
+            tfun_choice='single-flip',Nfine=Nfine,Nmeas=Nmeas,
+            trace=trace_global,REPORT=report_global,maxit=maxit_sa)
+  
+ctrl_disc_arb_cvxr = list(costfun_choice='svdpower_discrete',
+            optim_method='cvxr',
+            maxit=1e9,time_limit=gset$timelimit_cvxr,MIPGapAbs=.01,
+            cvxr_verbose=T,costfun_type='Linfty',
+            fmin=min(freqs_global),
+            fmax=max(freqs_global),Nfreq=length(freqs_global),
+            lattice_cstr='none',Nfine=Nfine,Nmeas=Nmeas,
+            trace=trace_global,REPORT=report_global)
+
+ctrl_disc_lat_sa = list(costfun_choice = 'svdpower_2lattice_discrete',
+             optim_method   = 'simul_anneal',
+             tfun_choice    = 'unif-with-bdry-discrete',tscale= 2,
+             trace=trace_global,REPORT=report_global,maxit=maxit_sa)
+
+extract_info_from_result=function(res,tag,Nmeas=gset$Nmeas,runtime_tot,...){
+  tagsp=strsplit(tag,'_')
+  if(hasArg('runtime_tot')){
+    # lubridate ensures that units are always in seconds
+    runtime=runtime_tot %>% lubridate::as.duration() %>% as.numeric()
+  }else{
+    runtime=res$runtime %>% lubridate::as.duration() %>% as.numeric()
+  }
+  if (length(res$mtvalue)<Nmeas){
+    stop('degenerate measurement times')
+  }
+  return(annmatrix(
+               x = matrix(sort(res$mtvalue),nrow=1),
+            rann = data.frame(power   = 1-res$fvalue,
+                              runtime = runtime,
+                              tag     = tag,
+                              cts     = tagsp[[1]][1],
+                              lattice = tagsp[[1]][2],
+                              solver  = tagsp[[1]][3]),
+            cann = data.frame(time=c(1:Nmeas))))
+}
+
+update_amm=function(Lnow,gset,tag,wrapped=F){
+  for (ii in c(1:gset$nrep)){
+    res = Lnow[[ii]]
+    if (wrapped){
+      amm = rbind(amm,extract_info_from_result(res=res$res_best,tag=tag,
+                                               runtime_tot=res$time_tot)) 
+    }else{
+      amm = rbind(amm,extract_info_from_result(res=res,tag=tag)) 
+    }
+  }
+  return(amm)  
+}
+amm=NULL
+```
+
+# Run the stats
+## BFGS
+```{r}
+Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function(ii){
+  var0_cts_arb_bfgs = runif(gset$Nmeas)
+  resu_cts_arb_bfgs = opt_osc_power(dvar0    = var0_cts_arb_bfgs, 
+                                    control  = ctrl_cts_arb_bfgs,
+                                    freqs    = freqs_global,
+                                    Amp      = NaN,
+                                    cfuntype = 'ncp',
+                                    regL1    = gset$regL1)
+})
+amm=update_amm(Lnow,gset,tag='cts_arb_bfgs',wrapped=F)
+
+Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function(ii){
+  var0_cts_lat_bfgs = list(x0=c(shift2=runif(1),scale1=0.5,scale2=.5,shift1=0),
+                           lat1 =NULL,lat2 =NULL) 
+  return(resu_cts_arb_bfgs = wrapper_sweep_lattice(opt_osc_power,
+                                    Nvals    = c(gset$Nmin_2lat:gset$Nmax_2lat),
+                                    Nmeas    = Nmeas,
+                                    cts_flag = T,
+                                    dvar0    = var0_cts_lat_bfgs,
+                                    control  = ctrl_cts_lat_bfgs,
+                                    freqs    = freqs_global,
+                                    Amp      = NaN,
+                                    cfuntype= 'ncp',
+                                    regL1    = gset$regL1)  )
+})
+amm=update_amm(Lnow,gset,tag='cts_lat_bfgs',wrapped=T)
+
+```
+
+## CVXR
+```{r}
+freqs_cvxr=seq(from=1,to=24,length.out=gset$nfreq_cvxr)
+res = opt_osc_power(dvar0  = NULL,
+             control = ctrl_disc_arb_cvxr,
+             freqs   = freqs_cvxr,
+             Amp     = NaN,
+             tau     = tau,
+             regL1   = gset$regL1)
+cvxr_am = extract_info_from_result(res,'disc_arb_cvxr',gset$Nmeas)
+amm     = rbind(amm,cvxr_am)
+```
+
+## Simulated annealing
+```{r}
+Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function(ii){
+  var0_cts_arb_sa   = runif(gset$Nmeas) 
+  opt_osc_power(dvar0  = var0_cts_arb_sa,
+                                      control = ctrl_cts_arb_sa,
+                                      freqs   = freqs_global,
+                                      Amp     = NaN,
+                                      cfuntype= 'ncp',
+                                      regL1   = gset$regL1)
+})
+amm=update_amm(Lnow,gset,tag='cts_arb_sa',wrapped=F)
+
+Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function(ii){
+    var0_cts_lat_sa   = list(x0=c(shift2=1/2/Nmeas,scale1=0.5,scale2=.5,shift1=0),
+                             lat1 =NULL,lat2 =NULL)
+    resu_cts_lat_sa = wrapper_sweep_lattice(opt_osc_power,
+                                Nvals    = c(gset$Nmin_2lat:gset$Nmax_2lat),
+                                Nmeas    = gset$Nmeas,
+                                cts_flag = T,
+                                dvar0    = var0_cts_lat_sa,
+                                control  = ctrl_cts_lat_sa,
+                                freqs    = freqs_global,
+                                Amp      = NaN,
+                                cfuntype= 'ncp',
+                                regL1   = gset$regL1)
+})
+amm=update_amm(Lnow,gset,tag='cts_lat_sa',wrapped=T)
+
+Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function(ii){
+    var0_disc_arb_sa = sample(c(1:Nfine),Nmeas) 
+    resu_disc_arb_sa = opt_osc_power(dvar0  = var0_disc_arb_sa,
+                                control = ctrl_disc_arb_sa,
+                                freqs   = freqs_global,
+                                Amp     = NaN,
+                                tau     = tau,
+                                cfuntype= 'ncp',
+                                regL1   = gset$regL1)
+})
+amm=update_amm(Lnow,gset,tag='disc_arb_sa',wrapped=F)
+
+Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function(ii){
+    var0_disc_lat_sa = list(x0=c(dx1=1,dx2=1,xshift2=Nfine/2),N1=NULL,N2=NULL)
+    resu_disc_lat_sa = wrapper_sweep_lattice(opt_osc_power,
+                                  Nvals    = c(gset$Nmin_2lat:gset$Nmax_2lat),
+                                  Nmeas    = Nmeas,
+                                  cts_flag = F,
+                                  dvar0    = var0_disc_lat_sa,
+                                  control  = ctrl_disc_lat_sa,
+                                  freqs    = freqs_global,
+                                  Amp      = NaN,
+                                  tau      = tau,
+                                  cfuntype= 'ncp',
+                                  regL1   = gset$regL1)
+})
+amm=update_amm(Lnow,gset,tag='disc_lat_sa',wrapped=T)
+```
+
+## Save simulations
+```{r}
+tstamp = now() %>% toString() %>%
+  strsplit('\\.') %>% {.[[1]][1]} %>% 
+  str_replace(' ','__')
+outdir =paste0('results/output/Nmeas',gset$Nmeas,'/',
+               'Nfi_',gset$Nfine,
+               '_Nfr_',gset$Nfreq,
+               '_rL1_',gset$regL1,
+               '_msa_',gset$maxit_sa,
+               '_mbf_',gset$maxit_bfgs,
+               '_nrep_',gset$nrep,
+               '_batch_',tstamp)
+amm_file = paste0(outdir,'amm_all.RDS')
+gset_file = paste0(outdir,'global_settings.RDS')
+if (save_simulation){
+  dir.create(paste0('results/output/Nmeas',toString(gset$Nmeas)))
+  saveRDS(amm,amm_file)
+  saveRDS(gset,gset_file)
+}
+
+```
+# setup for plots
+```{r}
+#fnames = read.csv('figs_for_paper/fnames.csv',header = F)
+#amm_file=fnames$V1[1]
+#amm=readRDS(file = amm_file)
+#
+## get global settings
+#gset=readRDS(file=amm_file %>% str_replace('amm_all','global_settings'))
 fs_glob=9
 theme_set(theme_bw())
-
-# get global settings
-gset=readRDS(file=ammfile %>% str_replace('amm_all','global_settings'))
 
 ```
 
@@ -25,7 +266,7 @@ gset=readRDS(file=ammfile %>% str_replace('amm_all','global_settings'))
 ## Get highres power
 ```{r}
 Nmeas=dim(amm)[2]
-freqs_hd = seq(from=1,to=24,length.out=2^9)
+freqs_hd = seq(from=1,to=24,length.out=2^11)
 amm@power = NaN
 for (ii in c(1:dim(amm)[1])){
   amm@power[ii] = costfun_svdpower(amm[ii,],freqs_hd,Amp=2,alpha=.05)
@@ -95,7 +336,9 @@ mt_lat  = amm[amm@best=='best_lattice',]
 mt_arb  = amm[amm@best=='best_disc_free',] 
 
 # reg turned off because you actually want min power here
-pars$minPower= pars%>% apply(1,function(x){
+minPower= c(1:dim(pars)[1]) %>% as.list()%>%
+  mclapply(mc.cores=mc_cores,FUN=function(ii){
+  x=pars[ii,]
   if (x[['tag']]=='uniform'){
     mt_loc=mt_unif
   }else if(x[['tag']]=='best_lattice'){
@@ -107,9 +350,10 @@ pars$minPower= pars%>% apply(1,function(x){
                             freqs=freqs_hd,
                             Amp = as.numeric(x[['amp']]),
                             reg=0))
-})
-head(pars)
+}) %>% unlist()
+pars$minPower = minPower
 ```
+
 ```{r}
 p3=pars %>% ggplot(aes(x=amp,y=minPower,color=tag,group=tag))+geom_line()+
   scale_color_manual(values=c('best_lattice'='cyan','best_disc_free'='red',
@@ -121,8 +365,6 @@ p3=pars %>% ggplot(aes(x=amp,y=minPower,color=tag,group=tag))+geom_line()+
         text=element_text(size=fs_glob))+
   scale_y_continuous(limits=c(0,1),breaks=c(0,1))
 p3
-# add the power curve for each of the optimal designs
-
 ```
 
 ```{r}
@@ -134,9 +376,10 @@ pcomp=as.ggplot((pschem/(p2| (p1/p3)))+
                   )
 pcomp=pcomp+ggtitle(paste0('Nm=',Nmeas,' L1reg=',gset$regL1))
 F1=(pcomp/leg)+plot_layout(heights=c(9,1))
-F1=F1
 F1
-saveRDS(file=ammfile %>% str_replace('amm_all','fig1'),F1)
+if (save_figures){
+  saveRDS(file=amm_file %>% str_replace('amm_all','fig1'),F1)
+}
 ```
 
 # Fig 2: Benchmarking 
@@ -177,13 +420,19 @@ p1 =am %>% stack() %>% ggplot(aes(x=value,y=0,color=tag))+geom_point()+
   )+scale_x_continuous(limits=c(0,1),breaks=seq(from=0,to=1,by=.5))
 
 p1
+  
 ```
 
 
 ## Power heatmap
 ```{r}
-amps  = seq(from=.5,3,by=.1)
-freqs = seq(from=1,to=24,by=.01)
+if (sparse_heatmap){
+  amps  = seq(from=.5,3,by=1)
+  freqs = seq(from=1,to=24,by=4)
+}else{
+  amps  = seq(from=.5,3,by=.1)
+  freqs = seq(from=1,to=24,by=.01)
+}
 tag   = c('uniform','2-lattice','arbitrary')
 pars  = expand.grid(amp=amps,freq=freqs,tag=tag)
 minPower = rep(NaN,dim(pars)[1])
@@ -219,15 +468,22 @@ p2
 
 ## Benchmark: worst-case FDR heatmap
 ```{r}
-load_all()
-Nmc=5e2
-Nacro=2^5
-Nfreq=2^5
 fmin=1
 fmax=23.9
 
-amps  = seq(from=.5,to=3,length.out=2^4)
-freqs = seq(from=1,to=24,length.out=2^4)
+if (sparse_heatmap){
+  Nmc=1e2
+  NacroFDR=2^3
+  NfreqFDR=2^3
+  amps  = seq(from=.5,to=3,length.out=2^2)
+  freqs = seq(from=1,to=24,length.out=2^2)
+}else{
+  Nmc=5e2
+  NacroFDR=2^5
+  NfreqFDR=2^5
+  amps  = seq(from=.5,to=3,length.out=2^4)
+  freqs = seq(from=1,to=24,length.out=2^4)
+}
 tag   = c('uniform','2-lattice','arbitrary')
 fdrs = expand.grid(amp=amps,freq=freqs,tag=tag)
 minFDR = replicate(dim(fdrs)[1],{NaN})
@@ -245,8 +501,8 @@ minFDR= c(1:dim(fdrs)[1]) %>% as.list() %>% mclapply(function(ii){
                             f0    = as.numeric(x[['freq']]),
                             Amp   = as.numeric(x[['amp']]),
                             Nmc   = Nmc,
-                            Nacro = Nacro,
-                            Nfreq = Nfreq,
+                            Nacro = NacroFDR,
+                            Nfreq = NfreqFDR,
                             fmin  = fmin,
                             fmax  = fmax)
            )
@@ -264,7 +520,6 @@ p3=fdrs %>% ggplot(aes(x=amp,y=freq,fill=minFDR))+geom_tile()+facet_wrap(~tag)+
   theme(strip.background=element_blank(),
     text=element_text(size=fs_glob))
 p3
-
 ```
 
 
@@ -280,38 +535,15 @@ p3
 
 ## Combine figs
 ```{r}
-F2=( p1/p2/p3 )+ggtitle(paste0('Nm=',Nmeas,' L1reg=',gset$regL1)) +plot_annotation(tag_levels='A')
-saveRDS(file=ammfile %>% str_replace('amm_all','fig2'),F2)
+pcomp= (p1/p2/p3)+plot_annotation(tag_levels='A')
+pcomp=as.ggplot(pcomp)+ggtitle(paste0('Nm=',Nmeas,' L1reg=',gset$regL1))
+pcomp
+F2=pcomp
+if (save_figures){
+  saveRDS(file=amm_file %>% str_replace('amm_all','fig2'),F2)
+}
 ```
 
-# Random
-## Benchmark: mean FDR power estimate
 ```{r}
-#load_all()
-#start=Sys.time()
-#tags = c('uniform','2-lattice','arbitrary')
-#fam=NULL
-#for (tag in tags){
-#  if (tag=='uniform'){
-#    mt_loc=mt_unif
-#  }else if(tag=='2-lattice'){
-#    mt_loc=mt_lat
-#  }else if(tag=='arbitrary'){
-#    mt_loc=mt_arb
-#  }
-#  res = benchmark_fdr(mt=mt_loc,
-#                Nmc=1e3,
-#                fmin=1,fmax=23.9,Nfreq_regr_vals=c(2^5),
-#                Ampvals=seq(from=1,to=3,by=.2),
-#                true_freq_vals=seq(from=5,to=11,length.out=30),
-#                pmethod='BY')
-#  res$tag = tag
-#  fam=rbind(fam,res)
-#}
-#end=Sys.time()
-#dim(fam)
-#head(fam)
-#
-#fam %>% ggplot(aes(x=Amp,y=pdetect_q,group=true_freq,color=true_freq))+geom_line()+facet_wrap(~tag,ncol=3)+scale_color_viridis_b()+ylim(c(0,1))
-end-start
+F1 | F2
 ```

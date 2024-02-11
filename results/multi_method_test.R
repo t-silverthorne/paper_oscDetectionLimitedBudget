@@ -15,7 +15,7 @@ optim_now=function(gset){
   tstamp = now() %>% toString() %>%
     strsplit('\\.') %>% {.[[1]][1]} %>% 
     str_replace(' ','__')
-  dir.create(paste0('results/output/Nmeas',gset$Nmeas))
+  dir.create(paste0('results/output/Nmeas',toString(gset$Nmeas)))
   
   
   extract_info_from_result=function(res,tag,Nmeas=gset$Nmeas,runtime_tot,...){
@@ -25,6 +25,9 @@ optim_now=function(gset){
       runtime=runtime_tot %>% lubridate::as.duration() %>% as.numeric()
     }else{
       runtime=res$runtime %>% lubridate::as.duration() %>% as.numeric()
+    }
+    if (length(res$mtvalue)<Nmeas){
+      stop('degenerate measurement times')
     }
     return(annmatrix(
                  x = matrix(sort(res$mtvalue),nrow=1),
@@ -167,7 +170,7 @@ optim_now=function(gset){
                                     Amp     = Amp_global,
                                     tau     = tau,
                                     cfuntype= 'ncp',
-                                    regL1   = gset$regL1,)
+                                    regL1   = gset$regL1)
     resu_disc_lat_sa = wrapper_sweep_lattice(opt_osc_power,
                                     Nvals    = c(gset$Nmin_2lat:gset$Nmax_2lat),
                                     Nmeas    = Nmeas,
@@ -211,14 +214,14 @@ gset = list(
   trace_global      = 1,
   report_global     = 1,
   maxit_sa          = 1e3,
-  maxit_bfgs        = 10, 
+  maxit_bfgs        = 1, 
   Amp_global        = 2,
   timelimit_by_bfgs = T,
   Nmin_2lat         = 4,
   Nmax_2lat         = 12,
   nrep              = 20,
   regL1             = 0,
-  gset_save         = T
+  gset_save         = F
 )
 
 for (Nmeas in seq(16)){
