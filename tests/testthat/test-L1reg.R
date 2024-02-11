@@ -1,4 +1,5 @@
 require(devtools)
+require(CVXR)
 test_that("L1 regularization has effect on continuous", {
   mt0=c(1:10)/10 - 1/10
   freqs=seq(from=1,to=24,length.out=24)
@@ -23,6 +24,7 @@ test_that("L1 regularization has effect on continuous", {
 test_that('L1 regularization has effect on CVXR',{
   Nmeas=20
   Nfine = 2^5 
+  freqs=seq(from=1,to=24,length.out=24)
   Amp_global = 2
   load_all()
   freqs_global  = seq(from=1,to=24,length.out=8)

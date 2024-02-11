@@ -11,7 +11,7 @@ if (control$optim_method=='simul_anneal'){
     if (any(is.na(x))){
       stop('NA value in meastimes')
     }else{
-      return(costfun_2lattice_svdpower_discrete(N1=N1,dx1=x[1],N2=N2,
+      return(-costfun_2lattice_svdpower_discrete(N1=N1,dx1=x[1],N2=N2,
                                                   dx2=x[2],xshift2=x[3],
                                                   tau=tau,freqs=freqs,
                                                   Amp=Amp,alpha=alpha,...))
