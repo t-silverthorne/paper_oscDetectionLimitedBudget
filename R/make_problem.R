@@ -17,7 +17,7 @@
 #'  
 #' @author Turner Silverthorne
 #' @export
-make_problem=function(x,Aquad,opts,regL1=0){
+make_problem=function(x,Aquad,opts,regL1=0,...){
   # get mean of quad mats and convert to CVXR type
   Amean = 0
   for (ii in c(1:length(Aquad))){

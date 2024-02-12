@@ -13,17 +13,17 @@ test_that("function evaluation", {
                REPORT=1,
                maxit=1)
   x0=c(shift1=shift1,shift2=shift2,scale1=scale1,scale2=scale2)
-  xout=opt_osc_power(dvar0=list(x0=x0,lat1=lat1,lat2=lat2),freqs,Amp,control)
-  expect_gt(xout$fvalue,0)
-  expect_lt(xout$fvalue,1)
+  xout=opt_osc_power(dvar0=list(x0=x0,lat1=lat1,lat2=lat2),freqs=freqs,control=control,Amp=Amp)
+  expect_gt(-xout$fvalue,0)
+  expect_lt(-xout$fvalue,1)
  
   control$optim_method ='simul_anneal' 
   control$maxit        = 50
   control$tfun_choice  = 'unif-with-bdry'
   control$tscale_unif_with_bdry=1/10
   x0=c(shift1=shift1,shift2=shift2,scale1=scale1,scale2=scale2)
-  xout=opt_osc_power(dvar0=list(x0=x0,lat1=lat1,lat2=lat2),freqs,Amp,control)
-  expect_gt(xout$fvalue,0)
-  expect_lt(xout$fvalue,1)
+  xout=opt_osc_power(dvar0=list(x0=x0,lat1=lat1,lat2=lat2),freqs=freqs,control=control,Amp=Amp)
+  expect_gt(-xout$fvalue,0)
+  expect_lt(-xout$fvalue,1)
   
 })

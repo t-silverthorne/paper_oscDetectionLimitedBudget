@@ -14,8 +14,8 @@ test_that("function evaluation", {
                trace          = 0,
                REPORT         = 1,
                maxit          = 50)
-  xout=opt_osc_power(dvar0=dvar0,freqs=freqs,Amp=2,control=control,tau=tau)
+  xout=opt_osc_power(dvar0=dvar0,freqs=freqs,control=control,tau=tau)
 
-  expect_gt(xout$fvalue,0)
-  expect_lt(xout$fvalue,1)
+  expect_gt(-xout$fvalue,0)
+  expect_lt(-xout$fvalue,1)
 })

@@ -10,11 +10,11 @@ test_that("L1 regularization has effect on continuous", {
                REPORT=1,
                maxit=5)
   set.seed(1)
-  uu=opt_osc_power(mt0,freqs,Amp,control,regL1=0)
+  uu=opt_osc_power(mt0,freqs,control,regL1=0,Amp=Amp)
   set.seed(1)
-  vv=opt_osc_power(mt0,freqs,Amp,control,regL1=0)
+  vv=opt_osc_power(mt0,freqs,control,regL1=0,Amp=Amp)
   set.seed(1)
-  ww=opt_osc_power(mt0,freqs,Amp,control,regL1=10)
+  ww=opt_osc_power(mt0,freqs,control,regL1=10,Amp=Amp)
   
   expect_equal(uu$mtvalue,vv$mtvalue)
   expect_equal(sum((uu$mtvalue-vv$mtvalue)^2),0)
@@ -26,7 +26,6 @@ test_that('L1 regularization has effect on CVXR',{
   Nfine = 2^5 
   freqs=seq(from=1,to=24,length.out=24)
   Amp_global = 2
-  load_all()
   freqs_global  = seq(from=1,to=24,length.out=8)
   tau = c(1:Nfine)/Nfine -1/Nfine
   ctrl_disc_arb_cvxr = list(costfun_choice='svdpower_discrete',

@@ -14,26 +14,26 @@ theme_set(theme_bw())
 fs_glob=9
 pmaster=NULL
 
-for (jj in c(1:10)){
-  pars = expand.grid(Amp=c(3),cfun=c('ncp','power'),Nfreq=2^c(6:12),regL1=c(0,1))
-  Nmeas=30
-  mt=runif(Nmeas)
-  pars$fval = c(1:dim(pars)[1]) %>% as.list() %>% mclapply(function(ii){
-    x=pars[ii,]
-    costfun_svdpower(mt=mt,
-                     freqs=seq(from=1,to=24,
-                               length.out=x[['Nfreq']]),
-                     Amp=x[['Amp']],
-                     cfuntype=x[['cfun']])
-  }) %>% unlist()
-  pars$id = jj 
-  pmaster=rbind(pmaster,pars)
-}
-require(dplyr)
-pmaster$mfval=pmaster[,c('fval','Amp','cfun','regL1','id')] %>% group_by(Amp,cfun,regL1,id) %>% mutate(mfval=min(fval)) %>% {.$mfval}
-
-pmaster$nfval = (pmaster$fval-pmaster$mfval)/pmaster$mfval
-pmaster%>% ggplot(aes(x=Nfreq,y=nfval,group=id))+geom_line()+facet_wrap(cfun~regL1,scales='free')+scale_x_continuous(trans='log2')
+#for (jj in c(1:10)){
+#  pars = expand.grid(Amp=c(3),cfun=c('ncp','power'),Nfreq=2^c(6:12),regL1=c(0,1))
+#  Nmeas=30
+#  mt=runif(Nmeas)
+#  pars$fval = c(1:dim(pars)[1]) %>% as.list() %>% mclapply(function(ii){
+#    x=pars[ii,]
+#    costfun_svdpower(mt=mt,
+#                     freqs=seq(from=1,to=24,
+#                               length.out=x[['Nfreq']]),
+#                     Amp=x[['Amp']],
+#                     cfuntype=x[['cfun']])
+#  }) %>% unlist()
+#  pars$id = jj 
+#  pmaster=rbind(pmaster,pars)
+#}
+#require(dplyr)
+#pmaster$mfval=pmaster[,c('fval','Amp','cfun','regL1','id')] %>% group_by(Amp,cfun,regL1,id) %>% mutate(mfval=min(fval)) %>% {.$mfval}
+#
+#pmaster$nfval = (pmaster$fval-pmaster$mfval)/pmaster$mfval
+#pmaster%>% ggplot(aes(x=Nfreq,y=nfval,group=id))+geom_line()+facet_wrap(cfun~regL1,scales='free')+scale_x_continuous(trans='log2')
   
 ```
 
@@ -41,24 +41,24 @@ pmaster%>% ggplot(aes(x=Nfreq,y=nfval,group=id))+geom_line()+facet_wrap(cfun~reg
 # Landscape for different N1,N2 values
 ```{r}
 start=Sys.time()
-Nland=20
+Nland=30
 Nfreq=2^9
 Nmeas=16
 freqs=seq(from=1,to=24,length.out=Nfreq)
-logscale=F
+logscale=T
 if (logscale){
   scale1=10^{seq(from=-2,to=0,length.out=Nland)}
   scale2=10^{seq(from=-2,to=0,length.out=Nland)}
   shift2=10^{seq(from=-2,to=0,length.out=Nland)}
 }else{
-  scale1=seq(from=0.1,to=1,length.out=Nland)
-  scale2=seq(from=0.1,to=1,length.out=Nland)
-  shift2=seq(from=0.1,to=1,length.out=Nland)
+  #scale1=seq(from=0.01,to=1,length.out=Nland)
+  #scale2=seq(from=0.01,to=1,length.out=Nland)
+  #shift2=seq(from=0.01,to=1,length.out=Nland)
 }
 N1vals=seq(from=floor(Nmeas/4),to=3*floor(Nmeas/4))
 
 pars=expand.grid(scale1=scale1,scale2=scale2,shift2=shift2,
-                 N1=N1vals,regL1=c(0))
+                 N1=N1vals,regL1=c(0,1))
 
 
 vals=c(1:dim(pars)[1]) %>% as.list() %>% mclapply(mc.cores=10,FUN=function(ii){
@@ -95,9 +95,9 @@ df=c(1:dim(pars)[1]) %>% as.list() %>% mclapply(mc.cores=10,FUN=function(ii){
 }) %>% rbindlist()
 
 df %>% head()
-p1=df[df$regL1==0,] %>% ggplot(aes(x=x,y=y,fill=value))+geom_tile()+facet_grid(N1~tag)+scale_fill_viridis_c()#+scale_x_continuous(trans='log10')+scale_y_continuous(trans='log10')
+p1=df[df$regL1==0,] %>% ggplot(aes(x=x,y=y,fill=value))+geom_tile()+facet_grid(N1~tag)+scale_fill_viridis_c()+scale_x_continuous(trans='log10')+scale_y_continuous(trans='log10')
 
-p2=df[df$regL1>0,] %>% ggplot(aes(x=x,y=y,fill=value))+geom_tile()+facet_grid(N1~tag)+scale_fill_viridis_c()#+scale_x_continuous(trans='log10')+scale_y_continuous(trans='log10')
+p2=df[df$regL1>0,] %>% ggplot(aes(x=x,y=y,fill=value))+geom_tile()+facet_grid(N1~tag)+scale_fill_viridis_c()+scale_x_continuous(trans='log10')+scale_y_continuous(trans='log10')
 
 p1|p2
 end=Sys.time()

@@ -1,6 +1,8 @@
 
 # Setup for simulation
-```{r}
+```{r setup-simulation}
+rm(list=ls())
+#.rs.restartR()
 run_simulation  = T # TODO: currently ignored
 save_simulation = T # TODO: currently ignored
 run_figures     = T
@@ -9,23 +11,23 @@ sparse_heatmap  = F
 mc_cores=10
 gset = list(
   Nmeas             = 16,
-  Nfreq             = 2^10,
+  Nfreq             = 2^8,
   nfreq_cvxr        = 2^8,
   Nfine             = 288,
   trace_global      = 0,
   report_global     = 1,
-  maxit_sa          = 1e2,#1e3,
-  maxit_bfgs        = 1,#10, 
-  timelimit_cvxr    = 60,
+  maxit_sa          = 5e2,
+  maxit_bfgs        = 10, 
+  timelimit_cvxr    = 'bfgs',
   Amp_global        = NaN,
   Nmin_2lat         = 4,
   Nmax_2lat         = 12,
   nrep              = 20,
-  regL1             = 0
+  regL1             = 1 
 )
 ```
 
-```{r}
+```{r setup-simulation-2}
 require(devtools)
 require(ggplot2)
 require(annmatrix)
@@ -77,7 +79,7 @@ ctrl_disc_arb_cvxr = list(costfun_choice='svdpower_discrete',
             maxit=1e9,time_limit=gset$timelimit_cvxr,MIPGapAbs=.01,
             cvxr_verbose=T,costfun_type='Linfty',
             fmin=min(freqs_global),
-            fmax=max(freqs_global),Nfreq=length(freqs_global),
+            fmax=max(freqs_global),Nfreq=gset$nfreq_cvxr,
             lattice_cstr='none',Nfine=Nfine,Nmeas=Nmeas,
             trace=trace_global,REPORT=report_global)
 
@@ -125,7 +127,7 @@ amm=NULL
 
 # Run the stats
 ## BFGS
-```{r}
+```{r bfgs}
 Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function(ii){
   var0_cts_arb_bfgs = runif(gset$Nmeas)
   resu_cts_arb_bfgs = opt_osc_power(dvar0    = var0_cts_arb_bfgs, 
@@ -156,8 +158,9 @@ amm=update_amm(Lnow,gset,tag='cts_lat_bfgs',wrapped=T)
 ```
 
 ## CVXR
-```{r}
+```{r cvxr}
 freqs_cvxr=seq(from=1,to=24,length.out=gset$nfreq_cvxr)
+ctrl_disc_arb_cvxr$time_limit =median(amm@runtime)#60
 res = opt_osc_power(dvar0  = NULL,
              control = ctrl_disc_arb_cvxr,
              freqs   = freqs_cvxr,
@@ -169,7 +172,7 @@ amm     = rbind(amm,cvxr_am)
 ```
 
 ## Simulated annealing
-```{r}
+```{r annealing}
 Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function(ii){
   var0_cts_arb_sa   = runif(gset$Nmeas) 
   opt_osc_power(dvar0  = var0_cts_arb_sa,
@@ -227,7 +230,7 @@ amm=update_amm(Lnow,gset,tag='disc_lat_sa',wrapped=T)
 ```
 
 ## Save simulations
-```{r}
+```{r save-sims}
 tstamp = now() %>% toString() %>%
   strsplit('\\.') %>% {.[[1]][1]} %>% 
   str_replace(' ','__')
@@ -249,7 +252,7 @@ if (save_simulation){
 
 ```
 # setup for plots
-```{r}
+```{r setup-plots}
 #fnames = read.csv('figs_for_paper/fnames.csv',header = F)
 #amm_file=fnames$V1[1]
 #amm=readRDS(file = amm_file)
@@ -264,7 +267,7 @@ theme_set(theme_bw())
 # Fig 1: Comparison of solvers
 
 ## Get highres power
-```{r}
+```{r highres-power}
 Nmeas=dim(amm)[2]
 freqs_hd = seq(from=1,to=24,length.out=2^11)
 amm@power = NaN
@@ -275,7 +278,7 @@ for (ii in c(1:dim(amm)[1])){
 
 ## Plot best of each type
 2 lattice, arbitrary, discrete, uniform
-```{r}
+```{r plot-best}
 amm@best='none'
 pmax=amm[amm@lattice=='lat',] %>% {.@power} %>% max()
 amm@best[amm@power==pmax & amm@lattice=='lat']='best_lattice'
@@ -301,7 +304,7 @@ p1
 ```
 
 ## Runtime vs performance
-```{r}
+```{r runtime-perf}
 p2=amm@'' %>% ggplot(aes(x=power,y=runtime))+
   geom_point(aes(shape=factor(lattice,c('arb','lat'),c('none','2-lattice')),
                  color=factor(solver,c('cvxr','bfgs','sa'),c('DCP','BFGS','annealing'))),size=1)+
@@ -325,7 +328,7 @@ p2=p2+theme(legend.position='none',
 ```
 
 ## Power values
-```{r}
+```{r power-curve}
 amps=seq(from=0,to=3,by=.1)
 freqs_sparse=seq(from=1,to=24,by=1)
 tag   = c('uniform','best_disc_free','best_lattice')
@@ -354,7 +357,7 @@ minPower= c(1:dim(pars)[1]) %>% as.list()%>%
 pars$minPower = minPower
 ```
 
-```{r}
+```{r combine-F1}
 p3=pars %>% ggplot(aes(x=amp,y=minPower,color=tag,group=tag))+geom_line()+
   scale_color_manual(values=c('best_lattice'='cyan','best_disc_free'='red',
                               'uniform'='black'))+
@@ -367,7 +370,7 @@ p3=pars %>% ggplot(aes(x=amp,y=minPower,color=tag,group=tag))+geom_line()+
 p3
 ```
 
-```{r}
+```{r save-F1}
 pschem = as.ggplot(plot_spacer())+theme(
   text=element_text(size=fs_glob))
 pcomp=as.ggplot((pschem/(p2| (p1/p3)))+
@@ -384,7 +387,7 @@ if (save_figures){
 
 # Fig 2: Benchmarking 
 ## Load designs
-```{r}
+```{r prep-F2}
 mt_unif = c(1:Nmeas)/Nmeas - 1/Nmeas
 mt_lat  = amm[amm@best=='best_lattice',] 
 mt_arb  = amm[amm@best=='best_disc_free',] 
@@ -400,7 +403,7 @@ am = rbind(am1,am2,am3)
 ```
 
 ## Plot of actual sampling strategies
-```{r}
+```{r sampling-F2}
 am@tag = factor(am@tag,levels=c('uniform','2-lattice','arbitrary'))
 
 colors=c('arbitrary'        = '#F57600',
@@ -425,7 +428,7 @@ p1
 
 
 ## Power heatmap
-```{r}
+```{r power-heatmap}
 if (sparse_heatmap){
   amps  = seq(from=.5,3,by=1)
   freqs = seq(from=1,to=24,by=4)
@@ -467,7 +470,7 @@ p2
 
 
 ## Benchmark: worst-case FDR heatmap
-```{r}
+```{r FDR-heatmap}
 fmin=1
 fmax=23.9
 
@@ -534,7 +537,7 @@ p3
 ```
 
 ## Combine figs
-```{r}
+```{r combine-F2}
 pcomp= (p1/p2/p3)+plot_annotation(tag_levels='A')
 pcomp=as.ggplot(pcomp)+ggtitle(paste0('Nm=',Nmeas,' L1reg=',gset$regL1))
 pcomp
@@ -544,6 +547,6 @@ if (save_figures){
 }
 ```
 
-```{r}
+```{r F1-F2}
 F1 | F2
 ```

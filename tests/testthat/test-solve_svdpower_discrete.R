@@ -12,9 +12,9 @@ test_that("function eval", {
                trace=1,
                REPORT=1,
                maxit=2)
-  xout=opt_osc_power(dvar0=xinds,freqs=freqs,Amp=Amp,control=control,tau=tau)
-  expect_gt(xout$fvalue,0)
-  expect_lt(xout$fvalue,1)
+  xout=opt_osc_power(dvar0=xinds,freqs=freqs,control=control,tau=tau,Amp=Amp)
+  expect_gt(-xout$fvalue,0)
+  expect_lt(-xout$fvalue,1)
   
   library(CVXR)
   library(gurobi)
@@ -29,7 +29,7 @@ test_that("function eval", {
                lattice_cstr='none',
                Nfine=2^4,Nmeas=16)#TODO: find out why Nfine=2^5 gives NA
   xout=opt_osc_power(dvar0=xinds,freqs=freqs,Amp=Amp,control=control,tau=tau)
-  expect_gt(xout$fvalue,0)
-  expect_lt(xout$fvalue,1)
+  expect_gt(-xout$fvalue,0)
+  expect_lt(-xout$fvalue,1)
   
 })

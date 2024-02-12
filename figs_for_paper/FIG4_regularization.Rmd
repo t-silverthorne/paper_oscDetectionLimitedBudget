@@ -15,8 +15,8 @@ load_all()
 theme_set(theme_bw())
 fs_glob=9
 
-L1vals = c(0,0.5)
-Nmvals = c(16,24) 
+L1vals = c(0,1)
+Nmvals = c(16) 
 
 pars = expand.grid(regL1=L1vals,Nmeas=Nmvals)
 ```

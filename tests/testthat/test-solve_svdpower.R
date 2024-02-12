@@ -7,9 +7,9 @@ test_that("function evaluation", {
                trace=0,#normally 6 if you want output
                REPORT=1,
                maxit=1)
-  uu=opt_osc_power(mt0,freqs,Amp,control)
-  expect_gt(uu$fvalue,0)
-  expect_lt(uu$fvalue,1)
+  uu=opt_osc_power(dvar0=mt0,freqs=freqs,control=control)
+  expect_gt(-uu$fvalue,0)
+  expect_lt(-uu$fvalue,1)
   
   control=list(costfun_choice='svdpower',
                optim_method='simul_anneal',
@@ -19,7 +19,7 @@ test_that("function evaluation", {
                trace=0,# make high if you want output
                REPORT=1,
                maxit=5)
-  uu=opt_osc_power(mt0,freqs,Amp,control)
-  expect_gt(uu$fvalue,0)
-  expect_lt(uu$fvalue,1)
+  uu=opt_osc_power(dvar0=mt0,freqs=freqs,control=control)
+  expect_gt(-uu$fvalue,0)
+  expect_lt(-uu$fvalue,1)
 })
