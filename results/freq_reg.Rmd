@@ -1,0 +1,133 @@
+```{r setup-simulation}
+rm(list=ls())
+#.rs.restartR()
+run_simulation  = T # TODO: currently ignored
+save_simulation = T # TODO: currently ignored
+run_figures     = T
+save_figures    = T
+sparse_heatmap  = F
+mc_cores=10
+gset = list(
+  Nmeas             = 20,
+  Nfreq             = 2^8,
+  nfreq_cvxr        = 2^8,
+  Nfine             = 288,
+  trace_global      = 0,
+  report_global     = 1,
+  maxit_sa          = 5e2,
+  maxit_bfgs        = 10, 
+  timelimit_cvxr    = 'bfgs',
+  Amp_global        = NaN,
+  Nmin_2lat         = 8,
+  Nmax_2lat         = 12,
+  nrep              = 10,
+  regL1             = 0
+)
+require(devtools)
+require(ggplot2)
+require(annmatrix)
+require(ggplotify)
+require(patchwork)
+require(parallel)
+require(data.table)
+require(stringr)
+require(CVXR)
+source('plotConfig.R')
+load_all()
+freqs_global  = seq(from=1,to=24,length.out=gset$Nfreq)
+
+Nmeas         = gset$Nmeas
+Nfreq         = gset$Nfreq
+Nfine         = gset$Nfine        
+trace_global  = gset$trace_global  
+report_global = gset$report_global
+maxit_sa      = gset$maxit_sa
+maxit_bfgs    = gset$maxit_bfgs
+Amp_global    = gset$Amp_global
+
+
+ctrl_cts_lat_sa   = list(costfun_choice = 'svdpower_2lattice',
+            optim_method = 'simul_anneal',
+            tfun_choice  = 'unif-with-bdry',tscale_unif_with_bdry=1,
+            trace=trace_global,REPORT=report_global,maxit=maxit_sa)
+```
+
+```{r}
+amm=NULL
+Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function(ii){
+    var0_cts_lat_sa   = list(x0=c(shift2=1/2,scale1=0.5,scale2=.5,shift1=0),
+                             lat1 =NULL,lat2 =NULL)
+    resu_cts_lat_sa = wrapper_sweep_lattice(opt_osc_power,
+                                Nvals    = c(gset$Nmin_2lat:gset$Nmax_2lat),
+                                Nmeas    = gset$Nmeas,
+                                cts_flag = T,
+                                dvar0    = var0_cts_lat_sa,
+                                control  = ctrl_cts_lat_sa,
+                                freqs    = freqs_global,
+                                Amp      = NaN,
+                                cfuntype= 'ncp',
+                                regL1   = gset$regL1,
+                                regFder = 0)
+})
+amm=helper_update_amm(amm,Lnow,gset,tag='cts_lat_sa',wrapped=T)
+amm@regFder=0
+
+
+ammF=NULL
+Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function(ii){
+    var0_cts_lat_sa   = list(x0=c(shift2=1/2/Nmeas,scale1=0.5,scale2=.5,shift1=0),
+                             lat1 =NULL,lat2 =NULL)
+    resu_cts_lat_sa = wrapper_sweep_lattice(opt_osc_power,
+                                Nvals    = c(gset$Nmin_2lat:gset$Nmax_2lat),
+                                Nmeas    = gset$Nmeas,
+                                cts_flag = T,
+                                dvar0    = var0_cts_lat_sa,
+                                control  = ctrl_cts_lat_sa,
+                                freqs    = freqs_global,
+                                Amp      = NaN,
+                                cfuntype= 'ncp',
+                                regL1   = .5,
+                                regFder = .5)
+})
+ammF=helper_update_amm(ammF,Lnow,gset,tag='cts_lat_sa',wrapped=T)
+ammF@regFder=1
+
+ammtot=rbind(amm,ammF)
+
+ammtot %>% stack() %>% ggplot(aes(x=value,y=power))+geom_point()+facet_wrap(~regFder)+xlim(c(0,1))
+```
+
+Trying to interpret what regularization is doing
+```{r}
+Nmeas_vals=c(20,50)
+freqs_global  = seq(from=1,to=24,length.out=2^10)
+Nsh=2^8
+
+df_full =NULL
+scvals=c(0.5,1)
+for (sc1 in scvals){
+  for (Nmeas in Nmeas_vals){
+    n1=Nmeas/2
+    n2=Nmeas-n1
+    lat1=c(1:n1)/n1-1/n1
+    lat2=c(1:n2)/n2-1/n2
+    
+    scale1= sc1 
+    scale2=.5
+    
+    shvals = seq(from=0,to=1,length.out=Nsh)
+    
+    cvals = shvals %>% sapply(function(sh){costfun_2lattice_svdpower(0,sh,scale1,scale2,lat1,lat2,freqs=freqs_global,
+                              cfuntype='ncp',regFder=0)})
+    
+    cfvals = shvals %>% sapply(function(sh){costfun_2lattice_svdpower(0,sh,scale1,scale2,lat1,lat2,freqs=freqs_global,
+                              cfuntype='ncp',regFder=1)})
+    
+    df=data.frame(x=shvals,y=cvals,reg=F,Nmeas=Nmeas,scale1=sc1)
+    dfreg=data.frame(x=shvals,y=cfvals,reg=T,Nmeas=Nmeas,scale1=sc1)
+    df_full=rbind(df_full,df,dfreg) 
+  }
+}
+df_full %>% ggplot(aes(x=x,y=y,group=reg,color=reg))+geom_line()+facet_wrap(scale1~Nmeas)
+
+```

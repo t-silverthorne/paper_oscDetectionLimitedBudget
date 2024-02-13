@@ -33,14 +33,21 @@ make_problem=function(x,Aquad,opts,regL1=0,regFder=0,...){
            function(ind){
              paste0('quad_form(x,Aquad[[',ind,']])')
            }),collapse=',')
-    if (regL1==0){
-      strp=paste0('prob=Problem(Minimize(max_elemwise(',big_str,')),csts)')
-    }else if(regL1>0){
+   
+    str_prefix='prob=Problem(Minimize('
+    str_suffix=paste0('max_elemwise(',big_str,')),csts)')
+    
+    if(regL1>0){
       regL1 = Constant(regL1)  
-      strp=paste0('prob=Problem(Minimize(regL1*quad_form(x,Amean)+max_elemwise(',big_str,')),csts)')
-    }else{
-      stop('invalid regL1, must be non-negative')
+      str_prefix=paste0(str_prefix,'regL1*quad_form(x,Amean)+')
     }
+    if(regFder>0){
+      stop('freq regularization not yet implemented for CVXR')
+      #regL1 = Constant(regFder)  
+      #str_prefix=paste0(str_prefix,'regFder*quad_form(x,dAdFreq_L2)+')
+    }
+    
+    strp=paset0(str_prefix,str_suffix)
     eval(parse(text=strp))
   }else{
     stop('unrecognized opts$lattice_str or opts$solver_type')

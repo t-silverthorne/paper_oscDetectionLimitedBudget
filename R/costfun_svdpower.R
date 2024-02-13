@@ -1,9 +1,11 @@
 #' Helper function for continuous power optimization
 #' @export
-costfun_svdpower=function(mt,freqs,Amp=1,alpha=.05,regL1=0,cfuntype='power'){
+costfun_svdpower=function(mt,freqs,Amp=1,alpha=.05,regL1=0,regFder=0,cfuntype='power'){
   N   = length(mt)
   f0  = qf(p=1-alpha,df1=2,df2=N-3)
-
+  if (regFder!=0 & cfuntype=='power'){
+    stop('Use cfuntype=ncp, frequency regularization for power has not been implemented.')
+  }
   # depending on cfuntype, return non-centrality parameter or power
   if (cfuntype=='ncp'){
     cvals = freqs %>% sapply(function(freq){
@@ -18,10 +20,16 @@ costfun_svdpower=function(mt,freqs,Amp=1,alpha=.05,regL1=0,cfuntype='power'){
   }else{
     stop('unknown cfuntype')
   }
+  cval = min(cvals)
   if (regL1>0){
-    cval = min(cvals)+regL1*mean(cvals)  
-  }else{
-    cval = min(cvals)
+    cval = cval+regL1*mean(cvals)  
+  }
+  
+  if (regFder>0){
+    dlambda_dfreq = freqs %>% sapply(function(freq){deig_dfreq(mt,freq)}) %>% abs() %>% mean() 
+    #dlambda_dfreq = freqs %>% sapply(function(freq){deig_dfreq(mt,freq)}) %>% {.^2} %>% sum()
+    #dlambda_dfreq = sqrt(dlambda_dfreq/length(freqs))
+    cval = cval-regFder*dlambda_dfreq
   }
   return(cval)
 }

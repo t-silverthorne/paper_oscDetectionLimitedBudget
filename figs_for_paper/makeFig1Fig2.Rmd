@@ -88,40 +88,6 @@ ctrl_disc_lat_sa = list(costfun_choice = 'svdpower_2lattice_discrete',
              tfun_choice    = 'unif-with-bdry-discrete',tscale= 2,
              trace=trace_global,REPORT=report_global,maxit=maxit_sa)
 
-extract_info_from_result=function(res,tag,Nmeas=gset$Nmeas,runtime_tot,...){
-  tagsp=strsplit(tag,'_')
-  if(hasArg('runtime_tot')){
-    # lubridate ensures that units are always in seconds
-    runtime=runtime_tot %>% lubridate::as.duration() %>% as.numeric()
-  }else{
-    runtime=res$runtime %>% lubridate::as.duration() %>% as.numeric()
-  }
-  if (length(res$mtvalue)<Nmeas){
-    stop('degenerate measurement times')
-  }
-  return(annmatrix(
-               x = matrix(sort(res$mtvalue),nrow=1),
-            rann = data.frame(power   = 1-res$fvalue,
-                              runtime = runtime,
-                              tag     = tag,
-                              cts     = tagsp[[1]][1],
-                              lattice = tagsp[[1]][2],
-                              solver  = tagsp[[1]][3]),
-            cann = data.frame(time=c(1:Nmeas))))
-}
-
-update_amm=function(Lnow,gset,tag,wrapped=F){
-  for (ii in c(1:gset$nrep)){
-    res = Lnow[[ii]]
-    if (wrapped){
-      amm = rbind(amm,extract_info_from_result(res=res$res_best,tag=tag,
-                                               runtime_tot=res$time_tot)) 
-    }else{
-      amm = rbind(amm,extract_info_from_result(res=res,tag=tag)) 
-    }
-  }
-  return(amm)  
-}
 amm=NULL
 ```
 
@@ -137,7 +103,7 @@ Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function
                                     cfuntype = 'ncp',
                                     regL1    = gset$regL1)
 })
-amm=update_amm(Lnow,gset,tag='cts_arb_bfgs',wrapped=F)
+amm=helper_helper_update_amm(amm,Lnow,gset,tag='cts_arb_bfgs',wrapped=F)
 
 Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function(ii){
   var0_cts_lat_bfgs = list(x0=c(shift2=runif(1),scale1=0.5,scale2=.5,shift1=0),
@@ -153,7 +119,7 @@ Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function
                                     cfuntype= 'ncp',
                                     regL1    = gset$regL1)  )
 })
-amm=update_amm(Lnow,gset,tag='cts_lat_bfgs',wrapped=T)
+amm=helper_helper_update_amm(amm,Lnow,gset,tag='cts_lat_bfgs',wrapped=T)
 
 ```
 
@@ -167,7 +133,7 @@ res = opt_osc_power(dvar0  = NULL,
              Amp     = NaN,
              tau     = tau,
              regL1   = gset$regL1)
-cvxr_am = extract_info_from_result(res,'disc_arb_cvxr',gset$Nmeas)
+cvxr_am = helper_extract_info_from_result(res,'disc_arb_cvxr',gset$Nmeas)
 amm     = rbind(amm,cvxr_am)
 ```
 
@@ -182,7 +148,7 @@ Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function
                                       cfuntype= 'ncp',
                                       regL1   = gset$regL1)
 })
-amm=update_amm(Lnow,gset,tag='cts_arb_sa',wrapped=F)
+amm=helper_helper_update_amm(amm,Lnow,gset,tag='cts_arb_sa',wrapped=F)
 
 Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function(ii){
     var0_cts_lat_sa   = list(x0=c(shift2=1/2/Nmeas,scale1=0.5,scale2=.5,shift1=0),
@@ -198,7 +164,7 @@ Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function
                                 cfuntype= 'ncp',
                                 regL1   = gset$regL1)
 })
-amm=update_amm(Lnow,gset,tag='cts_lat_sa',wrapped=T)
+amm=helper_helper_update_amm(amm,Lnow,gset,tag='cts_lat_sa',wrapped=T)
 
 Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function(ii){
     var0_disc_arb_sa = sample(c(1:Nfine),Nmeas) 
@@ -210,7 +176,7 @@ Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function
                                 cfuntype= 'ncp',
                                 regL1   = gset$regL1)
 })
-amm=update_amm(Lnow,gset,tag='disc_arb_sa',wrapped=F)
+amm=helper_helper_update_amm(amm,Lnow,gset,tag='disc_arb_sa',wrapped=F)
 
 Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function(ii){
     var0_disc_lat_sa = list(x0=c(dx1=1,dx2=1,xshift2=Nfine/2),N1=NULL,N2=NULL)
@@ -226,7 +192,7 @@ Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function
                                   cfuntype= 'ncp',
                                   regL1   = gset$regL1)
 })
-amm=update_amm(Lnow,gset,tag='disc_lat_sa',wrapped=T)
+amm=helper_helper_update_amm(amm,Lnow,gset,tag='disc_lat_sa',wrapped=T)
 ```
 
 ## Save simulations

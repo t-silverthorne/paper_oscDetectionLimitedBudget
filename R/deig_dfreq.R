@@ -1,3 +1,4 @@
+#' Derivative of smallest eigenvalue of FIM wrt frequency
 deig_dfreq=function(mt,freq){
   cvec=cos(2*pi*freq*mt)
   svec=sin(2*pi*freq*mt)
