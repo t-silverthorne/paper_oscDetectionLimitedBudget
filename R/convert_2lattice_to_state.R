@@ -6,5 +6,6 @@ convert_2lattice_to_state=function(shift1,shift2,scale1,scale2,lat1,lat2){
   # simulated annealing (in simulated annealing, times stay inside study because
   # of design of transition function) 
   x  = c(x1,x2) 
+  x  = x %% 1
   return(x)
 }

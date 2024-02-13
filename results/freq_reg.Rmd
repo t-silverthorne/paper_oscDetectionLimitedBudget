@@ -101,7 +101,7 @@ Trying to interpret what regularization is doing
 ```{r}
 Nmeas_vals=c(20,50)
 freqs_global  = seq(from=1,to=24,length.out=2^10)
-Nsh=2^8
+Nsh=2^5
 
 df_full =NULL
 scvals=c(0.5,1)
@@ -115,7 +115,7 @@ for (sc1 in scvals){
     scale1= sc1 
     scale2=.5
     
-    shvals = seq(from=0,to=1,length.out=Nsh)
+    shvals = seq(from=0,to=1.5,length.out=Nsh)
     
     cvals = shvals %>% sapply(function(sh){costfun_2lattice_svdpower(0,sh,scale1,scale2,lat1,lat2,freqs=freqs_global,
                               cfuntype='ncp',regFder=0)})
