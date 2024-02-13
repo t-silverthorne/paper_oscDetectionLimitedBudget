@@ -128,6 +128,6 @@ for (sc1 in scvals){
     df_full=rbind(df_full,df,dfreg) 
   }
 }
-df_full %>% ggplot(aes(x=x,y=y,group=reg,color=reg))+geom_line()+facet_wrap(scale1~Nmeas)
+df_full %>% ggplot(aes(x=x,y=y,group=reg,color=reg))+geom_line()+facet_grid(scale1~Nmeas)
 
 ```
