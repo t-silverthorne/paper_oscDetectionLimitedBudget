@@ -1,6 +1,7 @@
 #' Helper function for continuous power optimization
 #' @export
-costfun_svdpower=function(mt,freqs,Amp=1,alpha=.05,regL1=0,regFder=0,cfuntype='power'){
+costfun_svdpower=function(mt,freqs,Amp=1,alpha=.05,regL1=0,regFder=0,gapPenalty=0,
+                          cfuntype='power'){
   N   = length(mt)
   f0  = qf(p=1-alpha,df1=2,df2=N-3)
   if (regFder!=0 & cfuntype=='power'){
@@ -26,10 +27,14 @@ costfun_svdpower=function(mt,freqs,Amp=1,alpha=.05,regL1=0,regFder=0,cfuntype='p
   }
   
   if (regFder>0){
-    dlambda_dfreq = freqs %>% sapply(function(freq){deig_dfreq(mt,freq)}) %>% abs() %>% max() 
-    #dlambda_dfreq = freqs %>% sapply(function(freq){deig_dfreq(mt,freq)}) %>% {.^2} %>% sum()
-    #dlambda_dfreq = sqrt(dlambda_dfreq/length(freqs))
+    #dlambda_dfreq = freqs %>% sapply(function(freq){deig_dfreq(mt,freq)}) %>% abs() %>% max() 
+    dlambda_dfreq = freqs %>% sapply(function(freq){deig_dfreq(mt,freq)}) %>% {.^2} %>% sum()
+    dlambda_dfreq = sqrt(dlambda_dfreq/length(freqs))
     cval = cval-regFder*dlambda_dfreq
+  }
+  
+  if (gapPenalty>0){
+    cval=cval-gapPenalty*helper_gap_penalty(mt) 
   }
   return(cval)
 }
