@@ -1,4 +1,7 @@
 helper_unif_update_scale=function(scale,shift,lat,tscale){
+  if (tscale<2){
+    stop('for discrete problem, tscale must be >= 2')
+  }
   if (any(scale*lat + shift <0)  | any(scale*lat + shift >1)){
     stop('invalid initial state')
   }else{

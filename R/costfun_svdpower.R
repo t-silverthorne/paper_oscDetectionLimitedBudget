@@ -1,6 +1,6 @@
 #' Helper function for continuous power optimization
 #' @export
-costfun_svdpower=function(mt,freqs,Amp=1,alpha=.05,regL1=0,regFder=0,gapPenalty=0,
+costfun_svdpower=function(mt,freqs,Amp=1,alpha=.05,regL1=0,regFder=0,gapPenalty=0,leveragePenalty=0,
                           cfuntype='power'){
   N   = length(mt)
   f0  = qf(p=1-alpha,df1=2,df2=N-3)
@@ -35,6 +35,12 @@ costfun_svdpower=function(mt,freqs,Amp=1,alpha=.05,regL1=0,regFder=0,gapPenalty=
   
   if (gapPenalty>0){
     cval=cval-gapPenalty*helper_gap_penalty(mt) 
+  }
+  if (leveragePenalty>0){
+    maxlev = freqs %>% sapply(function(freq){
+       cosinor_design_matrix(mt,freq) %>% {stats::hat(.,intercept=F)} %>% abs() %>% max()
+    }) %>% max()
+    cval =cval - leveragePenalty*maxlev
   }
   return(cval)
 }

@@ -1,3 +1,125 @@
+# Visualization in 1D
+
+## Plot oscillations
+```{r}
+load_all()
+freqs_global  = seq(from=1,to=24,length.out=2^8)
+Nsh=2^8
+
+mc_cores   = 8 
+df_full    = NULL
+scvals     = c(.5,1)
+Nmeas_vals = c(24)
+for (sc1 in scvals){
+  for (Nmeas in Nmeas_vals){
+    n1     = Nmeas/2
+    n2     = Nmeas-n1
+    lat1   = c(1:n1)/n1-1/n1
+    lat2   = c(1:n2)/n2-1/n2
+    
+    scale1 = sc1 
+    scale2 = .5 
+    
+    shvals = seq(from=0,to=1,length.out=Nsh)
+    
+    cvals = c(1:length(shvals)) %>% as.list() %>% mclapply(mc.cores=mc_cores,function(ii){
+      costfun_2lattice_svdpower(0,shvals[ii],scale1,scale2,lat1,lat2,freqs=freqs_global,
+                              cfuntype='ncp')}) %>% unlist()
+    
+    cfvals = c(1:length(shvals)) %>% as.list() %>% mclapply(mc.cores=mc_cores,function(ii){
+      costfun_2lattice_svdpower(0,shvals[ii],scale1,scale2,lat1,lat2,freqs=freqs_global,
+                              cfuntype='ncp',gapPenalty=Nmeas)}) %>% unlist()
+    
+    df=data.frame(x=shvals,y=cvals,reg=F,Nmeas=Nmeas,scale1=sc1)
+    dfreg=data.frame(x=shvals,y=cfvals,reg=T,Nmeas=Nmeas,scale1=sc1)
+    df_full=rbind(df_full,df,dfreg) 
+  }
+}
+df_full %>% ggplot(aes(x=x,y=y,group=reg,color=reg))+geom_line()+facet_grid(scale1~Nmeas)
+
+```
+
+## Can SANN cts find optimum?
+```{r}
+n1     = 16
+n2     = Nmeas-n1
+lat1   = c(1:n1)/n1-1/n1
+lat2   = c(1:n2)/n2-1/n2
+
+scale1 =.5 
+scale2 =.9 
+
+shvals = seq(from=0,to=1,length.out=Nsh)
+
+cvals = c(1:length(shvals)) %>% as.list() %>% mclapply(mc.cores=mc_cores,function(ii){
+  costfun_2lattice_svdpower(0,shvals[ii],scale1,scale2,lat1,lat2,freqs=freqs_global,
+                          cfuntype='ncp')}) %>% unlist()
+
+cfvals = c(1:length(shvals)) %>% as.list() %>% mclapply(mc.cores=mc_cores,function(ii){
+  costfun_2lattice_svdpower(0,shvals[ii],scale1,scale2,lat1,lat2,freqs=freqs_global,
+                          cfuntype='ncp',gapPenalty=Nmeas)}) %>% unlist()
+
+df=data.frame(x=shvals,y=cvals,reg=F,Nmeas=Nmeas,scale1=sc1)
+dfreg=data.frame(x=shvals,y=cfvals,reg=T,Nmeas=Nmeas,scale1=sc1)
+df_full=rbind(df_full,df,dfreg) 
+
+
+#cfun = function(x){-costfun_2lattice_svdpower(0,x,scale1,scale2,lat1,lat2,
+#                                             freqs=freqs_global,cfuntype='ncp',
+#                                             regL1=0,gapPenalty=0,regFder=0) }
+#xopt=stats::optim(par=runif(1),fn=cfun,method='SANN',
+#                  control=list(maxit=40,REPORT=1,trace=6))
+
+var0_cts_lat_sa   = list(x0=c(shift2=1/2/Nmeas,scale1=1,scale2=1,shift1=0),
+                         lat1 =NULL,lat2 =NULL)
+ctrl_cts_lat_sa   = list(costfun_choice = 'svdpower_2lattice',
+            optim_method = 'simul_anneal',
+            tfun_choice  = 'unif-with-bdry',tscale_unif_with_bdry=1,
+            trace=trace_global,REPORT=report_global,maxit=maxit_sa)
+xopt=wrapper_sweep_lattice(opt_osc_power,
+                                Nvals    = c(8,16),
+                                Nmeas    = gset$Nmeas,
+                                cts_flag = T,
+                                dvar0    = var0_cts_lat_sa,
+                                control  = ctrl_cts_lat_sa,
+                                freqs    = freqs_global,
+                                Amp      = NaN,
+                                gapPenalty=Nmeas,
+                                cfuntype= 'ncp')
+xopt
+df_full %>% ggplot(aes(x=x,y=y,group=reg,color=reg))+geom_line()+
+  geom_point(data=data.frame(x=xopt$res_best$optim_raw$par[1],y=-xopt$res_best$optim_raw$value,reg='opt'),aes(x=x,y=y))
+
+ggplot()+geom_point(aes(x=xopt$res_best$mtvalue,y=1))
+```
+
+
+## Can SANN discrete find optimum 
+```{r}
+ctrl_disc_lat_sa = list(costfun_choice = 'svdpower_2lattice_discrete',
+             optim_method   = 'simul_anneal',
+             tfun_choice    = 'unif-with-bdry-discrete',tscale= 2,
+             trace=trace_global,REPORT=report_global,maxit=maxit_sa)
+var0_disc_lat_sa = list(x0=c(dx1=1,dx2=1,xshift2=Nfine/2),N1=NULL,N2=NULL)
+
+Nfine=288
+tau = c(1:Nfine)/Nfine-1/Nfine
+resu_disc_lat_sa = wrapper_sweep_lattice(opt_osc_power,
+                                Nvals    = c(8,16),
+                                Nmeas    = Nmeas,
+                                cts_flag = F,
+                                dvar0    = var0_disc_lat_sa,
+                                control  = ctrl_disc_lat_sa,
+                                freqs    = freqs_global,
+                                Amp      = NaN,
+                                tau      = tau,
+                                cfuntype = 'ncp',
+                                gapPenalty=Nmeas)
+resu_disc_lat_sa
+
+```
+
+
 # Lattice based
 ```{r setup-simulation}
 rm(list=ls())
@@ -7,7 +129,7 @@ save_simulation = T # TODO: currently ignored
 run_figures     = T
 save_figures    = T
 sparse_heatmap  = F
-mc_cores=10
+mc_cores        = 10
 gset = list(
   Nmeas             = 24,
   Nfreq             = 2^8,
@@ -96,44 +218,6 @@ ammtot=rbind(amm,ammF)
 ammtot %>% stack() %>% ggplot(aes(x=value,y=power))+geom_point()+facet_wrap(~regFder)+xlim(c(0,1))
 ```
 
-Trying to interpret what regularization is doing
-```{r}
-load_all()
-freqs_global  = seq(from=1,to=24,length.out=2^10)
-Nsh=2^8
-
-mc_cores=10
-df_full =NULL
-scvals=c(.5,1)
-Nmeas_vals=c(50)
-for (sc1 in scvals){
-  for (Nmeas in Nmeas_vals){
-    n1=Nmeas/5
-    n2=Nmeas-n1
-    lat1=c(1:n1)/n1-1/n1
-    lat2=c(1:n2)/n2-1/n2
-    
-    scale1= sc1 
-    scale2=.5 
-    
-    shvals = seq(from=0,to=1,length.out=Nsh)
-    
-    cvals = c(1:length(shvals)) %>% as.list() %>% mclapply(mc.cores=mc_cores,function(ii){
-      costfun_2lattice_svdpower(0,shvals[ii],scale1,scale2,lat1,lat2,freqs=freqs_global,
-                              cfuntype='ncp',regFder=0)}) %>% unlist()
-    
-    cfvals = c(1:length(shvals)) %>% as.list() %>% mclapply(mc.cores=mc_cores,function(ii){
-      costfun_2lattice_svdpower(0,shvals[ii],scale1,scale2,lat1,lat2,freqs=freqs_global,
-                              cfuntype='ncp',gapPenalty=1e2,regFder=0)}) %>% unlist()
-    
-    df=data.frame(x=shvals,y=cvals,reg=F,Nmeas=Nmeas,scale1=sc1)
-    dfreg=data.frame(x=shvals,y=cfvals,reg=T,Nmeas=Nmeas,scale1=sc1)
-    df_full=rbind(df_full,df,dfreg) 
-  }
-}
-df_full %>% ggplot(aes(x=x,y=y,group=reg,color=reg))+geom_line()+facet_grid(scale1~Nmeas)
-
-```
 
 # Single
 ```{r}
