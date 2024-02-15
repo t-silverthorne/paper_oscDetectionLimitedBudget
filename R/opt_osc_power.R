@@ -51,7 +51,12 @@ if (control$costfun_choice=='svdpower'){
                                         dx1=xout$par[1],dx2=xout$par[2],
                                         xshift2=xout$par[3])]
   xindsvalue = xout$par 
-
+}else if(control$costfun_choice=='auglattice'){
+  xout       = solve_auglattice(dvar0=dvar0,freqs=freqs,control=control,...) 
+  fvalue     = xout$value
+  mtvalue    = helper_auglattice_to_state(N1=xout$par[1],N2=xout$par[2],
+                                     shift2=xout$par[3],scale2=xout$par[4])
+  xindsvalue = xout$par
 }else if(control$costfun_choice=='nlattice_power_discrete'){
   stop("Currently not able to handle n-lattice constraints. No simulated annealing routine implemented")
   #xout=solve_nlattice_power_discrete(Nfine,freqs,Amp,control,alpha)
