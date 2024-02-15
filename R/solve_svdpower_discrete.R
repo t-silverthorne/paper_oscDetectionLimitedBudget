@@ -16,6 +16,7 @@ solve_svdpower_discrete=function(xinds,tau,freqs,control,...){
     x                 = make_variable(control)
     prob              = make_problem(x,Aquad,control,...)
     result = CVXR::solve(prob,verbose=control$cvxr_verbose,num_iter=control$maxit,
-                         TimeLimit=control$time_limit,MIPGapAbs=control$MIPGapAbs)
+                         TimeLimit=control$time_limit,MIPGapAbs=control$MIPGapAbs,
+                         Presolve=2,MIPFocus=3)
   }else{stop('unknown control$optim_method')}
 }

@@ -87,18 +87,55 @@ Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function
 })
 resmat=helper_update_amm(resmat,Lnow,gset,tag='cts_lat_sa',wrapped=T,cfunlabel='ncp')
 
-resmat %>% stack() %>% ggplot(aes(x=value,y=power))+geom_point()
+resmat %>% stack() %>% ggplot(aes(x=value,y=ncp))+geom_point()
 ```
 
 # Discrete problem
 ## Single run
 ```{r}
+Nfine=gset$Nfine
+tau=c(1:Nfine)/Nfine-1/Nfine
+ctrl_disc_lat_sa = list(costfun_choice = 'svdpower_2lattice_discrete',
+  optim_method   = 'simul_anneal',
+  tfun_choice    = 'unif-with-bdry-discrete',tscale= Nfine,
+  trace=gset$trace_global,REPORT=gset$report_global,maxit=gset$maxit_sa)
 
+var0_disc_lat_sa = list(
+  x0=c(dx1=1,dx2=1,xshift2=Nfine/2),
+  N1=NULL,
+  N2=NULL)
 
+resu_disc_lat_sa = wrapper_sweep_lattice(opt_osc_power,
+  Nvals    = c(gset$Nmin_2lat:gset$Nmax_2lat),
+  Nmeas    = Nmeas,
+  cts_flag = F,
+  dvar0    = var0_disc_lat_sa,
+  control  = ctrl_disc_lat_sa,
+  freqs    = freqs,
+  Amp      = NaN,
+  tau      = tau,
+  cfuntype= 'ncp',
+  gapPenalty=Nmeas/10)
+res=resu_disc_lat_sa
+ggplot()+geom_point(aes(x=res$res_best$mtvalue,y=1))+xlim(c(0,1))
 ```
 
 ## Ensemble run
 ```{r}
+Lnow = c(1:gset$nrep) %>% as.list() %>%  mclapply(mc.cores=mc_cores,FUN=function(ii){
+  resu_disc_lat_sa = wrapper_sweep_lattice(opt_osc_power,
+    Nvals    = c(gset$Nmin_2lat:gset$Nmax_2lat),
+    Nmeas    = Nmeas,
+    cts_flag = F,
+    dvar0    = var0_disc_lat_sa,
+    control  = ctrl_disc_lat_sa,
+    freqs    = freqs,
+    Amp      = NaN,
+    tau      = tau,
+    cfuntype= 'ncp',
+    gapPenalty=Nmeas/10)
+})
+resmat=helper_update_amm(resmat,Lnow,gset,tag='disc_lat_sa',wrapped=T,cfunlabel='ncp')
 
-
+resmat %>% stack() %>% ggplot(aes(x=value,y=ncp))+geom_point()
 ```
