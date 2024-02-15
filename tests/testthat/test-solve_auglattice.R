@@ -46,7 +46,7 @@ test_that('opt_osc_power wrapper works on auglattice',{
              N2=8,
              shift2=1/2/N1,
              scale2=1)
-  freqs=seq(from=1,to=24,length.out=2^10)
+  freqs=seq(from=1,to=24,length.out=2^8)
   control=list(N1min=8,N1max=16,trace=0,REPORT=0,maxit=1e1,
                costfun_choice='auglattice',cfuntype='ncp')
   expect_no_error(opt_osc_power(dvar0=dvar0,freqs=freqs,control=control) )

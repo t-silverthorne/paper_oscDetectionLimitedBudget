@@ -1,9 +1,10 @@
-CVXR and Gurobi are necessary. Setting up each package with R is explained in their respective documentation. An additional step is required for RStudio integration. The gurobi paths must be set not only in your .bashrc file but also in .profile. 
+Two non-standard R libraries are used in this repository and their installation instructions are given below.
 
-Following CVXR and gurobi install instructions, updating .profile, and rebooting should make gurobi work in R.
+Installation of CVXR
 
+# Make sure you have devtools
+require(devtools)
 
-Need to use this approach to get CVXR to put timelimit on gurobi
 # Specify the GitHub repository
 github_repo <- "cvxgrp/CVXR"
 
@@ -14,30 +15,30 @@ github_branch <- "WIP_gurobi_solver_status"
 devtools::install_github(repo = github_repo, ref = github_branch)
 
 
+Installation of Gurobi
 
-
-Need to install cvxpy old version in order for it to work with dsp-cvxpy
-
-
-Gurobi backend in python is currently unused
-
-
-SCIPOPTSUITE needs to be installed externally so that pyscipopt will install in python and you can then used cvxpy to do MIQP (Gurobi does not appear to handle this conic formulation)
-
-
-
-Need to use pip to get most dependencies, but this messes up SCIP. 
-
-You can get SCIP to compile, on mac may need to pass compiler flag cmake .. -DAUTOBUILD=on
-Compilation didn't work
-https://github.com/conda-forge/scipoptsuite-feedstock using conda to get scipoptsuite
-
-
-
-Updated Gurobi install instructions:
 1. Download gurobi
-2. Get license
+2. Get license file
 3. Put license in /opt/gurobi/ directory
-4. Follow R specific instructions to install R package
-5. Update .profile so that dynamic library loading works with Gurobi.
+4. Follow R specific instructions in Gurobi manual to install R package
+5. Update .profile so that dynamic library loading works with Gurobi. On linux, the profile will read
 
+export GUROBI_HOME="/opt/gurobi1003/linux64"
+export PATH="${PATH}:${GUROBI_HOME}/bin"
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${GUROBI_HOME}/lib"
+
+The first line should be modified appropriately on Mac or Windows operating systems.
+
+
+Testing that CVXR can access Gurobi:
+
+To ensure that CVXR can access Gurobi inside R, navigate run the R notebook found in examples/ex_cvxr.Rmd
+
+
+Testing all other dependencies:
+In Rstudio, you can execute the unit tests for this package by running
+
+require(devtools)
+devtools::test()
+
+If all dependencies are working, the tests should all pass.
