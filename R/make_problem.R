@@ -47,7 +47,7 @@ make_problem=function(x,Aquad,opts,regL1=0,regFder=0,...){
       #str_prefix=paste0(str_prefix,'regFder*quad_form(x,dAdFreq_L2)+')
     }
     
-    strp=paset0(str_prefix,str_suffix)
+    strp=paste0(str_prefix,str_suffix)
     eval(parse(text=strp))
   }else{
     stop('unrecognized opts$lattice_str or opts$solver_type')

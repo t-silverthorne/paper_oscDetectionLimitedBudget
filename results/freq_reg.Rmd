@@ -218,6 +218,44 @@ ammtot=rbind(amm,ammF)
 ammtot %>% stack() %>% ggplot(aes(x=value,y=power))+geom_point()+facet_wrap(~regFder)+xlim(c(0,1))
 ```
 
+Trying to interpret what regularization is doing
+```{r}
+load_all()
+freqs_global  = seq(from=1,to=24,length.out=2^10)
+Nsh=2^8
+
+mc_cores=10
+df_full =NULL
+scvals=c(.5,1)
+Nmeas_vals=c(50)
+for (sc1 in scvals){
+  for (Nmeas in Nmeas_vals){
+    n1=Nmeas/5
+    n2=Nmeas-n1
+    lat1=c(1:n1)/n1-1/n1
+    lat2=c(1:n2)/n2-1/n2
+    
+    scale1= sc1 
+    scale2=.5 
+    
+    shvals = seq(from=0,to=1,length.out=Nsh)
+    
+    cvals = c(1:length(shvals)) %>% as.list() %>% mclapply(mc.cores=mc_cores,function(ii){
+      costfun_2lattice_svdpower(0,shvals[ii],scale1,scale2,lat1,lat2,freqs=freqs_global,
+                              cfuntype='ncp',regFder=0)}) %>% unlist()
+    
+    cfvals = c(1:length(shvals)) %>% as.list() %>% mclapply(mc.cores=mc_cores,function(ii){
+      costfun_2lattice_svdpower(0,shvals[ii],scale1,scale2,lat1,lat2,freqs=freqs_global,
+                              cfuntype='ncp',gapPenalty=1,regFder=0)}) %>% unlist()
+    
+    df=data.frame(x=shvals,y=cvals,reg=F,Nmeas=Nmeas,scale1=sc1)
+    dfreg=data.frame(x=shvals,y=cfvals,reg=T,Nmeas=Nmeas,scale1=sc1)
+    df_full=rbind(df_full,df,dfreg) 
+  }
+}
+df_full %>% ggplot(aes(x=x,y=y,group=reg,color=reg))+geom_line()+facet_grid(scale1~Nmeas)
+
+```
 
 # Single
 ```{r}
