@@ -14,6 +14,8 @@
 #' @author Turner Silverthorne
 opt_osc_power=function(dvar0=NULL,freqs,control,
                        nlattice_opts=NULL,tau=NULL,...){
+#' TODO add warning for passing args to control that should 
+#' appear explicitly in this function (i.e. cfuntype)
 require(lubridate)
 require(stringr)
 start_time=Sys.time()

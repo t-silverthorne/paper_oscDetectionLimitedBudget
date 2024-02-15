@@ -13,7 +13,7 @@ require(CVXR)
 source('plotConfig.R')
 load_all()
 gset = list(
-  Nmeas             = NaN,      # measurement budget
+  Nmeas             = NaN,     # measurement budget
   Nfreq             = 2^8,     # number of frequencies to use
   Nfine             = 288,     # corresponds to 5 minute sampling
   trace_global      = 6,       # controls how often to report 
@@ -22,8 +22,9 @@ gset = list(
   Amp_global        = NaN,     # amp is irrelevant, not used here
   Nmin_2lat         = NaN,     # will be updated in inner loop
   Nmax_2lat         = NaN,     # will be updated in inner loop
-  timelimit_cvxr    = 10  # 20 seconds of compute time
+  timelimit_cvxr    = 60*5     # 20 seconds of compute time
 )
+mc_cores=10
 freqs=seq(from=1,to=24,length.out=gset$Nfreq)
 Nmeasvals = c(16,24,32)
 Nfine=gset$Nfine
@@ -62,6 +63,7 @@ for (Nmeas in Nmeasvals){
 ```{r auglat-solution}
 mtdf_aug=NULL
 for (Nmeas in Nmeasvals){
+  print(paste0('Running Nmeas=',Nmeas))
   gset$Nmeas=Nmeas
   gset$Nmin_2lat=floor(Nmeas/4)
   gset$Nmax_2lat=3*floor(Nmeas/4)
@@ -71,8 +73,10 @@ for (Nmeas in Nmeasvals){
              scale2=1)
   control=list(N1min=gset$Nmin_2lat,N1max=gset$Nmax_2lat,
                trace=0,REPORT=0,maxit=1e3,
-               costfun_choice='auglattice',cfuntype='ncp')
-  res=opt_osc_power(dvar0=dvar0,freqs=freqs,control=control)
+               costfun_choice='auglattice')
+  res=opt_osc_power(dvar0=dvar0,freqs=freqs,control=control,
+                    cfuntype='ncp',
+                    regFder=10)
   mtdf_aug=rbind(mtdf_aug,data.frame(time=res$mtvalue,solver='pin2lat',Nmeas=Nmeas,
                                      ncp=-res$fvalue))
 }
@@ -80,12 +84,56 @@ mtdf_aug
 ```
 
 ```{r}
+mtdf=mtdf_full[mtdf_full$solver!='pin2lat',]
 mtdf_full=rbind(mtdf,mtdf_aug)
 
-mtdf_full %>% ggplot(aes(x=time,y=ncp,color=solver))+geom_point()+
+p1=mtdf_full %>% ggplot(aes(x=time,y=ncp,color=solver))+geom_point()+
   facet_wrap(~Nmeas,nrow=length(Nmeasvals))
+p1
 ```
 
 ```{r}
+saveRDS(mtdf_full,'results/augCVXRmt.RDS')
+```
+
+```{r}
+mc_cores=10
+mtdf_full=readRDS('results/augCVXRmt.RDS')
+amps  = seq(from=1.0,2.0,by=.05)
+freqs = seq(from=1,to=24,by=.01)
+
+tag   = c('uniform','pin2lat','cvxr')
+pars  = expand.grid(amp=amps,freq=freqs,tag=tag,Nmeas=Nmeasvals)
+minPower = rep(NaN,dim(pars)[1])
+minPower =c(1:length(minPower)) %>% as.list() %>% mclapply(mc.cores=mc_cores,
+  function(ii){
+    x=pars[ii,]
+    if (x[['tag']]=='uniform'){
+      Nmeas  = as.numeric(x[['Nmeas']])
+      mt_loc = c(1:Nmeas)/Nmeas-1/Nmeas
+    }else{
+      filt   = mtdf_full$Nmeas==as.numeric(x[['Nmeas']]) & mtdf_full$solver==x[['tag']]
+      mt_loc = as.numeric(mtdf_full[filt,]$time)
+    }
+      return(costfun_svdpower(mt    = mt_loc,
+                              freqs = as.numeric(x[['freq']]),
+                              Amp   = as.numeric(x[['amp']])))
+  }
+)%>% unlist()
+pars$minPower=minPower
+
+fs_glob=9
+p2=pars %>% ggplot(aes(x=amp,y=freq,fill=minPower))+geom_tile()+facet_grid(Nmeas~tag)+
+  scale_fill_viridis_c(limits=c(0,1))+
+  scale_x_continuous(breaks=seq(min(amps),max(amps),length.out=3))+
+  scale_y_continuous(breaks=seq(0,max(freqs),length.out=5))+
+  theme(strip.background=element_blank(),
+    text=element_text(size=fs_glob))+
+  labs(fill = 'power',
+          y = 'frequency',
+          x = 'amplitude')
+p2
+
+
 
 ```

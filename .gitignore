@@ -7,6 +7,7 @@ temp_ammforvis.RDS
 figs_for_paper/allfigs_files/*
 results/output/batch*/*
 results/output/batch_2024-01-21___11:53:23.358679/2024-01-21___12:24:20.100879_cvxr_Nmeas_20_solution.RDS
+results/augCVXRmt.RDS
 
 report/*
 metaout/*
