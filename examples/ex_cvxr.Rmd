@@ -14,8 +14,8 @@ source('plotConfig.R')
 load_all()
 gset = list(
   Nmeas             = 24,  # measurement budget
-  nfreq_cvxr        = 2^6, # number of freqs 
-  Nfine             = 288, # 10 minute intervals
+  nfreq_cvxr        = 2^4, # number of freqs 
+  Nfine             = 144, # 10 minute intervals
   timelimit_cvxr    = 20,  # 20 seconds of compute time
   Amp_global        = NaN  # amp irrelevant
 )

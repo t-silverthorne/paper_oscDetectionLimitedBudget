@@ -72,7 +72,7 @@ for (Nmeas in Nmeasvals){
              shift2=1/4/Nmeas,
              scale2=1)
   control=list(N1min=gset$Nmin_2lat,N1max=gset$Nmax_2lat,
-               trace=0,REPORT=0,maxit=1e3,
+               trace=1,REPORT=1,maxit=1e3,
                costfun_choice='auglattice')
   res=opt_osc_power(dvar0=dvar0,freqs=freqs,control=control,
                     cfuntype='ncp',
