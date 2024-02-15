@@ -4,6 +4,7 @@ test_that("function evaluation", {
 })
 
 test_that('agrees with finite difference',{
+  set.seed(1)
   mt = runif(20)
   
   freq = 2.5

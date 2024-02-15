@@ -1,4 +1,7 @@
 helper_unif_update_scale_discrete=function(scale,shift,Npts,tscale,Nfine){
+  if (tscale<2){
+    stop('for discrete problem, tscale must be >= 2')
+  }
   if (scale*(Npts-1)+shift > Nfine | shift<0 ){
     stop('invalid initial state')
   }else{

@@ -27,6 +27,7 @@ test_that("transition function conserves Nmeas", {
 })
 
 test_that("solution function evaluates", {
+  N1=12
   dvar0=list(N1=12,
              N2=12,
              shift2=1/2/N1,
@@ -42,7 +43,8 @@ test_that("solution function evaluates", {
 })
 
 test_that('opt_osc_power wrapper works on auglattice',{
-  dvar0=list(N1=16,
+  N1=16
+  dvar0=list(N1=N1,
              N2=8,
              shift2=1/2/N1,
              scale2=1)
