@@ -124,7 +124,7 @@ for (sc1 in scvals){
     
     cfvals = c(1:length(shvals)) %>% as.list() %>% mclapply(mc.cores=mc_cores,function(ii){
       costfun_2lattice_svdpower(0,shvals[ii],scale1,scale2,lat1,lat2,freqs=freqs_global,
-                              cfuntype='ncp',gapPenalty=1e2,regFder=0)}) %>% unlist()
+                              cfuntype='ncp',gapPenalty=1,regFder=0)}) %>% unlist()
     
     df=data.frame(x=shvals,y=cvals,reg=F,Nmeas=Nmeas,scale1=sc1)
     dfreg=data.frame(x=shvals,y=cfvals,reg=T,Nmeas=Nmeas,scale1=sc1)
