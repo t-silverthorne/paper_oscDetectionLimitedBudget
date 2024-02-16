@@ -1,17 +1,19 @@
 # Overview
-This private repository contains code for optimizing rhythm detection experiments with frequency uncertainty. There are two main components to this repository:
+There are two main components to this repository:
 
-1. Code for supporting our manuscript, found mainly in figs_for_paper/ and results/ directories.
-2. Code that will eventually be packaged as a standalone R package, found in the R/ directory with unit tests in tests/.
+1. Supporting code for our manuscript, found mainly in `figs_for_paper/` and `results/` directories.
+2. Code that will eventually be packaged as a standalone `R` package, found in the `R/` directory with unit tests in `tests/`.
 
 Closer to the release of the paper, items (1) and (2) will likely be split into separate repositories. 
 
-
 # Installation of non-standard packages
-Two non-standard R packages are used in this repository and their installation instructions are given below.
+
+Two non-standard R packages are used in this repository and their installation instructions are given below. 
+
+Before installation, the user should download Rstudio and open the `oscDetectPaper.Rproj` file located in the root directory of this repo. This will ensure that all dependencies are installed locally and will not affect any pre-existing R environments.
 
 ## CVXR
-We require a specific branch of the CVXR repo. It can be installed by starting an R session and running the following: 
+We require a specific branch of the CVXR repo. It can be installed by opening an R console running the following: 
 ```R
 # Make sure you have devtools
 require(devtools)
@@ -41,25 +43,34 @@ Solving mixed-integer programming problems in CVXR requires access to the commer
 4. Follow R specific instructions in Gurobi manual to install R package
 5. Update .profile so that dynamic library loading works with Gurobi. 
 
-On linux, the .profile file will read
+On linux, the .profile file should be updated to read
 ```bash
 export GUROBI_HOME="/opt/gurobi1003/linux64"
 export PATH="${PATH}:${GUROBI_HOME}/bin"
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${GUROBI_HOME}/lib"
 ```
 
-the first line should be modified appropriately on Mac or Windows operating systems.
+the first line should be modified appropriately on Mac or Windows operating systems to the corresponding path where Gurobi is installed.
 
 
-To make sure that Gurobi can be accessed as a backend solver for CVXR, open an R terminal and run the following.
+To make sure that Gurobi can be accessed as a backend solver for CVXR, open an R console and run the following.
 ```R
 source('examples/ex_cvxr.Rmd')
 ```
 
-## Testing all other dependencies:
-In Rstudio, you can execute the unit tests for this package by running
+## Installing all other dependencies:
+This package uses `renv` for `R` environment management. To install the remaining dependencies using `renv`, run the following in an `R` console
+```R
+require(renv)
+renv::restore()
+```
+For more information on using `renv` to manage shared `R` repositories, see the documentation [here](https://rstudio.github.io/renv/articles/collaborating.html).
 
-  require(devtools)
-  devtools::test()
 
-If all dependencies are working, the tests should all pass.
+# Testing package
+
+You can execute the unit tests for this package by running:
+```R
+require(devtools)
+devtools::test()
+```
