@@ -1,5 +1,4 @@
-
-
+# Setup 
 ```{r setup}
 require(devtools)
 require(ggplot2)
@@ -12,25 +11,33 @@ require(stringr)
 require(CVXR)
 source('plotConfig.R')
 load_all()
+fs_glob=9
 gset = list(
   Nmeas             = NaN,     # measurement budget
   Nfreq             = 2^8,     # number of frequencies to use
   Nfine             = 288,     # corresponds to 5 minute sampling
   trace_global      = 6,       # controls how often to report 
   report_global     = 10,      # how much reporting you want
-  maxit_sa          = 1e2,     # max iterations for simulated annealing 
+  maxit_sa          = 1e3,     # max iterations for simulated annealing 
   Amp_global        = NaN,     # amp is irrelevant, not used here
   Nmin_2lat         = NaN,     # will be updated in inner loop
   Nmax_2lat         = NaN,     # will be updated in inner loop
-  timelimit_cvxr    = 60*5     # 20 seconds of compute time
+  timelimit_cvxr    = 5*60     # 20 seconds of compute time
 )
+
 mc_cores=10
 freqs=seq(from=1,to=24,length.out=gset$Nfreq)
 Nmeasvals = c(16,24,32)
 Nfine=gset$Nfine
+quick_test=F
+if (quick_test){
+  gset$timelimit_cvxr = 5
+  gset$maxit_sa       = 10
+  Nmeasvals = c(16,32)
+}
 ```
 
-
+# Run the solver
 ```{r CVXR-solution}
 tau = c(1:Nfine)/Nfine -1/Nfine
 
@@ -48,11 +55,11 @@ for (Nmeas in Nmeasvals){
               trace=gset$trace_global,REPORT=gset$report_global)
   
   res=opt_osc_power(dvar0  = NULL,
-               control = ctrl_disc_arb_cvxr,
-               freqs   = freqs,
-               Amp     = NaN,
-               tau     = tau,
-               cfuntype='ncp')
+              control = ctrl_disc_arb_cvxr,
+              freqs   = freqs,
+              Amp     = NaN,
+              tau     = tau,
+              cfuntype='ncp')
   mtdf=rbind(mtdf,data.frame(time=res$mtvalue,solver='cvxr',Nmeas=Nmeas,
                              ncp=-res$fvalue))
 }
@@ -72,19 +79,20 @@ for (Nmeas in Nmeasvals){
              shift2=1/4/Nmeas,
              scale2=1)
   control=list(N1min=gset$Nmin_2lat,N1max=gset$Nmax_2lat,
-               trace=1,REPORT=1,maxit=1e3,
-               costfun_choice='auglattice')
+             trace=1,REPORT=1,maxit=gset$maxit_sa,
+             costfun_choice='auglattice')
+  #res=opt_osc_power(dvar0=dvar0,freqs=freqs,control=control,
+  #           cfuntype='ncp',
+  #           regFder=10)
   res=opt_osc_power(dvar0=dvar0,freqs=freqs,control=control,
-                    cfuntype='ncp',
-                    regFder=10)
+             cfuntype='ncp')
   mtdf_aug=rbind(mtdf_aug,data.frame(time=res$mtvalue,solver='pin2lat',Nmeas=Nmeas,
                                      ncp=-res$fvalue))
 }
 mtdf_aug
 ```
 
-```{r}
-mtdf=mtdf_full[mtdf_full$solver!='pin2lat',]
+```{r plot-lattices}
 mtdf_full=rbind(mtdf,mtdf_aug)
 
 p1=mtdf_full %>% ggplot(aes(x=time,y=ncp,color=solver))+geom_point()+
@@ -92,15 +100,21 @@ p1=mtdf_full %>% ggplot(aes(x=time,y=ncp,color=solver))+geom_point()+
 p1
 ```
 
-```{r}
+```{r save-output}
 saveRDS(mtdf_full,'results/augCVXRmt.RDS')
 ```
 
-```{r}
+# Power analysis 
+```{r power-analysis}
 mc_cores=10
 mtdf_full=readRDS('results/augCVXRmt.RDS')
-amps  = seq(from=1.0,2.0,by=.05)
-freqs = seq(from=1,to=24,by=.01)
+if (quick_test){
+  amps  = seq(from=0.5,3.0,length.out=2^2)
+  freqs = seq(from=1,to=24,length.out=2^2)
+}else{
+  amps  = seq(from=.5,3.0,by=.05)
+  freqs = seq(from=1,to=24,by=.01)
+}
 
 tag   = c('uniform','pin2lat','cvxr')
 pars  = expand.grid(amp=amps,freq=freqs,tag=tag,Nmeas=Nmeasvals)
@@ -122,18 +136,119 @@ minPower =c(1:length(minPower)) %>% as.list() %>% mclapply(mc.cores=mc_cores,
 )%>% unlist()
 pars$minPower=minPower
 
-fs_glob=9
-p2=pars %>% ggplot(aes(x=amp,y=freq,fill=minPower))+geom_tile()+facet_grid(Nmeas~tag)+
+p2=pars %>% ggplot(aes(x=amp,y=freq,fill=minPower))+geom_tile(show.legend=F)+facet_grid(tag~Nmeas)+
+  scale_fill_viridis_c(limits=c(0,1))+
+  scale_x_continuous(breaks=seq(min(amps),max(amps),length.out=3))+
+  scale_y_continuous(breaks=seq(0,max(freqs),length.out=5))
+p1|p2
+```
+
+# FDR correction  
+```{r}
+fmin=1
+fmax=23.9
+
+if (quick_test){
+  Nmc=1e2
+  amps  = seq(from=.5,to=3,length.out=2^2)
+  freqs = seq(from=1,to=24,length.out=2^2)
+}else{
+  Nmc=5e2
+  amps  = seq(from=.5,3.0,by=.05)
+  freqs = seq(from=1,to=24,by=.01)
+}
+tag   = c('uniform','pin2lat','cvxr')
+fdrs  = expand.grid(amp=amps,freq=freqs,tag=tag,Nmeas=Nmeasvals)
+minFDR = replicate(dim(fdrs)[1],{NaN})
+start=Sys.time()
+minFDR= c(1:dim(fdrs)[1]) %>% as.list() %>% 
+  mclapply(mc.cores=mc_cores,function(ii){
+  x=fdrs[ii,]
+  if (x[['tag']]=='uniform'){
+    Nmeas  = as.numeric(x[['Nmeas']])
+    mt_loc = c(1:Nmeas)/Nmeas-1/Nmeas
+  }else{
+    filt   = mtdf_full$Nmeas==as.numeric(x[['Nmeas']]) & mtdf_full$solver==x[['tag']]
+    mt_loc = as.numeric(mtdf_full[filt,]$time)
+  }
+    return(benchmark_worst_fdr(mt = mt_loc,
+                            f0    = as.numeric(x[['freq']]),
+                            Amp   = as.numeric(x[['amp']]),
+                            Nmc   = Nmc,
+                            Nacro = NacroFDR,
+                            Nfreq = NfreqFDR,
+                            fmin  = fmin,
+                            fmax  = fmax)
+           )
+  }) %>% unlist()
+end=Sys.time()
+end-start
+fdrs$minFDR = as.numeric(minFDR)
+p3=fdrs %>% ggplot(aes(x=amp,y=freq,fill=minFDR))+geom_tile()+facet_grid(tag~Nmeas)+
   scale_fill_viridis_c(limits=c(0,1))+
   scale_x_continuous(breaks=seq(min(amps),max(amps),length.out=3))+
   scale_y_continuous(breaks=seq(0,max(freqs),length.out=5))+
+  labs(fill = 'power',
+          y = 'frequency',
+          x = 'amplitude')
+p3
+
+```
+
+# Aesthetics
+```{r}
+p1c=p1+theme(
+  legend.position = 'bottom',
+  strip.background = element_blank(),
+  text=element_text(size=fs_glob)
+  )+labs(
+    x='time',
+    y='non-centrality'
+  )
+leg1=get_legend(p1c)
+p1c=as.ggplot(p1+theme(
+  legend.position = 'none',
+  strip.background = element_blank(),
+  text=element_text(size=fs_glob)
+  )+labs(
+    x='time',
+    y='non-centrality'
+  ))
+
+
+p2c=as.ggplot(p2+
   theme(strip.background=element_blank(),
     text=element_text(size=fs_glob))+
   labs(fill = 'power',
           y = 'frequency',
-          x = 'amplitude')
-p2
+          x = 'amplitude'))
+```
+
+```{r}
+p3c=p3+
+  labs(fill='power',
+       y=element_blank())+
+  theme(
+    strip.background=element_blank(),
+    text=element_text(size=fs_glob),
+    legend.position='bottom',
+    legend.key.height= unit(.3,'cm'),
+    legend.key.width = unit(.85,'cm')
+    )
+legpower = get_legend(p3c)
+p3c=as.ggplot(p3+
+  labs(fill='power',
+       y=element_blank())+
+  theme(
+    strip.background=element_blank(),
+    text=element_text(size=fs_glob),
+    legend.position='none'
+    ))
 
 
+F1top    = (p1c/(p2c|as.ggplot(p3c))) + plot_annotation(tag_levels='A')+plot_layout(heights=c(4,5))
+F1bottom = (as.ggplot(leg1)+as.ggplot(legpower)+plot_layout(widths=c(1,1)))
+F1       = (as.ggplot(F1top)/as.ggplot(F1bottom)) + plot_layout(heights=c(20,1))
 
+ggsave(paste0(overleaf_plot_directory,'cvxrVaug_powerFDR.pdf'),F1,width = 6,height=4)
 ```
