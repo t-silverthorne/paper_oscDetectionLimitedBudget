@@ -62,6 +62,7 @@ for (Nmeas in Nmeasvals){
               cfuntype='ncp')
   mtdf=rbind(mtdf,data.frame(time=res$mtvalue,solver='cvxr',Nmeas=Nmeas,
                              ncp=-res$fvalue))
+  rm(res)
 }
 
 ```
