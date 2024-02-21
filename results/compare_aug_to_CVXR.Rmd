@@ -96,7 +96,7 @@ mtdf_full=rbind(mtdf,mtdf_aug)
 
 ```{r plot-lattices}
 
-p1=mtdf_full %>% ggplot(aes(x=time,y=ncp,color=solver))+geom_point(size=.7)+
+p1=mtdf_full %>% ggplot(aes(x=time,y=ncp,color=solver))+xlim(c(0,1))+geom_point(size=.7)+
   facet_wrap(~Nmeas,ncol=length(Nmeasvals))
 p1
 ```
@@ -109,7 +109,6 @@ saveRDS(mtdf_full,'results/augCVXRmt.RDS')
 ```{r power-analysis}
 mc_cores=10
 mtdf_full=readRDS('results/augCVXRmt.RDS')
-quick_test=F
 if (quick_test){
   amps  = seq(from=0.5,3.0,length.out=2^2)
   pers  = seq(from=1/24,to=1,length.out=2^2)
@@ -151,7 +150,6 @@ p2
 fmin=1
 fmax=23.9
 
-quick_test=F
 if (quick_test){
   Nmc=1e1
   NfreqFDR=2^2
@@ -233,6 +231,8 @@ p2c=as.ggplot(p2+
           y = 'period (hr)',
           x = 'amplitude')+
   theme_bw())
+```
+```{r}
 p3c=p3+
   labs(fill='power',
        y=element_blank())+
@@ -264,3 +264,4 @@ F1       = (as.ggplot(F1top)/as.ggplot(F1bottom)) + plot_layout(heights=c(20,1))
 ggsave(paste0(overleaf_plot_directory,'cvxrVaug_powerFDR.pdf'),F1,width = 6,height=6)
 F1
 ```
+
