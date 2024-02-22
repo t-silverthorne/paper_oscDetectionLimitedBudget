@@ -1,6 +1,6 @@
 benchmark_worst_fdr=function(mt,Amp,f0,Nmc,Nacro,Nfreq,fmin,fmax){
     freqs = seq(from=fmin,to=fmax,length.out=Nfreq)
-    acros = seq(from=0,to=2*pi,length.out=2^3)
+    acros = seq(from=0,to=2*pi,length.out=Nacro)
     
     acros %>%sapply(function(acro){
       X=t(replicate(Nmc,{Amp*cos(2*pi*f0*mt-acro)}))+
