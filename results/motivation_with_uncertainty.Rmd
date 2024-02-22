@@ -12,6 +12,7 @@ require(latex2exp)
 source('plotConfig.R')
 load_all()
 fs_glob=9
+sz_glob=1
 mc_cores=10
 ```
 
@@ -41,12 +42,12 @@ pars$pval = c(1:dim(pars)[1]) %>%mclapply(mc.cores=mc_cores,function(ii){
 
 cticks=c(1,2,4,6,8)
 pars = pars %>% mutate(Q=cut(freq,quantile(freq,0:4/4),include.lowest=T,include.heighest=T))
-p1=pars %>% ggplot(aes(x=acro,y=pval,color=freq))+geom_point()+
+p1=pars %>% ggplot(aes(x=acro,y=pval,color=freq))+geom_point(size=sz_glob)+
   scale_color_viridis_c(limits=c(fmin,fmax),breaks=cticks,labels=24/cticks)+
   ylim(c(0,1))+
   scale_x_continuous(limits =c(0,2*pi),
                      breaks=c(0,pi/2,pi,3*pi/2,2*pi),
-                     labels=c(TeX('$0$'),TeX('$\\frac{\\pi}{2}$'),TeX('$\\pi$'),TeX('$\\frac{3\\pi}{2}$'),TeX('$2\\pi$')))
+                     labels=c(TeX('$0$'),TeX('$\\pi/2$'),TeX('$\\pi$'),TeX('$3\\pi/2$'),TeX('$2\\pi$')))
 p1
 ```
 
@@ -101,11 +102,11 @@ df=rbind(fdr_unif,fdr_rand)
 df$sched=factor(df$sched,c('uniform','random'),c('uniform','random'))
 df = df %>% mutate(Q=cut(freq,quantile(freq,0:4/4),include.lowest=T,include.heighest=T))
 
-p2= df %>% ggplot(aes(x=acro,y=qval,color=freq))+geom_point()+
+p2= df %>% ggplot(aes(x=acro,y=qval,color=freq))+geom_point(size=sz_glob)+
   scale_color_viridis_c(limits=c(fmin,fmax))+facet_grid(sched~Q)+
   scale_x_continuous(limits =c(0,2*pi),
                      breaks=c(0,pi/2,pi,3*pi/2,2*pi),
-                     labels=c(TeX('$0$'),TeX('$\\frac{\\pi}{2}$'),TeX('$\\pi$'),TeX('$\\frac{3\\pi}{2}$'),TeX('$2\\pi$')))
+                     labels=c(TeX('$0$'),TeX('$\\pi/2$'),TeX('$\\pi$'),TeX('$3\\pi/2$'),TeX('$2\\pi$')))
 p2
 ```
 
@@ -115,7 +116,9 @@ p2
 p1c = p1+theme(
   legend.position = 'bottom',
   strip.background = element_blank(),
-  text=element_text(size=fs_glob)
+  text=element_text(size=fs_glob),
+  legend.key.height= unit(.3,'cm'),
+  legend.key.width = unit(.85,'cm')
   )+labs(
     y='p-value',
     x='acrophase (rad)',
@@ -138,9 +141,14 @@ p2c = as.ggplot(p2+theme(
   text=element_text(size=fs_glob)
   )+labs(
     x='acrophase (rad)',
-    y='p-value'
+    y='FDR q-value'
   ))
 Ptot=as.ggplot((p1c/p2c)+plot_annotation(tag_levels ='A')+plot_layout(heights=c(1,2)))
 
-Ptot/leg1 + plot_layout(heights=c(8,1))
+Fig = Ptot/leg1 + plot_layout(heights=c(10,1))
+ggsave(paste0(overleaf_plot_directory,'motivation_fig_v2.pdf'),Fig,width=6,height=5)
+Fig
+```
+
+```{r}
 ```
