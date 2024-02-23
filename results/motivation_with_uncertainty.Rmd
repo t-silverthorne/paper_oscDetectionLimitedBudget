@@ -143,7 +143,7 @@ p2c = as.ggplot(p2+theme(
     x='acrophase (rad)',
     y='FDR q-value'
   ))
-Ptot=as.ggplot((p1c/p2c)+plot_annotation(tag_levels ='A')+plot_layout(heights=c(1,2)))
+Ptot=as.ggplot((p1c/p2c)+plot_annotation(tag_levels ='A')+plot_layout(heights=c(1.3,2)))
 
 Fig = Ptot/leg1 + plot_layout(heights=c(10,1))
 ggsave(paste0(overleaf_plot_directory,'motivation_fig_v2.pdf'),Fig,width=6,height=5)

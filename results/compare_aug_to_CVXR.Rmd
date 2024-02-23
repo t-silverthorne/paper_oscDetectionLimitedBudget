@@ -25,7 +25,7 @@ gset = list(
   timelimit_cvxr    = 5*60     # 20 seconds of compute time
 )
 
-mc_cores=10
+mc_cores=12
 freqs=seq(from=1,to=24,length.out=gset$Nfreq)
 Nmeasvals = c(16,24,32)
 Nfine=gset$Nfine
