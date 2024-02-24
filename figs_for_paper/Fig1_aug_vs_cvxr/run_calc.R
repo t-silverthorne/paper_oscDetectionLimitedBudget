@@ -1,9 +1,10 @@
 source('figs_for_paper/Fig1_aug_vs_cvxr/settings.R')
 source('plotConfig.R')
-mc_cores=12 # TODO: read in from slurm
+mc_cores=Sys.getenv("SLURM_CPUS_PER_TASK") 
 
 # load solutions
 mtdf_full=readRDS('figs_for_paper/Fig1_aug_vs_cvxr/solns.RDS')
+head(mtdf_full)
 
 # make panel 1
 p1=mtdf_full %>% ggplot(aes(x=time,y=ncp,color=solver))+xlim(c(0,1))+geom_point(size=.7)+

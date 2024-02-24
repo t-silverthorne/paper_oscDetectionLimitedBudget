@@ -1,0 +1,38 @@
+# setup
+require(devtools)
+require(ggplot2)
+require(annmatrix)
+require(ggplotify)
+require(patchwork)
+require(parallel)
+require(data.table)
+require(stringr)
+require(CVXR)
+load_all()
+gset = list(
+  Nmeas             = 24,  # measurement budget
+  nfreq_cvxr        = 2^4, # number of freqs 
+  Nfine             = 144, # 10 minute intervals
+  timelimit_cvxr    = 20,  # 20 seconds of compute time
+  Amp_global        = NaN  # amp irrelevant
+)
+Nfine=gset$Nfine
+freqs=seq(from=1,to=24,length.out=gset$nfreq_cvxr)
+
+# solve
+tau = c(1:Nfine)/Nfine -1/Nfine
+ctrl_disc_arb_cvxr = list(costfun_choice='svdpower_discrete',
+            optim_method='cvxr',
+            maxit=1e9,time_limit=gset$timelimit_cvxr,MIPGapAbs=.01,
+            cvxr_verbose=T,costfun_type='Linfty',
+            fmin=min(freqs),
+            fmax=max(freqs),Nfreq=gset$nfreq_cvxr,
+            lattice_cstr='none',Nfine=gset$Nfine,Nmeas=gset$Nmeas,
+            trace=gset$trace_global,REPORT=gset$report_global)
+
+res = opt_osc_power(dvar0  = NULL,
+             control = ctrl_disc_arb_cvxr,
+             freqs   = freqs,
+             Amp     = NaN,
+             tau     = tau)
+

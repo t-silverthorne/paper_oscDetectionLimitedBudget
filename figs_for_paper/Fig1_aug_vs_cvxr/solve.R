@@ -1,6 +1,6 @@
 source('figs_for_paper/Fig1_aug_vs_cvxr/settings.R')
 Nfine=gset$Nfine
-mc_cores=12 # TODO: read in from slurm
+mc_cores=Sys.getenv("SLURM_CPUS_PER_TASK") 
 
 tau = c(1:Nfine)/Nfine -1/Nfine
 

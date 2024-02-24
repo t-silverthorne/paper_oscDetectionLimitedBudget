@@ -26,9 +26,9 @@ fmax=24
 freqs=seq(from=1,to=24,length.out=gset$Nfreq)
 Nmeasvals = c(16,24,32)
 
-N_amp_plt = 50/10
-N_per_plt = 1e2/20
+N_amp_plt = 10 # 50
+N_per_plt = 10 # 1e2
 
-NmcFDR   = 5e2/10
-NacroFDR = 2^5/2/2
-NfreqFDR = 2^5
+NmcFDR   = 1e2 # 5e2
+NacroFDR = 2^5 # 2^5
+NfreqFDR = 2^5 # 2^5
