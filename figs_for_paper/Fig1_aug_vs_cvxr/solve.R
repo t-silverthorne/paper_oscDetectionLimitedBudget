@@ -1,18 +1,6 @@
-require(devtools)
-require(ggplot2)
-require(annmatrix)
-require(ggplotify)
-require(patchwork)
-require(parallel)
-require(data.table)
-require(stringr)
-require(CVXR)
-load_all()
 source('figs_for_paper/Fig1_aug_vs_cvxr/settings.R')
-mc_cores=12 # TODO: read in from slurm
-freqs=seq(from=1,to=24,length.out=gset$Nfreq)
-Nmeasvals = c(16,24,32)
 Nfine=gset$Nfine
+mc_cores=12 # TODO: read in from slurm
 
 tau = c(1:Nfine)/Nfine -1/Nfine
 

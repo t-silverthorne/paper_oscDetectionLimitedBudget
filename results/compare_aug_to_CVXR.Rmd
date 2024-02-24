@@ -147,8 +147,8 @@ p2
 
 # FDR correction  
 ```{r}
-fmin=1
-fmax=23.9
+fmin=gset$fmin
+fmax=gset$fmax
 
 if (quick_test){
   Nmc=1e1
@@ -184,7 +184,7 @@ minFDR= c(1:dim(fdrs)[1]) %>% as.list() %>%
                             Nacro = NacroFDR,
                             Nfreq = NfreqFDR,
                             fmin  = fmin,
-                            fmax  = fmax)
+                            fmax  = fmax*.99)
            )
   }) %>% unlist()
 end=Sys.time()

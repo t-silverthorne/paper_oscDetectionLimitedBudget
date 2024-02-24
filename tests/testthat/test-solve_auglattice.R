@@ -54,14 +54,34 @@ test_that('opt_osc_power wrapper works on auglattice',{
   expect_no_error(opt_osc_power(dvar0=dvar0,freqs=freqs,control=control) )
 })
 
-
-
-
-
-
-
-
-
-
-
-
+test_that('second test of evaluation',{
+  gset = list(
+    maxit_sa          = 1e3,     # max iterations for simulated annealing 
+    timelimit_cvxr    = 5*60,    # 20 seconds of compute time
+    Nmeas             = NaN,     # measurement budget
+    Nfreq             = 2^3,     # number of frequencies to use
+    Nfine             = 288,     # corresponds to 5 minute sampling
+    trace_global      = 6,       # controls how often to report 
+    report_global     = 10,      # how much reporting you want
+    Amp_global        = NaN,     # amp is irrelevant, not used here
+    Nmin_2lat         = NaN,     # will be updated in inner loop
+    Nmax_2lat         = NaN      # will be updated in inner loop
+  )
+  freqs=seq(from=1,to=24,length.out=gset$Nfreq)
+  Nmeas=16
+  gset$Nmeas=Nmeas
+  gset$Nmin_2lat=floor(Nmeas/4)
+  gset$Nmax_2lat=3*floor(Nmeas/4)
+  dvar0=list(N1=floor(Nmeas/4),
+             N2=3*floor(Nmeas/4),
+             shift2=1/4/Nmeas,
+             scale2=1)
+  control=list(N1min=gset$Nmin_2lat,N1max=gset$Nmax_2lat,
+               trace=1,REPORT=1,maxit=gset$maxit_sa,
+               costfun_choice='auglattice')
+  #res=opt_osc_power(dvar0=dvar0,freqs=freqs,control=control,
+  #           cfuntype='ncp',
+  #           regFder=10)
+  expect_no_error(opt_osc_power(dvar0=dvar0,freqs=freqs,control=control,
+                    cfuntype='ncp'))
+})

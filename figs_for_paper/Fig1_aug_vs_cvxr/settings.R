@@ -1,3 +1,13 @@
+require(devtools)
+require(ggplot2)
+require(annmatrix)
+require(ggplotify)
+require(patchwork)
+require(parallel)
+require(data.table)
+require(stringr)
+require(CVXR)
+load_all()
 gset = list(
   maxit_sa          = 1e3,     # max iterations for simulated annealing 
   timelimit_cvxr    = 5*60,    # 20 seconds of compute time
@@ -10,3 +20,15 @@ gset = list(
   Nmin_2lat         = NaN,     # will be updated in inner loop
   Nmax_2lat         = NaN      # will be updated in inner loop
 )
+
+fmin=1
+fmax=24
+freqs=seq(from=1,to=24,length.out=gset$Nfreq)
+Nmeasvals = c(16,24,32)
+
+N_amp_plt = 50/10
+N_per_plt = 1e2/20
+
+NmcFDR   = 5e2/10
+NacroFDR = 2^5/2/2
+NfreqFDR = 2^5
