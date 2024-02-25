@@ -25,7 +25,7 @@ rowCosinor <- function(theData, zts, per=24) {
 
   phases     <- atan2(betas[2,], betas[3,])
   acrophases <- (((per/2) / pi) * (phases)) %% per
-  amplitudes <- 2*sqrt(betas[2,]*betas[2,] + betas[3,]*betas[3,])
+  amplitudes <- sqrt(betas[2,]*betas[2,] + betas[3,]*betas[3,])
 
   fits <- t(X %*% betas)
 
