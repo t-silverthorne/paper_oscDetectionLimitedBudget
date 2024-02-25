@@ -1,6 +1,6 @@
 #' Helper function for continuous power optimization
 #' @export
-costfun_svdpower=function(mt,freqs,Amp=1,alpha=.05,regL1=0,regFder=0,gapPenalty=0,leveragePenalty=0,
+costfun_svdpower=function(mt,freqs,Amp=1,alpha=.05,weight_ncp=1,regL1=0,regFder=0,gapPenalty=0,leveragePenalty=0,
                           cfuntype='power'){
   N   = length(mt)
   f0  = qf(p=1-alpha,df1=2,df2=N-3)
@@ -21,7 +21,7 @@ costfun_svdpower=function(mt,freqs,Amp=1,alpha=.05,regL1=0,regFder=0,gapPenalty=
   }else{
     stop('unknown cfuntype')
   }
-  cval = min(cvals)
+  cval = weight_ncp*min(cvals)
   if (regL1>0){
     cval = cval+regL1*mean(cvals)  
   }
