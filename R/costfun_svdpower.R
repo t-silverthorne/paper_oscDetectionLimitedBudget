@@ -26,11 +26,18 @@ costfun_svdpower=function(mt,freqs,Amp=1,alpha=.05,weight_ncp=1,regL1=0,regFder=
     cval = cval+regL1*mean(cvals)  
   }
   
-  if (regFder>0){
+  if (regFder!=0){
     #dlambda_dfreq = freqs %>% sapply(function(freq){deig_dfreq(mt,freq)}) %>% abs() %>% max() 
     dlambda_dfreq = freqs %>% sapply(function(freq){deig_dfreq(mt,freq)}) %>% {.^2} %>% sum()
     dlambda_dfreq = sqrt(dlambda_dfreq/length(freqs))
-    cval = cval-regFder*dlambda_dfreq
+    if (is.numeric(regFder)&regFder>0){
+      cval = cval-regFder*dlambda_dfreq
+    }
+    else if(regFder=='2norm'){
+      cval = dlambda_dfreq
+    }else{
+      stop('unrecognised regFder setting')
+    }
   }
   
   if (gapPenalty>0){
