@@ -23,8 +23,7 @@ rowCosinor <- function(theData, zts, per=24) {
 
   betas <- solve(t(X) %*% X) %*% t(X) %*% t(Y)
 
-  phases     <- atan2(betas[2,], betas[3,])
-  acrophases <- (((per/2) / pi) * (phases)) %% per
+  phases     <- atan2(betas[2,], betas[3,]) %% (2*pi)
   amplitudes <- sqrt(betas[2,]*betas[2,] + betas[3,]*betas[3,])
 
   fits <- t(X %*% betas)
@@ -42,7 +41,7 @@ rowCosinor <- function(theData, zts, per=24) {
 
   pval <- pf(Fstatistic, DFmod, DFres, lower.tail=FALSE)
 
-  data.frame(acrophase=acrophases, amplitude=amplitudes, mesor=betas[1,],
+  data.frame(phase=phases, amplitude=amplitudes, mesor=betas[1,],
              rsq=Rsqs, statistic=Fstatistic, pvalue=pval
              )
 }
