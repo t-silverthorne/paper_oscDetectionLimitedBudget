@@ -10,9 +10,9 @@ require(CVXR)
 load_all()
 gset = list(
   maxit_sa          = 1e3,     # max iterations for simulated annealing 
-  timelimit_cvxr    = 5*60,    # 20 seconds of compute time
+  timelimit_cvxr    = 5*60,    # units of seconds of compute time
   Nmeas             = NaN,     # measurement budget
-  Nfreq             = 2^8,     # number of frequencies to use
+  Nfreq             = 2^10,     # number of frequencies to use
   Nfine             = 288,     # corresponds to 5 minute sampling
   trace_global      = 6,       # controls how often to report 
   report_global     = 10,      # how much reporting you want
@@ -26,9 +26,9 @@ fmax=24
 freqs=seq(from=1,to=24,length.out=gset$Nfreq)
 Nmeasvals = c(16,24,32)
 
-N_amp_plt = 10 # 50
-N_per_plt = 10 # 1e2
+N_amp_plt = 50  # 50
+N_per_plt = 100 # 1e2
 
-NmcFDR   = 1e2 # 5e2
-NacroFDR = 2^5 # 2^5
-NfreqFDR = 2^5 # 2^5
+NmcFDR    = 5e2 # 5e2
+NacroFDR  = 2^5 # 2^5
+NfreqFDR  = 2^5 # 2^5

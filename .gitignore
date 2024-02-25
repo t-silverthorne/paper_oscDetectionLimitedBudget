@@ -66,3 +66,4 @@ actual_paper/*
 
 rdev_cheatsheet.txt
 */*.asv
+results/compute_canada/gurobi.env
