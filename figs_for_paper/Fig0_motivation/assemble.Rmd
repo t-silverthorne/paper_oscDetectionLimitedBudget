@@ -19,6 +19,8 @@ Add another panel illustrating why power drops at certain phases
 ```
 
 ```{r}
+p1=readRDS('figs_for_paper/Fig0_motivation/p1.RDS')
+p2=readRDS('figs_for_paper/Fig0_motivation/p2.RDS')
 p1c = p1+theme(
   legend.position = 'bottom',
   strip.background = element_blank(),
@@ -49,10 +51,10 @@ p2c = as.ggplot(p2+theme(
     x='acrophase (rad)',
     y='FDR q-value'
   ))
-Ptot=as.ggplot((p1c/p2c)+plot_annotation(tag_levels ='A')+plot_layout(heights=c(1.3,2)) & plot_theme(plot.margin=margin(0,0,0,0)))
+Ptot=as.ggplot((p1c/p2c)+plot_annotation(tag_levels ='A')+plot_layout(heights=c(1.3,2)) & theme(plot.margin=margin(0,0,0,0)))
 
 Fig = Ptot/leg1 + plot_layout(heights=c(10,1))
-ggsave(paste0(overleaf_plot_directory,'motivation_fig_v2'),Fig,width=6,height=5,device='png',dpi=600)
+ggsave(paste0(overleaf_plot_directory,'motivation_fig_v2.png'),Fig,width=6,height=5,device='png',dpi=600)
 Fig
 
 ```
