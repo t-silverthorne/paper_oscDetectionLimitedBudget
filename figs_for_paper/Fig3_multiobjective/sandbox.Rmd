@@ -25,9 +25,9 @@ Generate grids
 ```{r}
 trace_global=0
 report_global=1
-maxit_sa=5
-Nmc =  1e2 
-Nmeasvals = c(24,48)
+maxit_sa = 500
+Nmc      =  80 
+Nmeasvals = c(12,24,48)
 
 pars=expand.grid(sched_type=c('random','optimal'),Nmeas=Nmeasvals)
 
@@ -66,15 +66,31 @@ df = c(1:dim(pars)[1]) %>% lapply(function(ii){
   return(res) 
 }) %>% rbindlist()
 
-df %>% ggplot(aes(x=ncp,y=fder))+geom_point()+facet_grid(type~Nmeas,scales='free')
-```
-# Combine
-
-```{r}
 df_rao  = data.frame(feature='rao',Nmeas=df$Nmeas,type=df$type,ncp=df$ncp,y=df$rao)
 df_fder = data.frame(feature='fder',Nmeas=df$Nmeas,type=df$type,ncp=df$ncp,y=df$fder)
 df_tot = rbind(df_rao,df_fder)
 
 head(df_tot)
-df_tot %>% ggplot(aes(x=ncp,y=y,color=type))+geom_point()+facet_grid(feature~Nmeas,scales='free')
+```
+```{r}
+df_tot=df_tot_bkup
+df_tot$feature =factor(df_tot$feature,levels=c('rao','fder'),labels = c('non-uniformity','frequency sensitivity')) 
+df_tot$type=factor(df_tot$type,levels=c('random','optimal'),labels = c('random','near optimal')) 
+df_tot$Nmeas =factor(df_tot$Nmeas,levels=c(12,24,48),labels = c('12','24','48')) 
+
+p1=df_tot %>% ggplot(aes(x=ncp,y=y,color=type))+geom_point(size=1)+facet_grid(feature~Nmeas,scales='free')
+
+p1c = p1 + theme(
+    strip.background=element_blank(),
+    text=element_text(size=fs_glob)
+
+)+labs(
+  x='non-centrality',
+  y=element_blank(),
+  color='measurement distribution'
+)&theme(legend.position='bottom',plot.margin=margin(0,0,0,0))
+p1c
+
+ggsave(paste0(overleaf_plot_directory,'multiobjective.png'),p1c,width = 6,height=4,device='png',dpi=600)
+
 ```

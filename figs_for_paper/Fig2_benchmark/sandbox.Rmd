@@ -123,5 +123,5 @@ Fig=(p1c/p2c/p3c) + plot_annotation(tag_levels = 'A')+plot_layout(guides='collec
         )
 Fig
 
-ggsave(paste0(overleaf_plot_directory,'accuracy_benchmark'),Fig,width = 6,height=6,device='png',dpi=600)
+ggsave(paste0(overleaf_plot_directory,'accuracy_benchmark.png'),Fig,width = 6,height=6,device='png',dpi=600)
 ```
