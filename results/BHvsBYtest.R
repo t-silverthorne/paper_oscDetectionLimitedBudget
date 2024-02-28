@@ -5,14 +5,14 @@ require(parallel)
 Nrep = 1e3
 take_mean=F
 u=c(1:Nrep) %>% lapply(function(ii){Nmc=10
-pvec  = runif(Nmc)
-BHvec = p.adjust(pvec,method='BH')
-BYvec = p.adjust(pvec,method='BY')
-if (take_mean){
-  BHvec = mean(BHvec)
-  BYvec = mean(BYvec)
-}
-return(data.frame(BHval=BHvec,BYval=BYvec))
+  pvec  = runif(Nmc) # TODO: harmonic regression
+  BHvec = p.adjust(pvec,method='BH')
+  BYvec = p.adjust(pvec,method='BY')
+  if (take_mean){
+    BHvec = mean(BHvec)
+    BYvec = mean(BYvec)
+  }
+  return(data.frame(BHval=BHvec,BYval=BYvec))
 }) %>% rbindlist()
 
 theme_set(theme_classic())
