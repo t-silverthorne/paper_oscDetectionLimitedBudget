@@ -6,6 +6,18 @@ helper_auglattice_to_state=function(N1,N2,shift2,scale2){
   return(mt)
 }
 
+#' Helper function converts parameterization of two lattices into single lattice
+convert_2lattice_to_state=function(shift1,shift2,scale1,scale2,lat1,lat2){
+  x1 = shift1+scale1*lat1
+  x2 = shift2+scale2*lat2
+  # keep measurement times inside study, necessary for L-BFGS-B solver but not 
+  # simulated annealing (in simulated annealing, times stay inside study because
+  # of design of transition function) 
+  x  = c(x1,x2) 
+  x  = x %% 1
+  return(x)
+}
+
 helper_unif_update_shift=function(scale,shift,lat,tscale){
   if (any(scale*lat + shift <0)  | any(scale*lat + shift >1)){
     stop('invalid initial state')

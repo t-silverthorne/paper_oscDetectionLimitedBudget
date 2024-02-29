@@ -44,10 +44,7 @@ costfun_svdpower=function(mt,freqs,Amp=1,alpha=.05,weight_ncp=1,regL1=0,regFder=
     cval=cval-gapPenalty*helper_gap_penalty(mt) 
   }
   if (leveragePenalty>0){
-    maxlev = freqs %>% sapply(function(freq){
-       cosinor_design_matrix(mt,freq) %>% {stats::hat(.,intercept=F)} %>% abs() %>% max()
-    }) %>% max()
-    cval =cval - leveragePenalty*maxlev
+    stop('leverage depracated')
   }
   return(cval)
 }

@@ -32,3 +32,4 @@ make_simulated_data=function(mt,Nmc,Amin,Amax,fmin,fmax){
   am$time = mt
   return(am)
 }
+
