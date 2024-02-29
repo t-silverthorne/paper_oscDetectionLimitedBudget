@@ -44,21 +44,7 @@ make_quadmats = function(opts,returnFder=F,...){
     
     Amat  = a11%*%t(a11) + a22%*%t(a22) +4*a12%*%t(a12)-a11%*%t(a22) - a22%*%t(a11)
     
-    if (returnFder){
-      dcvec = matrix(-2*pi*tau*sin(2*pi*freq*tau) ,nrow=Nfine)
-      dsvec = matrix(2*pi*tau*cos(2*pi*freq*tau) ,nrow=Nfine)
-      
-      da11  = 2*cvec*dcvec
-      da22  = 2*svec*dsvec
-      da12  = dcvec*svec + cvec*dsvec
-      
-      dAmat_dfreq = da11%*%t(a11) + a11%*%t(da11) + da22%*%t(a22) + a22%*%t(da22) +
-          4*(da12%*%t(a12)+a12%*%t(da12)) - (da11%*%t(a22)+a11%*%t(da22)) -
-        (da22%*%t(a11)+a22%*%t(da11))
-      Amlist[[ii]] = dAmat_dfreq
-    }else{
-      Amlist[[ii]]=Amat 
-    }
+    Amlist[[ii]]=Amat 
     
   }
 

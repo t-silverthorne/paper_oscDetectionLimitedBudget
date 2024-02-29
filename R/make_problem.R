@@ -43,8 +43,6 @@ make_problem=function(x,Aquad,opts,regL1=0,regFder=0,...){
     }
     if(regFder>0){
       stop('freq regularization not yet implemented for CVXR')
-      #regL1 = Constant(regFder)  
-      #str_prefix=paste0(str_prefix,'regFder*quad_form(x,dAdFreq_L2)+')
     }
     
     strp=paste0(str_prefix,str_suffix)
