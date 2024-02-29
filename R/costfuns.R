@@ -51,3 +51,33 @@ costfun_svdpower=function(mt,freqs,Amp=1,alpha=.05,weight_ncp=1,regL1=0,regFder=
   }
   return(cval)
 }
+costfun_2lattice_svdpower_discrete = function(N1,dx1,N2,dx2,xshift2,
+                                              tau,freqs,...){
+xinds=unique(xinds_from_lat1lat2_pars(N1,dx1,N2,dx2,xshift2))
+if (any(is.na(xinds))|length(xinds)<N1+N2){
+  stop('duplicate or NA meas times present')
+}else if(any(xinds>length(tau))){
+  stop('edge case')
+}else{
+  return(costfun_svdpower(tau[xinds],freqs,...))
+}
+}
+
+#' Helper function for continuous power optimization, restricted to two lattice subspace
+#' @export
+costfun_2lattice_svdpower=function(shift1,shift2,scale1,scale2,lat1,lat2,
+                                   freqs,...){
+  mt=convert_2lattice_to_state(shift1,shift2,scale1,scale2,lat1,lat2)
+  return(costfun_svdpower(mt,freqs,...))
+}
+
+costfun_auglattice=function(N1,N2,shift2,scale2,freqs,...){
+  mt=helper_auglattice_to_state(N1=N1,N2=N2,
+                                shift2=shift2,scale2=scale2)
+  return(costfun_svdpower(mt,freqs,...))
+}
+
+costfun_svdpower_discrete = function(xinds,tau,freqs,...){
+  return(costfun_svdpower(tau[xinds],freqs,...))
+}
+
