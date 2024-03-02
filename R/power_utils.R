@@ -1,19 +1,20 @@
 #' Evaluate exact power of harmonic regression hypothesis test.
 #' 
 #' @description
-#' Returns exact power of harmonic regression hypothesis test.
+#' Returns exact power of harmonic regression hypothesis test. 
+#' 
 #' 
 #' @param t measurement schedule
-#' @param param list of oscillation parameters: 
-#' \itemize{
-#' \item \code{Amp}  amplitude, 
-#' \item \code{freq} frequency,
-#' \item \code{acro} acrophase.
-#' }
-#' @param alpha=.05 type I error
+#' @param param$Amp amplitude of signal 
+#' @param param$freq frequency fo signal
+#' @param param$acro phase of signal in radians
+#' @param alpha type I error, by default \code{alpha=.05}
 #' 
-#' @return statistical power for given parameters
+#' @note
+#' Assumes the noise has mean zero and unit standard deviation.
+#' In these units, amplitude can be interpreted as the signal to noise ratio.
 #' 
+#' @return statistical power 
 #' @author Turner Silverthorne
 #' @export
 eval_exact_power <- function(t,param,alpha=.05){
@@ -30,21 +31,18 @@ eval_exact_power <- function(t,param,alpha=.05){
   return(1 - pf(q=f0,df1=2,df2=N-3,ncp=lambda))
 }
 
-#' Use Monte Carlo method to estimate power 
+#'Use Monte Carlo method to estimate power 
 #' 
 #' @description
 #' Performs harmonic regression on a simulated dataset of independent samples
 #' and returns the portion of samples that have statistically significant p-values.
 #' Useful for comparison with the exact expression for statistical power,
-#' see [eval_exact_power()].
+#' see [eval_exact_power].
 #' 
 #' @param tvec vector of measurement times
-#' @param param oscillation parameters
-#' \itemize{
-#' \item \code{Amp} amplitude of oscillation,
-#' \item \code{freq} frequency of oscillation,
-#' \item \code{acro} acrophase of oscillation.
-#' }
+#' @param param$Amp amplitude of signal 
+#' @param param$freq frequency fo signal
+#' @param param$acro phase of signal in radians
 #' @param Nmc number of Monte Carlo samples
 #' @param alpha type I error, default value \code{alpha=.05} 
 #' 
@@ -59,6 +57,29 @@ eval_montecarlo_power<-function(tvec,param,Nmc,alpha=.05){
   return(rowCosinor(Ydat,tvec,per=1/freq) %>% {.$pvalue <.05} %>% mean())
 }
 
+#' Calculate FDR-corrected power for a range of phases and frequencies
+#' 
+#' @description
+#' Given a measurement schedule, true frequency, and amplitude, the FDR-corrected power
+#' is estimated for each acrophase and the minimum power is returned.
+#' 
+#' @note
+#' Multiple test correction is performed only with respect to the multiple frequencies and
+#' not with respect to the multiple phases.
+#' 
+#' @param mt vector of measurement times
+#' @param Amp amplitude of signal
+#' @param f0 true frequency of signal
+#' @param Nacro number of acrophases to use in simulating the power
+#' @param Nfreq number of candidate frequencies to try in harmonic regression
+#' @param fmin lowest candidate frequency
+#' @param fmax highest candidate frequency
+#' @param fdr_method passed to the [p.adjust] function, this determines what type
+#' of multiple test correction should be performed
+#' 
+#' @return the worst-case FDR-corrected power
+#' @author Turner Silverthorne
+#' @export
 benchmark_worst_fdr=function(mt,Amp,f0,Nmc,Nacro,Nfreq,fmin,fmax,
                              fdr_method='BH'){
     freqs = seq(from=fmin,to=fmax,length.out=Nfreq)
@@ -85,42 +106,3 @@ benchmark_worst_fdr=function(mt,Amp,f0,Nmc,Nacro,Nfreq,fmin,fmax,
     }) %>% min()
 }
 
-
-#' Perform multiple test correction on rows or columns of a p-value matrix
-#' 
-#' @description
-#' User chooses if multiple test correction should be performed row-wise or column-wise.
-#' Depending on this choice, rows or columns are treated as the p-values from
-#' independent hypothesis tests and are corrected using the [stats::p.adjust()] function.
-#' 
-#' @param pdat matrix of pvalues
-#' @param dim dimension along which adjustment should be performed
-#' \itemize{
-#' \item if \code{dim==1}, each row is treated as a collection of hypothesis tests for which
-#'  a set of q-values should be computed
-#'  \item if \code{dim==2}, each column is treated as a collection of hypothesis tests for which
-#'  a set of q-values should be computed
-#' }
-#' @param pmethod adjustment method, passed to [stats::p.adjust()]
-#' 
-#' @return matrix of q-values
-#' @author Turner Silverthorne
-#' @export
-matrix_1d_padjust=function(pdat,dim,pmethod){
-  stop('depracated')
-  qdat=NaN*pdat
-  
-  #TODO: could write more concisely using apply() but this gave cryptic rann errors
-  if (dim==1){ 
-    for (ii in c(1:dim(pdat)[1])){
-      qdat[ii,] = p.adjust(pdat[ii,],method=pmethod) 
-    }
-  }
-  
-  if (dim==2){
-    for (ii in c(1:dim(pdat)[2])){
-      qdat[,ii] = p.adjust(pdat[,ii],method=pmethod) 
-    }
-  }
-  return(qdat)
-}

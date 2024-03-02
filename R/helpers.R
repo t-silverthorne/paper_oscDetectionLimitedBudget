@@ -1,3 +1,4 @@
+#' Convert augmented lattice to a vector of measurement times
 helper_auglattice_to_state=function(N1,N2,shift2,scale2){
   lat1=c(1:N1)/N1-1/N1
   lat2=c(1:N2)/N2-1/N1
@@ -141,53 +142,4 @@ wrapper_sweep_lattice=function(optim_routine,Nvals,Nmeas,cts_flag,dvar0,...){
               time_tot=time_tot,
               all_fvals=all_fvals))
 }
-
-helper_extract_info_from_result=function(res,tag,Nmeas=gset$Nmeas,runtime_tot,cfunlabel='power',...){
-  tagsp=strsplit(tag,'_')
-  if(hasArg('runtime_tot')){
-    # lubridate ensures that units are always in seconds
-    runtime=runtime_tot %>% lubridate::as.duration() %>% as.numeric()
-  }else{
-    runtime=res$runtime %>% lubridate::as.duration() %>% as.numeric()
-  }
-  if (length(res$mtvalue)<Nmeas){
-    stop('degenerate measurement times')
-  }
-  
-  if (cfunlabel=='power'){
-    return(annmatrix(
-                 x = matrix(sort(res$mtvalue),nrow=1),
-              rann = data.frame(power   = 1-res$fvalue,
-                                runtime = runtime,
-                                tag     = tag,
-                                cts     = tagsp[[1]][1],
-                                lattice = tagsp[[1]][2],
-                                solver  = tagsp[[1]][3]),
-              cann = data.frame(time=c(1:Nmeas))))
-  }else if(cfunlabel=='ncp'){
-    return(annmatrix(
-                 x = matrix(sort(res$mtvalue),nrow=1),
-              rann = data.frame(ncp     = -res$fvalue,
-                                runtime = runtime,
-                                tag     = tag,
-                                cts     = tagsp[[1]][1],
-                                lattice = tagsp[[1]][2],
-                                solver  = tagsp[[1]][3]),
-              cann = data.frame(time=c(1:Nmeas))))
-  }
-}
-
-helper_update_amm=function(amm,Lnow,gset,tag,wrapped=F,...){
-  for (ii in c(1:gset$nrep)){
-    res = Lnow[[ii]]
-    if (wrapped){
-      amm = rbind(amm,helper_extract_info_from_result(res=res$res_best,tag=tag,
-                                               runtime_tot=res$time_tot,...)) 
-    }else{
-      amm = rbind(amm,helper_extract_info_from_result(res=res,tag=tag,...)) 
-    }
-  }
-  return(amm)  
-}
-
 
