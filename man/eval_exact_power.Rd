@@ -9,20 +9,23 @@ eval_exact_power(t, param, alpha = 0.05)
 \arguments{
 \item{t}{measurement schedule}
 
-\item{param}{list of oscillation parameters:
-\itemize{
-\item \code{Amp}  amplitude,
-\item \code{freq} frequency,
-\item \code{acro} acrophase.
-}}
+\item{alpha}{type I error, by default \code{alpha=.05}}
 
-\item{alpha=.05}{type I error}
+\item{param$Amp}{amplitude of signal}
+
+\item{param$freq}{frequency fo signal}
+
+\item{param$acro}{phase of signal in radians}
 }
 \value{
-statistical power for given parameters
+statistical power
 }
 \description{
 Returns exact power of harmonic regression hypothesis test.
+}
+\note{
+Assumes the noise has mean zero and unit standard deviation.
+In these units, amplitude can be interpreted as the signal to noise ratio.
 }
 \author{
 Turner Silverthorne

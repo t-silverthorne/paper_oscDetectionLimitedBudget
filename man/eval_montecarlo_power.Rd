@@ -9,16 +9,15 @@ eval_montecarlo_power(tvec, param, Nmc, alpha = 0.05)
 \arguments{
 \item{tvec}{vector of measurement times}
 
-\item{param}{oscillation parameters
-\itemize{
-\item \code{Amp} amplitude of oscillation,
-\item \code{freq} frequency of oscillation,
-\item \code{acro} acrophase of oscillation.
-}}
-
 \item{Nmc}{number of Monte Carlo samples}
 
 \item{alpha}{type I error, default value \code{alpha=.05}}
+
+\item{param$Amp}{amplitude of signal}
+
+\item{param$freq}{frequency fo signal}
+
+\item{param$acro}{phase of signal in radians}
 }
 \value{
 Monte Carlo estimate of power
@@ -27,7 +26,7 @@ Monte Carlo estimate of power
 Performs harmonic regression on a simulated dataset of independent samples
 and returns the portion of samples that have statistically significant p-values.
 Useful for comparison with the exact expression for statistical power,
-see \code{\link[=eval_exact_power]{eval_exact_power()}}.
+see \link{eval_exact_power}.
 }
 \author{
 Turner Silverthorne

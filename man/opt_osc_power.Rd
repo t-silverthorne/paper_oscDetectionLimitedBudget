@@ -2,8 +2,7 @@
 % Please edit documentation in R/opt_osc_power.R
 \name{opt_osc_power}
 \alias{opt_osc_power}
-\title{(WIP) Maximize worst-case power for cosinor-based rhythm detection
-Template function for wrapping all optimization methods in suite.}
+\title{Maximize worst-case power for cosinor-based rhythm detection}
 \usage{
 opt_osc_power(
   dvar0 = NULL,
@@ -14,18 +13,16 @@ opt_osc_power(
   ...
 )
 }
-\arguments{
-\item{control$optim_method}{svdpower with L-BFGS-B requires:
+\description{
+Template function for wrapping all optimization methods in suite.
+
+svdpower with L-BFGS-B requires:
 control$trace
 control$REPORT
 control$maxit
 svdpower with simul_anneal requires:
 same as previous, in additionlpha
-control options necessary for specifying transition function}
-}
-\description{
-(WIP) Maximize worst-case power for cosinor-based rhythm detection
-Template function for wrapping all optimization methods in suite.
+control options necessary for specifying transition function
 }
 \author{
 Turner Silverthorne

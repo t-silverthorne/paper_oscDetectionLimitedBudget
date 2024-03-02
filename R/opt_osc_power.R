@@ -1,8 +1,7 @@
-#' (WIP) Maximize worst-case power for cosinor-based rhythm detection
-#'  Template function for wrapping all optimization methods in suite.
+#' Maximize worst-case power for cosinor-based rhythm detection
+#' @description
+#' Template function for wrapping all optimization methods in suite.
 #' 
-#' @param control$costfun_choice
-#' @param control$optim_method
 #' 
 #' svdpower with L-BFGS-B requires:
 #'  control$trace

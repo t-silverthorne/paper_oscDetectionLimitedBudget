@@ -6,6 +6,25 @@
 \usage{
 convert_2lattice_to_state(shift1, shift2, scale1, scale2, lat1, lat2)
 }
+\arguments{
+\item{shift1}{shift of first lattice}
+
+\item{shift2}{shift of second lattice}
+
+\item{scale1}{scale of first lattice}
+
+\item{scale2}{scale of second lattice}
+
+\item{lat1}{vector of measurement times in first lattice}
+
+\item{lat2}{vector of measurement times in second lattice}
+}
+\value{
+vector of measurement times corresponding to the input 2-lattice parameterisation
+}
 \description{
 Helper function converts parameterization of two lattices into single lattice
+}
+\author{
+Turner Silverthorne
 }
