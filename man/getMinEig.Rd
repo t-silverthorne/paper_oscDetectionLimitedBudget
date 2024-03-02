@@ -6,6 +6,17 @@
 \usage{
 getMinEig(Mat, is_symmetric = F)
 }
+\arguments{
+\item{Mat}{a matrix}
+
+\item{is_symmetric}{boolean, is the matrix symmetric}
+}
+\value{
+smallest eigenvalue of mat, computed using \link[base:eigen]{base::eigen}
+}
 \description{
-Helper function returns smallest eigenvalue
+Wrapper for computing smallest eigenvalue of a matrix
+}
+\author{
+Turner Silverthorne
 }

@@ -2,10 +2,22 @@
 % Please edit documentation in R/FIM_utils.R
 \name{deig_dfreq}
 \alias{deig_dfreq}
-\title{Derivative of smallest eigenvalue of FIM wrt frequency}
+\title{Frequency derivative of smallest FIM eigenvalue}
 \usage{
 deig_dfreq(mt, freq)
 }
+\arguments{
+\item{mt}{vector of measurement times}
+
+\item{freq}{frequency of signal}
+}
+\value{
+derivative of minimum eigenvalue of reduced FIM with respect to frequency
+}
 \description{
-Derivative of smallest eigenvalue of FIM wrt frequency
+computes derivative of minimum eigenvalue of reduced Fisher information matrix
+with respect to the frequency parameter
+}
+\author{
+Turner Silverthorne
 }

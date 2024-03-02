@@ -2,10 +2,22 @@
 % Please edit documentation in R/FIM_utils.R
 \name{getReducedFIM}
 \alias{getReducedFIM}
-\title{Helper function computes reduced Fisher information matrix for cosinor model}
+\title{Reduced Fisher information matrix for cosinor model}
 \usage{
 getReducedFIM(t, param)
 }
+\arguments{
+\item{t}{vector of measurement times}
+
+\item{$freq}{frequency of oscillation}
+}
+\value{
+Fisher information matrix corresponding to de-meaned cosinor model. In
+the paper, we refer to this as the reduced Fisher information matrix.
+}
 \description{
-Here, reduced FIM correpsonds to de-meaned model.
+Reduced Fisher information matrix for cosinor model
+}
+\author{
+Turner Silverthorne
 }

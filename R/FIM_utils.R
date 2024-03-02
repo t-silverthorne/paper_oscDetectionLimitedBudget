@@ -1,6 +1,12 @@
-#' Helper function computes reduced Fisher information matrix for cosinor model
+#'Reduced Fisher information matrix for cosinor model
 #' 
-#' Here, reduced FIM correpsonds to de-meaned model. 
+#' @param t vector of measurement times
+#' @param$freq frequency of oscillation
+#' 
+#' @return Fisher information matrix corresponding to de-meaned cosinor model. In 
+#' the paper, we refer to this as the reduced Fisher information matrix.
+#' 
+#' @author Turner Silverthorne 
 #' @export
 getReducedFIM <- function(t,param){
   freq   = param[['freq']];
@@ -16,13 +22,34 @@ getReducedFIM <- function(t,param){
   }
 }
 
-#' Helper function returns smallest eigenvalue
+#'Helper function returns smallest eigenvalue
+#' 
+#' @description
+#' Wrapper for computing smallest eigenvalue of a matrix
+#' 
+#' @param Mat a matrix
+#' @param is_symmetric boolean, is the matrix symmetric
+#' 
+#' @return smallest eigenvalue of mat, computed using [base::eigen] 
+#' 
+#' @author Turner Silverthorne 
 #' @export
 getMinEig <- function(Mat,is_symmetric=F){
-  return(eigen(Mat,only.values=T,symmetric = is_symmetric) %>% {.$values} %>%  min())
+  return(base::eigen(Mat,only.values=T,symmetric = is_symmetric) %>% {.$values} %>%  min())
 }
 
-#' Derivative of smallest eigenvalue of FIM wrt frequency
+#'Frequency derivative of smallest FIM eigenvalue
+#' @description
+#' computes derivative of minimum eigenvalue of reduced Fisher information matrix 
+#' with respect to the frequency parameter
+#' 
+#' @param mt vector of measurement times
+#' @param freq frequency of signal
+#' 
+#' @return derivative of minimum eigenvalue of reduced FIM with respect to frequency
+#' 
+#' @author Turner Silverthorne 
+#' @export
 deig_dfreq=function(mt,freq){
   cvec=cos(2*pi*freq*mt)
   svec=sin(2*pi*freq*mt)
