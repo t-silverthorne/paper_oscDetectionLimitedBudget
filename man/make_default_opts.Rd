@@ -49,7 +49,7 @@ to not overlap with one another
 
 related to simulated annealing proposal function
 \itemize{
-\item\code{opts$lprop_method} sets weights for distribution for sampling sub lattices (uniform, linear, exp),
+\item\code{opts$tfun_choice} sets weights for distribution for sampling sub lattices (uniform, linear, exp),
 see \code{\link[=sa_sample_inds]{sa_sample_inds()}} and \code{\link[=sa_propfunction]{sa_propfunction()}}
 }
 }

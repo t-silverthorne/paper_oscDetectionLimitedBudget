@@ -1,22 +1,4 @@
 #' (Depracated) Generate simulated dataset with amplitude and freq uncertainty
-#' 
-#' @description
-#' Generated simulated dataset with uniformly random frequency and amplitude and 
-#' Gaussian white noise. The amplitude is assumed to be in units such that the noise
-#' is of strength 1. In other words, the amplitude is the signal to noise ratio.
-#' 
-#' @param mt vector of measurement times
-#' @param Nmc size of simulated dataset 
-#' @param Amin minimum amplitude
-#' @param Amax maximum amplitude
-#' @param fmin minimum frequency
-#' @param fmax maximum frequency
-#' 
-#' @return an [annmatrix::annmatrix()] object with rows labeled by amplitude,
-#'  frequency, and acrophase. Columns are labeled by measurement time \code{mt}.
-#'  
-#' @author Turner Silverthorne  
-#' @export
 make_simulated_data=function(mt,Nmc,Amin,Amax,fmin,fmax){
   stop("depracated")
   am      = as.annmatrix(matrix(replicate(Nmc*length(mt),{0}),nrow=Nmc,ncol=length(mt)))
