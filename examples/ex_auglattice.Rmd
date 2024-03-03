@@ -37,8 +37,9 @@ solve_pin2lat(x0,freqs,control,cfuntype='ncp')
 
 ## Parallel run
 ```{r}
-nrep=1e2
-c(1:nrep) %>% mclapply(mc.cores = 5,function(ind){
+control$maxit=1e3
+nrep=1e1
+c(1:nrep) %>% mclapply(mc.cores = 10,function(ind){
   x0 = list(
     N1    = sample(c(4:20),1),
     shift2 =1/24,
@@ -47,5 +48,5 @@ c(1:nrep) %>% mclapply(mc.cores = 5,function(ind){
   x0$N2 = Nmeas-x0$N1
   x0$shift2 = 1/2/x0$N1
   solve_pin2lat(x0,freqs,control,cfuntype='ncp')
-})
+}) 
 ```

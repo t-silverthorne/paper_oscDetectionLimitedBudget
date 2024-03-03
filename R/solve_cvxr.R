@@ -11,7 +11,8 @@
 #' @param control$num_iter max number of CVXR iterations
 #' @param control$MIPGapAbs stopping criterion for CVXR solver
 #' @param control$time_limit max time allowed for computation
-#' 
+#' @param Threads how many threads should CVXR use 
+#'  
 #' @return the result of calling [CVXR::solve] with specified user controls
 #' 
 #' @note
@@ -29,14 +30,15 @@
 #' @seealso [opt_osc_power()] which contains a similar wrapper for CVXR
 #' @author Turner Silverthorne
 #' @export
-solve_cvxr=function(control,...){
+solve_cvxr=function(control,Threads,...){
   start_time=Sys.time()
   Aquad             = make_quadmats(control)
   x                 = make_variable(control)
   prob              = make_problem(x,Aquad,control)
   xout = CVXR::solve(prob,verbose=control$cvxr_verbose,num_iter=control$maxit,
                        TimeLimit=control$time_limit,MIPGapAbs=control$MIPGapAbs,
-                       Presolve=control$PreSolve,MIPFocus=control$MIPFocus)
+                       Presolve=control$PreSolve,MIPFocus=control$MIPFocus,
+                     Threads=Threads)
   
   tau = c(1:control$Nfine)/control$Nfine - 1/control$Nfine
   mtvalue    = tau[as.logical(xout[[1]]>1-1e-6)] # TODO: better way of catching this 

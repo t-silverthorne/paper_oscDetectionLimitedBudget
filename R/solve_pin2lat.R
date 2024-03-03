@@ -23,6 +23,8 @@
 #'@author Turner Silverthorne
 #'@export
 solve_pin2lat=function(x0,freqs,control,...){
+  start_time=Sys.time()
+  
   N1_init     = x0[['N1']]
   N2_init     = x0[['N2']]
   shift2_init = x0[['shift2']]
@@ -41,9 +43,23 @@ solve_pin2lat=function(x0,freqs,control,...){
                                      scale2 = x[4],
                                      freqs  = freqs,
                                      control=control)}
-  xopt=stats::optim(x0,fn=cfun,gr=tfun,
+  xout=stats::optim(x0,fn=cfun,gr=tfun,
                     method='SANN',
                     control=list(trace  = control$trace,
                                  REPORT = control$REPORT,
                                  maxit  = control$maxit))
+  end_time = Sys.time()
+  fvalue     = xout$value
+  mtvalue    = helper_auglattice_to_state(N1=xout$par[1],N2=xout$par[2],
+                                     shift2=xout$par[3],scale2=xout$par[4])
+  xindsvalue = xout$par
+  
+  tstamp   = lubridate::now() %>% toString() %>% str_replace(' ','___')
+  
+  res_full = list(fvalue     = fvalue,
+       mtvalue    = mtvalue,
+       xindsvalue = xindsvalue,
+       timestamp  = tstamp,
+       runtime    = end_time-start_time,
+       optim_raw  = xout)
 }
