@@ -7,7 +7,7 @@ require(CVXR)
 require(gurobi)
 load_all()
 
-Nfreq        = 2^8
+Nfreq        = 2^10
 tlim         =  10
 Nmeas=as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 threads_glob = Sys.getenv("SLURM_CPUS_PER_TASK") 
@@ -19,13 +19,14 @@ control=list(
   Nfreq=Nfreq,
   fmin=1,
   fmax=24,
-  PreSolve=2,
+  PreSolve=0,
   MIPFocus=3,
   cvxr_verbose=T,
   time_limit=tlim,
   maxit=1e9,
-  MIPGapAbs=.01
-)
+  MIPGapAbs=.01,
+  NodefileStart=0.95
+  )
 
 res=solve_cvxr(control,Threads=threads_glob,cfuntype='ncp')
 mtdf=rbind(mtdf,data.frame(time=res$mtvalue,solver='cvxr',Nmeas=Nmeas,

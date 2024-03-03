@@ -38,7 +38,8 @@ control=list(
   cvxr_verbose=T,
   time_limit=5,
   maxit=1e9,
-  MIPGapAbs=.01 
+  MIPGapAbs=.01,
+  NodefileStart=Inf 
 )
 res=solve_cvxr(control,cfuntype='ncp')
 ggplot()+geom_point(aes(x=res$mtvalue,y=1))+xlim(c(0,1))

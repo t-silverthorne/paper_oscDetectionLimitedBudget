@@ -38,7 +38,7 @@ solve_cvxr=function(control,Threads,...){
   xout = CVXR::solve(prob,verbose=control$cvxr_verbose,num_iter=control$maxit,
                        TimeLimit=control$time_limit,MIPGapAbs=control$MIPGapAbs,
                        Presolve=control$PreSolve,MIPFocus=control$MIPFocus,
-                     Threads=Threads)
+                     Threads=Threads,NodefileStart=control$NodefileStart)
   
   tau = c(1:control$Nfine)/control$Nfine - 1/control$Nfine
   mtvalue    = tau[as.logical(xout[[1]]>1-1e-6)] # TODO: better way of catching this 
