@@ -6,7 +6,7 @@ require(gurobi)
 load_all()
 
 Nfreq        = 2^10
-tlim         =  10
+tlim         =  60*60*5 
 Nmeas=as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 threads_glob = Sys.getenv("SLURM_CPUS_PER_TASK") 
 
@@ -23,7 +23,7 @@ control=list(
   time_limit=tlim,
   maxit=1e9,
   MIPGapAbs=.01,
-  NodefileStart=Inf
+  NodefileStart=259
   )
 
 res=solve_cvxr(control,Threads=threads_glob,cfuntype='ncp')

@@ -1,10 +1,10 @@
 # Overview
-There are two main components to this repository:
+There are two components to this repository:
 
-1. Supporting code for our manuscript, found mainly in `figs_for_paper/` and `results/` directories.
+1. Supporting code for our manuscript can be found in `figs_for_paper/` and `results/` directories.
 2. Code that will eventually be packaged as a standalone `R` package, found in the `R/` directory with unit tests in `tests/`.
 
-Closer to the release of the paper, items (1) and (2) will likely be split into separate repositories. 
+Closer to the release of the paper, items (1) and (2) will be split into separate repositories. 
 
 # Installation of non-standard packages
 
@@ -39,21 +39,29 @@ Solving mixed-integer programming problems in CVXR requires access to the commer
 
 1. Download gurobi
 2. Get license file
-3. Put license in /opt/gurobi/ directory
+3. Put license in /opt/gurobi/ directory (see Windows instructions below)
 4. Follow R specific instructions in Gurobi manual to install R package
-5. Update .profile so that dynamic library loading works with Gurobi. 
+5. Follow OS specific instructions to setup R dynamic library loading 
 
-On linux, the .profile file should be updated to read
+### Mac and Linux
+On Linux, the .profile file should be updated to read
 ```bash
 export GUROBI_HOME="/opt/gurobi1003/linux64"
 export PATH="${PATH}:${GUROBI_HOME}/bin"
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${GUROBI_HOME}/lib"
 ```
+the first line should be modified appropriately for users on a Mac operating system to the corresponding path where Gurobi is installed.
 
-the first line should be modified appropriately on Mac or Windows operating systems to the corresponding path where Gurobi is installed.
+### Windows
+No modification of your path is necessary provided that your license file is placed in the following location. 
+```bash
+C:/gurobi/gurobi.lic
+```
 
+## Testing dynamic library loading
 
-To make sure that Gurobi can be accessed as a backend solver for CVXR, open an R console and run the following.
+To make sure the previous step worked (i.e. Gurobi can be accessed as a backend solver for CVXR), open an R console and run the following.
+
 ```R
 source('examples/ex_cvxr.Rmd')
 ```
