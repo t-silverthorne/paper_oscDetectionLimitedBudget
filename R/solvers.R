@@ -83,7 +83,7 @@ solve_svdpower_2lattice=function(dvar0,freqs,control,...){
 }
 
 
-solve_auglattice=function(dvar0,freqs,control,...){
+solve_auglattice=function(dvar0,freqs,control,cfuntype='ncp',...){
   N1_init     = dvar0[['N1']]
   N2_init     = dvar0[['N2']]
   shift2_init = dvar0[['shift2']]
@@ -95,6 +95,7 @@ solve_auglattice=function(dvar0,freqs,control,...){
                                          shift2 = x[3],
                                          scale2 = x[4],
                                          freqs  = freqs,
+                                         cfuntype=cfuntype,
                                          ...)}
   tfun = function(x){tfun_auglattice(N1     = x[1],
                                      N2     = x[2],

@@ -7,9 +7,8 @@
 make_variable(opts)
 }
 \arguments{
-\item{opts}{optimization options, only relevant field is \code{opts$Nfine}. the number
-of points in the underlying fine grid from which measurement times are to be chosen.
-In the first two cases, \code{x} represents as a weight function on the candidate measurement times. In the third case,}
+\item{opts$Nfine}{the number of points in the underlying fine grid from which
+measurement times are to be chosen.}
 }
 \value{
 \code{x} binary \link[CVXR:Variable-class]{CVXR::Variable} to be used as the decision variable in CVXR programming.
