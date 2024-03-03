@@ -42,6 +42,8 @@ solve_cvxr=function(control,Threads,...){
   
   tau = c(1:control$Nfine)/control$Nfine - 1/control$Nfine
   mtvalue    = tau[as.logical(xout[[1]]>1-1e-6)] # TODO: better way of catching this 
+  
+  freqs      = seq(from=control$fmin,to=control$fmax,length.out=control$Nfreq)
   fvalue     = -costfun_svdpower(mt=mtvalue,freqs=freqs,...) 
   xindsvalue = xout[[1]]
   

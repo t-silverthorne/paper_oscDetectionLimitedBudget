@@ -4,18 +4,19 @@ require(parallel)
 require(data.table)
 require(stringr)
 require(CVXR)
+require(gurobi)
 load_all()
-source('plotConfig.R')
 
-tlim         = 5
-Nmeasvals    = c(16,24)
-threads_glob = 1
+Nfreq        = 2^8
+tlim         =  10
+Nmeas=as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
+threads_glob = Sys.getenv("SLURM_CPUS_PER_TASK") 
 
 mtdf=NULL
 control=list(
-  Nmeas=24,
+  Nmeas=Nmeas,
   Nfine=288,
-  Nfreq=2^4,
+  Nfreq=Nfreq,
   fmin=1,
   fmax=24,
   PreSolve=2,
@@ -26,11 +27,8 @@ control=list(
   MIPGapAbs=.01
 )
 
-for (Nmeas in Nmeasvals){
-  control$Nmeas = Nmeas
-  res=solve_cvxr(control,Threads=threads_glob,cfuntype='ncp')
-  mtdf=rbind(mtdf,data.frame(time=res$mtvalue,solver='cvxr',Nmeas=Nmeas,
-                             ncp=-res$fvalue))
-}
+res=solve_cvxr(control,Threads=threads_glob,cfuntype='ncp')
+mtdf=rbind(mtdf,data.frame(time=res$mtvalue,solver='cvxr',Nmeas=Nmeas,
+                            ncp=-res$fvalue))
 head(mtdf)
-saveRDS(mtdf,'figs_for_paper/Fig1_aug_vs_cvxr_v2/solns_cvxr.RDS')
+saveRDS(mtdf,paste0('figs_for_paper/Fig1_aug_vs_cvxr_v2/solns_cvxr_',Nmeas,'.RDS'))

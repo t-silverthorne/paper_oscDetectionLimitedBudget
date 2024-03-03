@@ -67,3 +67,6 @@ actual_paper/*
 rdev_cheatsheet.txt
 */*.asv
 results/compute_canada/gurobi.env
+figs_for_paper/Fig1_aug_vs_cvxr/p2.RDS
+figs_for_paper/Fig1_aug_vs_cvxr/p3.RDS
+figs_for_paper/Fig1_aug_vs_cvxr/solns.RDS
