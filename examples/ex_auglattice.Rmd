@@ -30,9 +30,14 @@ control=list(
   N1max = 20,
   maxit = 1e3,
   trace = 1,
-  REPORT = 50
+  REPORT = 1
 )
-solve_pin2lat(x0,freqs,control,cfuntype='ncp')
+Nfreq = 2^10
+freqs=seq(1,24,length.out=Nfreq)
+res=solve_pin2lat(x0,freqs,control,cfuntype='ncp')
+res$mtvalue
+costfun_svdpower(res$mtvalue,freqs,cfuntype = 'ncp')
+costfun_svdpower(c(1:Nmeas)/Nmeas-1/Nmeas,freqs,cfuntype = 'ncp')
 ```
 
 ## Parallel run

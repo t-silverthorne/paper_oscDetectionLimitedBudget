@@ -49,7 +49,7 @@ solve_pin2lat=function(x0,freqs,control,...){
                                  REPORT = control$REPORT,
                                  maxit  = control$maxit))
   end_time = Sys.time()
-  fvalue     = xout$value
+  fvalue     = -xout$value
   mtvalue    = helper_auglattice_to_state(N1=xout$par[1],N2=xout$par[2],
                                      shift2=xout$par[3],scale2=xout$par[4])
   xindsvalue = xout$par

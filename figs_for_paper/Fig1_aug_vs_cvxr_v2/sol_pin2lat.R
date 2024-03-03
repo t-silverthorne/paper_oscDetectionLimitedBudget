@@ -18,15 +18,15 @@ control=list(
   trace = 1,
   REPORT = 50
 )
-freqs=seq(1,24,Nfreq)
+control$N1min = floor(Nmeas/4)
+control$N1max = 3*floor(Nmeas/4)
+freqs=seq(1,24,length.out=Nfreq)
 mtdf=NULL
 mtdf = c(1:nrep) %>% lapply(function(ind){
-  control$N1min = floor(Nmeas/4)
-  control$N1max = 3*floor(Nmeas/4)
-  
-  x0 =list(N1     = floor(Nmeas/4),
-           N2     = Nmeas - floor(Nmeas/4),
-           shift2 = 1/2/Nmeas,
+  N1loc = sample(c(control$N1min,control$N1max),1) 
+  x0 =list(N1     = N1loc,
+           N2     = Nmeas - N1loc,
+           shift2 = 1/2/N1loc,
            scale2 = 1)
   res=solve_pin2lat(x0,freqs,control,cfuntype='ncp')
   data.frame(time=res$mtvalue,solver='pin2lat',Nmeas=Nmeas,
