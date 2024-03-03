@@ -14,6 +14,10 @@
 #' 
 #' @return the result of calling [CVXR::solve] with specified user controls
 #' 
+#' @note
+#' the \code{...} argument is only relevant for computing the cost function value
+#' at the end of this method, it is not relevant to the optimization stage.
+#' 
 #' @note 
 #' \code{time_limit} does not count the time taken to complete the pre-solve.
 #' 
@@ -25,11 +29,28 @@
 #' @seealso [opt_osc_power()] which contains a similar wrapper for CVXR
 #' @author Turner Silverthorne
 #' @export
-solve_cvxr=function(control){
+solve_cvxr=function(control,...){
+  start_time=Sys.time()
   Aquad             = make_quadmats(control)
   x                 = make_variable(control)
   prob              = make_problem(x,Aquad,control)
-  result = CVXR::solve(prob,verbose=control$cvxr_verbose,num_iter=control$maxit,
+  xout = CVXR::solve(prob,verbose=control$cvxr_verbose,num_iter=control$maxit,
                        TimeLimit=control$time_limit,MIPGapAbs=control$MIPGapAbs,
-                       Presolve=PreSolve,MIPFocus=MIPFocus)
+                       Presolve=control$PreSolve,MIPFocus=control$MIPFocus)
+  
+  tau = c(1:control$Nfine)/control$Nfine - 1/control$Nfine
+  mtvalue    = tau[as.logical(xout[[1]]>1-1e-6)] # TODO: better way of catching this 
+  fvalue     = -costfun_svdpower(mt=mtvalue,freqs=freqs,...) 
+  xindsvalue = xout[[1]]
+  
+  tstamp   = lubridate::now() %>% toString() %>% str_replace(' ','___')
+  
+  end_time =Sys.time()
+  
+  res_full = list(fvalue     = fvalue,
+       mtvalue    = mtvalue,
+       xindsvalue = xindsvalue,
+       timestamp  = tstamp,
+       runtime    = end_time-start_time,
+       optim_raw  = xout)
 }

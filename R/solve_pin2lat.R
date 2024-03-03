@@ -34,7 +34,6 @@ solve_pin2lat=function(x0,freqs,control,...){
                                          shift2 = x[3],
                                          scale2 = x[4],
                                          freqs  = freqs,
-                                         cfuntype=cfuntype,
                                          ...)}
   tfun = function(x){tfun_auglattice(N1     = x[1],
                                      N2     = x[2],

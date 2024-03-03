@@ -86,29 +86,26 @@ make_problem=function(x,Aquad,opts,regL1=0,regFder=0,...){
   }
   Amean = Amean/length(Aquad)
   Amean = Constant(Amean)
-  if(opts$lattice_cstr=='none' & opts$optim_method =='cvxr'){
-    Nm   = Constant(opts$Nmeas)
-    csts = list( sum(x) == Nm)
-    big_str = paste(lapply(1:length(Aquad) %>% as.list(),
-           function(ind){
-             paste0('quad_form(x,Aquad[[',ind,']])')
-           }),collapse=',')
-   
-    str_prefix='prob=Problem(Minimize('
-    str_suffix=paste0('max_elemwise(',big_str,')),csts)')
-    
-    if(regL1>0){
-      regL1 = Constant(regL1)  
-      str_prefix=paste0(str_prefix,'regL1*quad_form(x,Amean)+')
-    }
-    if(regFder>0){
-      stop('freq regularization not yet implemented for CVXR')
-    }
-    
-    strp=paste0(str_prefix,str_suffix)
-    eval(parse(text=strp))
-  }else{
-    stop('unrecognized opts$lattice_str or opts$solver_type')
+  
+  Nm   = Constant(opts$Nmeas)
+  csts = list( sum(x) == Nm)
+  big_str = paste(lapply(1:length(Aquad) %>% as.list(),
+         function(ind){
+           paste0('quad_form(x,Aquad[[',ind,']])')
+         }),collapse=',')
+ 
+  str_prefix='prob=Problem(Minimize('
+  str_suffix=paste0('max_elemwise(',big_str,')),csts)')
+  
+  if(regL1>0){
+    regL1 = Constant(regL1)  
+    str_prefix=paste0(str_prefix,'regL1*quad_form(x,Amean)+')
   }
+  if(regFder>0){
+    stop('freq regularization not yet implemented for CVXR')
+  }
+  
+  strp=paste0(str_prefix,str_suffix)
+  eval(parse(text=strp))
   return(prob)
 }

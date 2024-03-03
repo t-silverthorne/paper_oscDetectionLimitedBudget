@@ -1,0 +1,51 @@
+# Setup
+```{r setup}
+require(devtools)
+require(ggplot2)
+require(annmatrix)
+require(ggplotify)
+require(patchwork)
+require(parallel)
+require(data.table)
+require(stringr)
+require(CVXR)
+source('plotConfig.R')
+load_all()
+```
+
+# Run solver
+
+## Single run
+```{r}
+Nmeas=24
+x0 = list(
+  N1    = sample(c(4:20),1),
+  shift2 =1/24,
+  scale2 = 1
+)
+x0$N2 = Nmeas-x0$N1
+
+control=list(
+  N1min =  4,
+  N1max = 20,
+  maxit = 1e3,
+  trace = 1,
+  REPORT = 50
+)
+solve_pin2lat(x0,freqs,control,cfuntype='ncp')
+```
+
+## Parallel run
+```{r}
+nrep=1e2
+c(1:nrep) %>% mclapply(mc.cores = 5,function(ind){
+  x0 = list(
+    N1    = sample(c(4:20),1),
+    shift2 =1/24,
+    scale2 = 1
+  )
+  x0$N2 = Nmeas-x0$N1
+  x0$shift2 = 1/2/x0$N1
+  solve_pin2lat(x0,freqs,control,cfuntype='ncp')
+})
+```
