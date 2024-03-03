@@ -1,7 +1,5 @@
 require(devtools)
 require(annmatrix)
-require(parallel)
-require(data.table)
 require(stringr)
 require(CVXR)
 require(gurobi)
@@ -19,13 +17,13 @@ control=list(
   Nfreq=Nfreq,
   fmin=1,
   fmax=24,
-  PreSolve=0,
+  PreSolve=-1,
   MIPFocus=3,
   cvxr_verbose=T,
   time_limit=tlim,
   maxit=1e9,
   MIPGapAbs=.01,
-  NodefileStart=0.95
+  NodefileStart=Inf
   )
 
 res=solve_cvxr(control,Threads=threads_glob,cfuntype='ncp')

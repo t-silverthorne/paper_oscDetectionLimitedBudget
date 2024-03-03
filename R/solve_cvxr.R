@@ -35,7 +35,7 @@ solve_cvxr=function(control,Threads,...){
   Aquad             = make_quadmats(control)
   x                 = make_variable(control)
   prob              = make_problem(x,Aquad,control)
-  xout = CVXR::solve(prob,verbose=control$cvxr_verbose,num_iter=control$maxit,
+  xout = CVXR::solve(prob,verbose=control$cvxr_verbose,num_iter=control$maxit,solver="GUROBI",
                        TimeLimit=control$time_limit,MIPGapAbs=control$MIPGapAbs,
                        Presolve=control$PreSolve,MIPFocus=control$MIPFocus,
                      Threads=Threads,NodefileStart=control$NodefileStart)

@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --account=def-stinch     # replace this with your own account
-#SBATCH --array=16,24
-#SBATCH --mem-per-cpu=8G        # memory; default unit is megabytes
-#SBATCH --time=0-00:03 # time (DD-HH:MM)
+#SBATCH --nodes=1                # add this line to make sure that slurm uses multiple nodes
+#SBATCH --cpus-per-task=1        # number of processes
+#SBATCH --mem-per-cpu=30G        # memory; default unit is megabytes
+#SBATCH --time=0-00:25           # time (DD-HH:MM)
 #SBATCH --mail-user=turner.silverthorne@utoronto.ca
 #SBATCH --mail-type=ALL
-
 
 module load StdEnv/2020
 module load gurobi
