@@ -1,0 +1,38 @@
+```{r}
+require(devtools)
+require(annmatrix)
+require(stringr)
+require(CVXR)
+require(gurobi)
+require(ggplot2)
+require(igraph) # for hypervolume scalarization
+load_all()
+
+Nfreq        =  3
+tlim         =  20  
+Nmeas        =  24 
+threads_glob =  8
+
+mtdf=NULL
+control=list(
+  Nmeas=Nmeas,
+  Nfine=144,
+  Nfreq=Nfreq,
+  fmin=1,
+  fmax=24,
+  PreSolve=2,
+  MIPFocus=2,
+  cvxr_verbose=T,
+  time_limit=tlim,
+  maxit=1e9,
+  MIPGapAbs=.005,
+  NodefileStart=Inf,
+  prob_formulation='max_elemwise'
+  )
+
+
+res=solve_cvxr(control,Threads=threads_glob,cfuntype='ncp')
+
+
+data.frame(time=res$mtvalue) %>% ggplot(aes(x=time,y=1))+geom_point()
+```

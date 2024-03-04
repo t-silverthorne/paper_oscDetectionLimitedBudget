@@ -1,5 +1,9 @@
 #'Solve power optimization using CVXR
 #' 
+#' @description
+#' Performs DCP if \code{control$prob_formulation = 'max_elemwise'} or \code{'max_entries'}.
+#' Performs hypervolume scalarization if \code{control$prob_formulation == 'hvolume'}.
+#' 
 #' @param control$Nmeas number of measurements to be collected
 #' @param control$Nfine number of points in fine grid from which measurement times are to be chosen
 #' @param control$Nfreq number of points to use in frequency discretisation of objective
@@ -11,6 +15,7 @@
 #' @param control$num_iter max number of CVXR iterations
 #' @param control$MIPGapAbs stopping criterion for CVXR solver
 #' @param control$time_limit max time allowed for computation
+#' @param control$prob_formualtion either max_elemwise, max_entries, or hvolume, see description
 #' @param Threads how many threads should CVXR use 
 #'  
 #' @return the result of calling [CVXR::solve] with specified user controls
@@ -34,7 +39,20 @@ solve_cvxr=function(control,Threads,...){
   start_time=Sys.time()
   Aquad             = make_quadmats(control)
   x                 = make_variable(control)
-  prob              = make_problem(x,Aquad,control)
+  if (control$prob_formulation=='max_elemwise'){
+    prob = make_problem(x,Aquad,control)
+  }else if (control$prob_formulation=='max_entries'){
+    prob = make_problem_entries(x,Aquad,control) 
+  }else if (control$prob_formulation=='hvolume'){
+    weight = igraph::sample_sphere_surface(
+      dim=length(Aquad),
+      n=1,
+      positive=T
+    ) 
+    prob = make_problem_hvolume(x,Aquad,control,weight)
+  }else{
+    stop('unrecognised problem formulation')
+  }
   xout = CVXR::solve(prob,verbose=control$cvxr_verbose,num_iter=control$maxit,solver="GUROBI",
                        TimeLimit=control$time_limit,MIPGapAbs=control$MIPGapAbs,
                        Presolve=control$PreSolve,MIPFocus=control$MIPFocus,

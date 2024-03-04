@@ -78,14 +78,10 @@ make_quadmats = function(opts,...){
 #' @author Turner Silverthorne
 #' @export
 make_problem=function(x,Aquad,opts,regL1=0,regFder=0,...){
-  # get mean of quad mats and convert to CVXR type
-  Amean = 0
+  # convert to CVXR datatype
   for (ii in c(1:length(Aquad))){
-    Amean = Amean + Aquad[[ii]]
     Aquad[[ii]]=Constant(Aquad[[ii]])
   }
-  Amean = Amean/length(Aquad)
-  Amean = Constant(Amean)
   
   Nm   = Constant(opts$Nmeas)
   csts = list( sum(x) == Nm)
@@ -107,5 +103,35 @@ make_problem=function(x,Aquad,opts,regL1=0,regFder=0,...){
   
   strp=paste0(str_prefix,str_suffix)
   eval(parse(text=strp))
+  return(prob)
+}
+
+make_problem_entries=function(x,Aquad,opts){
+  Nm   = Constant(opts$Nmeas)
+  csts = list( sum(x) == Nm)
+  for (ii in c(1:length(Aquad))){
+    if (ii == 1){
+      obj = quad_form(x,Constant(Aquad[[ii]]))
+    }
+    obj = vstack(obj,quad_form(x,Constant(Aquad[[ii]])))
+  }
+  
+  prob = Problem(Minimize(max_entries(obj)),csts)
+}
+
+
+make_problem_hvolume=function(x,Aquad,opts,weight){
+  Nm   = Constant(opts$Nmeas)
+  csts = list( sum(x) == Nm)
+ 
+  Amean_w= 0
+  for (ii in c(1:length(Aquad))){
+    Amean_w= Amean_w + Aquad[[ii]]*weight[ii]
+  }
+  Amean_w=Amean_w/length(Aquad)
+  Amean_w=Constant(Amean_w)
+ 
+  
+  prob=Problem(Minimize(quad_form(x,Amean_w)),csts)
   return(prob)
 }
