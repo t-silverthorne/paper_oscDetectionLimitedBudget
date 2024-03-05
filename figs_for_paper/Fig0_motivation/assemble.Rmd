@@ -21,6 +21,8 @@ Add another panel illustrating why power drops at certain phases
 ```{r}
 p1=readRDS('figs_for_paper/Fig0_motivation/p1.RDS')
 p2=readRDS('figs_for_paper/Fig0_motivation/p2.RDS')
+p1=p1+geom_hline(aes(yintercept=.05,color='red'))
+p2=p2+geom_hline(aes(yintercept=.05,color='red'))
 p1c = p1+theme(
   legend.position = 'bottom',
   strip.background = element_blank(),

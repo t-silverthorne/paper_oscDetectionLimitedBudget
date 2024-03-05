@@ -1,0 +1,131 @@
+# Setup
+```{r}
+require(dplyr)
+require(devtools)
+require(ggplot2)
+require(data.table)
+require(parallel)
+require(patchwork)
+load_all()
+Nfreq=2^10
+freqs=seq(1,24,length.out=Nfreq)
+flist=c(
+'figs_for_paper/Fig1_aug_vs_cvxr_v2/pin2lat_solns/solns_pin2lat_16.RDS',
+'figs_for_paper/Fig1_aug_vs_cvxr_v2/pin2lat_solns/solns_pin2lat_24.RDS',
+'figs_for_paper/Fig1_aug_vs_cvxr_v2/pin2lat_solns/solns_pin2lat_32.RDS',
+'figs_for_paper/Fig1_aug_vs_cvxr_v2/cvxr_solns/solns_cvxr_16.RDS',
+'figs_for_paper/Fig1_aug_vs_cvxr_v2/cvxr_solns/solns_cvxr_24.RDS',
+'figs_for_paper/Fig1_aug_vs_cvxr_v2/cvxr_solns/solns_cvxr_32.RDS',
+'figs_for_paper/Fig1_aug_vs_cvxr_v2/cvxr_sparse_solns/solns_cvxr_sparse_16.RDS',
+'figs_for_paper/Fig1_aug_vs_cvxr_v2/cvxr_sparse_solns/solns_cvxr_sparse_24.RDS',
+'figs_for_paper/Fig1_aug_vs_cvxr_v2/cvxr_sparse_solns/solns_cvxr_sparse_32.RDS')
+
+mtdf=NULL
+for (fname in flist){
+  dfloc=readRDS(fname)
+  if (grepl('cvxr_sparse',fname)){
+    dfloc$solver='cvxr_sparse'
+  }
+  if (grepl('pin2lat',fname)){
+    if (all(dfloc$ncp<0)){
+      dfloc$ncp=-dfloc$ncp
+    }
+    maxrep = dfloc[which.max(dfloc$ncp),]$rep
+    dfloc  = dfloc[dfloc$rep==maxrep,] 
+    dfloc  = dfloc[, !names(dfloc)%in% c('rep')]
+  }
+  mtdf=rbind(mtdf,dfloc)
+}
+
+Nmv = c(16,24,32)
+
+for (Nmeas in Nmv){
+  mt_unif = c(1:Nmeas)/Nmeas - 1/Nmeas
+  ncp  = costfun_svdpower(mt_unif,freqs,cfuntype = 'ncp')
+  mtloc=data.frame(time=mt_unif,solver='uniform',Nmeas=Nmeas,ncp=ncp)
+  mtdf=rbind(mtdf,mtloc)
+}
+
+mtdf %>% head()
+
+mtdf$solver=factor(mtdf$solver,c('uniform','pin2lat','cvxr_sparse','cvxr'))
+```
+
+
+# Plot solutions
+```{r}
+p1=mtdf %>% ggplot(aes(x=time,y=solver,color=solver))+geom_point()+facet_wrap(~Nmeas,nrow=3)+scale_y_discrete(limits=rev)
+p1
+
+```
+
+
+# Plot power curves
+```{r}
+solvers=mtdf$solver %>% unique()
+Amps=seq(0,3,length.out=50)
+pars=expand.grid(solver=solvers,Nmeas=Nmv,Amp=Amps)
+
+pwrdf = c(1:dim(pars)[1]) %>% mclapply(function(ii){
+  x = pars[ii,]
+  solver = x[['solver']]
+  Nmeas  = as.numeric(x[['Nmeas']])
+  Amp    = as.numeric(x[['Amp']])
+ 
+  mt = mtdf[mtdf$solver==solver & mtdf$Nmeas==Nmeas,]$time%>% as.numeric()
+  power=costfun_svdpower(mt,freqs,Amp,cfuntype = 'power')
+  return(data.frame(Amp=Amp,power=power,solver=solver,Nmeas=Nmeas))
+}) %>% rbindlist() %>% data.frame()
+
+pwrdf$solver=factor(pwrdf$solver,c('uniform','pin2lat','cvxr_sparse','cvxr'))
+p2=pwrdf %>% ggplot(aes(x=Amp,y=power,group=solver,color=solver))+geom_line()+facet_wrap(~Nmeas,nrow=3)
+```
+
+Check that guides collect properly
+```{r}
+p1+p2 + plot_layout(guides='collect') + plot_annotation(tag_levels='A') & theme(legend.position='bottom')
+```
+# Freq phase power plot
+```{r}
+Amps = c(1,1.5)
+Nfreq_plt=2^7
+Nacro=2^5+1
+acros=seq(0,2*pi,length.out=Nacro)
+acros=acros[1:(length(acros)-1)]
+freqs_plt = seq(1,24,length.out=Nfreq_plt)
+
+pars=expand.grid(Amp=Amps,solver=solvers,Nmeas=Nmv,acro=acros,freq=freqs_plt)
+
+
+#TODO: write this so that it doesnt have to search dataframe
+pwr2df = c(1:dim(pars)[1]) %>% mclapply(function(ii){
+  x = pars[ii,]
+  solver = x[['solver']]
+  Nmeas  = as.numeric(x[['Nmeas']])
+  acro   = as.numeric(x[['acro']])
+  freq   = as.numeric(x[['freq']])
+  Amp    = as.numeric(x[['Amp']]) 
+  param =list(Amp=Amp,freq=freq,acro=acro) 
+  
+  mt = mtdf[mtdf$solver==solver & mtdf$Nmeas==Nmeas,]$time%>% as.numeric()
+  power=eval_exact_power(mt,param)
+  return(data.frame(acro=acro,freq=freq,power=power,solver=solver,Nmeas=Nmeas,Amp=Amp))
+}) %>% rbindlist() %>% data.frame()
+
+head(pwr2df)
+
+```
+
+```{r}
+pwr2df$solver=factor(pwr2df$solver,c('uniform','pin2lat','cvxr_sparse','cvxr'))
+p3=pwr2df[pwr2df$Amp==1,] %>% ggplot(aes(x=acro,y=freq,fill=power))+geom_raster()+facet_grid(Nmeas~solver)+scale_fill_viridis_c()
+p4=pwr2df[pwr2df$Amp==1.5,] %>% ggplot(aes(x=acro,y=freq,fill=power))+geom_raster()+facet_grid(Nmeas~solver)+scale_fill_viridis_c()
+
+```
+
+```{r}
+(p1+p2)/p4 + plot_layout(guides='collect',heights = c(1,1.5)) + plot_annotation(tag_levels='A')  &
+  theme(
+    strip.background=element_blank(),
+    text=element_text(size=9))
+```
