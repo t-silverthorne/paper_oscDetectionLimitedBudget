@@ -28,7 +28,6 @@ gen_panel=function(mt){
  
   # panel 2 
   Nmc=1e2
-  Amp=2
   monteCarloPval <-function(tvec,Amp,freq,acro){
     Ydat = replicate(Nmc,{Amp*cos(2*pi*freq*tvec -acro) + rnorm(length(tvec))}) %>% t
     return(rowCosinor(Ydat,tvec,per=1/freq) %>% {.$pvalue} )
@@ -81,7 +80,7 @@ gen_panel=function(mt){
      plot.margin=margin(0,0,0,0),
      panel.grid.major = element_blank(),
      panel.grid.minor = element_blank(),
-     axis.text.x = element_text(vjust = 0.5)
+     axis.text.x = element_text(vjust = 0.25)
   )& labs(color='period')
  return(Fig) 
 }
