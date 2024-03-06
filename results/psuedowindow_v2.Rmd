@@ -13,7 +13,8 @@ Nfreq = 25-1
 Nacro = 2^3
 mtu = c(1:Nmeas)/Nmeas - 1/Nmeas
 mtr = sort(runif(Nmeas))
-
+fmin=1
+fmax=24
 freqs = c(1,2,4,8,16) 
 #acros = seq(0,2*pi,length.out = Nacro+1)
 #acros = acros[1:(length(acros)-1)]
