@@ -23,8 +23,8 @@ fmin  = 1
 fmax  = 24
 
 Nfreq_test = 2^6
-%>% %>% %>% %>% %>% %>% %>% %>% %>% %>% %>% %>% %>% %>% %>% fmin_test=fmin
-fmax_test=fmax*.99
+fmin_test=fmin
+fmax_test=fmax*.99 #TODO fix detunig
 mt_all = readRDS('figs_for_paper/Fig1_aug_vs_cvxr/solns.RDS')
 names = c(unique(mt_all$solver),'uniform')
 mdf=names %>% lapply(function(solver){
