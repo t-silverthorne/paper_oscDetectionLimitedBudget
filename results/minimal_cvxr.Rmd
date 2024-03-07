@@ -8,9 +8,9 @@ require(ggplot2)
 require(igraph) # for hypervolume scalarization
 load_all()
 
-Nfreq        =  3
+Nfreq        =  48
 tlim         =  20  
-Nmeas        =  24 
+Nmeas        =  32 
 threads_glob =  8
 
 mtdf=NULL
@@ -27,12 +27,14 @@ control=list(
   maxit=1e9,
   MIPGapAbs=.005,
   NodefileStart=Inf,
-  prob_formulation='max_elemwise'
+  prob_formulation='hvolume'
   )
 
 
 res=solve_cvxr(control,Threads=threads_glob,cfuntype='ncp')
 
-
 data.frame(time=res$mtvalue) %>% ggplot(aes(x=time,y=1))+geom_point()
+
+costfun_svdpower(res$mtvalue,freqs=seq(1,24,length.out=2^10),Amp=2,cfuntype = 'power')
+costfun_svdpower(c(1:Nmeas)/Nmeas,freqs=seq(1,24,length.out=2^10),Amp=1.5,cfuntype = 'power')
 ```

@@ -50,6 +50,9 @@ solve_cvxr=function(control,Threads,...){
       positive=T
     ) 
     prob = make_problem_hvolume(x,Aquad,control,weight)
+  }else if(control$prob_formulation=='L1'){
+    weight=rep(1,length(Aquad))/length(Aquad)
+    prob = make_problem_hvolume(x,Aquad,control,weight)    
   }else{
     stop('unrecognised problem formulation')
   }

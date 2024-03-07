@@ -1,0 +1,31 @@
+2. Motivation fig:
+- Use an actual optimal grid
+- Relabel x-axis "sampling time", y-axis "simulated expr"
+- Better frequencies, 4hr should be highest freq
+- Remove power curve
+
+7. Schematic fig:
+- Show step-by-step instead of all at once
+
+4. Results table:
+- Unif performance, CVXR optimal, pin2lat optimal, pin2lat pars x4, amplitude-power
+
+3. Benchmark fig:
+Remove cvxr and only show sparse result
+- A sideways
+- B sideways, add vertical line to indicate amp used in C
+- C without cvxr 
+
+1. Accuracy fig:
+- Color by p-value significance
+
+5. Lomb-Scargle power fig:
+- Can you actually reconstruct spectrum
+- Power of this hypothesis test?
+
+6. Black-box fig:
+Are we better than random designs when it comes to
+- Lomb-Scargle accuracy
+- Hypervolume weight function vs regularity vs performance of design
+
+0. New script for computing optimal solutions
