@@ -16,8 +16,8 @@ Remove cvxr and only show sparse result
 - B sideways, add vertical line to indicate amp used in C
 - C without cvxr 
 
-1. Accuracy fig:
-- Color by p-value significance
+(Y) 1. Accuracy fig:
+- Color by q-value significance
 
 5. Lomb-Scargle power fig:
 - Can you actually reconstruct spectrum
