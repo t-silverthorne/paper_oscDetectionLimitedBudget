@@ -9,35 +9,30 @@ require(patchwork)
 load_all()
 Nfreq=2^10
 freqs=seq(1,24,length.out=Nfreq)
-flist=c(
-'figs_for_paper/Fig1_aug_vs_cvxr_v2/pin2lat_solns/solns_pin2lat_16.RDS',
-'figs_for_paper/Fig1_aug_vs_cvxr_v2/pin2lat_solns/solns_pin2lat_24.RDS',
-'figs_for_paper/Fig1_aug_vs_cvxr_v2/pin2lat_solns/solns_pin2lat_32.RDS',
-'figs_for_paper/Fig1_aug_vs_cvxr_v2/cvxr_solns/solns_cvxr_16.RDS',
-'figs_for_paper/Fig1_aug_vs_cvxr_v2/cvxr_solns/solns_cvxr_24.RDS',
-'figs_for_paper/Fig1_aug_vs_cvxr_v2/cvxr_solns/solns_cvxr_32.RDS',
-'figs_for_paper/Fig1_aug_vs_cvxr_v2/cvxr_sparse_solns/solns_cvxr_sparse_16.RDS',
-'figs_for_paper/Fig1_aug_vs_cvxr_v2/cvxr_sparse_solns/solns_cvxr_sparse_24.RDS',
-'figs_for_paper/Fig1_aug_vs_cvxr_v2/cvxr_sparse_solns/solns_cvxr_sparse_32.RDS')
+Nmv = c(16,24,32)
+flist = NULL
+p3Amp=1
+for (Nm in Nmv){
+  fpin2lat = paste0('figs_for_paper/solutions/solns_pin2lat_',Nm,'.RDS')
+  fcvxr    = paste0('figs_for_paper/solutions/solns_cvxr_sparse_',Nm,'.RDS')
+  flist=c(fpin2lat,fcvxr,flist) 
+}
+flist
 
 mtdf=NULL
 for (fname in flist){
   dfloc=readRDS(fname)
-  if (grepl('cvxr_sparse',fname)){
-    dfloc$solver='cvxr_sparse'
+  if (grepl('cvxr',fname)){
+    dfloc$solver='cvxr'
   }
   if (grepl('pin2lat',fname)){
-    if (all(dfloc$ncp<0)){
-      dfloc$ncp=-dfloc$ncp
-    }
-    maxrep = dfloc[which.max(dfloc$ncp),]$rep
-    dfloc  = dfloc[dfloc$rep==maxrep,] 
-    dfloc  = dfloc[, !names(dfloc)%in% c('rep')]
+    dfloc$ncp = abs(dfloc$ncp) # consistent sign choice
+    maxrep    = dfloc[which.max(dfloc$ncp),]$rep
+    dfloc     = dfloc[dfloc$rep==maxrep,] 
+    dfloc     = dfloc[, !names(dfloc)%in% c('rep')]
   }
   mtdf=rbind(mtdf,dfloc)
 }
-
-Nmv = c(16,24,32)
 
 for (Nmeas in Nmv){
   mt_unif = c(1:Nmeas)/Nmeas - 1/Nmeas
@@ -48,14 +43,15 @@ for (Nmeas in Nmv){
 
 mtdf %>% head()
 
-mtdf$solver=factor(mtdf$solver,c('uniform','pin2lat','cvxr_sparse','cvxr'))
+mtdf$solver=factor(mtdf$solver,c('uniform','pin2lat','cvxr'))
 ```
 
 
 # Plot solutions
 ```{r}
 p1=mtdf %>% ggplot(aes(x=24*time,y=solver,color=solver))+
-  geom_point(size=.5)+facet_wrap(~Nmeas,nrow=3)+scale_y_discrete(limits=rev)+
+  geom_point(size=.5)+facet_wrap(~Nmeas,ncol=3)+
+  scale_y_discrete(limits=rev)+
   scale_x_continuous(limits=c(0,24),breaks = 4*c(0:6))+labs(x='time (hr)')
 
 p1
@@ -80,8 +76,16 @@ pwrdf = c(1:dim(pars)[1]) %>% mclapply(function(ii){
   return(data.frame(Amp=Amp,power=power,solver=solver,Nmeas=Nmeas))
 }) %>% rbindlist() %>% data.frame()
 
-pwrdf$solver=factor(pwrdf$solver,c('uniform','pin2lat','cvxr_sparse','cvxr'))
-p2=pwrdf %>% ggplot(aes(x=Amp,y=power,group=solver,color=solver))+geom_line()+facet_wrap(~Nmeas,nrow=3)+labs(x='amplitude',y='min power')
+pwrdf$solver=factor(pwrdf$solver,c('uniform','pin2lat','cvxr'))
+```
+
+
+```{r}
+p2=pwrdf %>% ggplot(aes(x=Amp,y=power,group=solver,color=solver))+
+  geom_line(show.legend=F)+
+  geom_vline(aes(xintercept = p3Amp,linetype='Amp=1'),show.legend=F)+
+  scale_linetype_manual(values='dashed')+
+  facet_wrap(~Nmeas,nrow=3)+labs(x='amplitude',y='min power')
 p2
 
 ```
@@ -122,25 +126,25 @@ head(pwr2df)
 ```
 
 ```{r}
-pwr2df$solver=factor(pwr2df$solver,c('uniform','pin2lat','cvxr_sparse','cvxr'))
-p3=pwr2df[pwr2df$Amp==1,] %>% ggplot(aes(x=acro,y=freq,fill=power))+geom_raster()+
-  facet_grid(Nmeas~solver)+
+pwr2df$solver=factor(pwr2df$solver,c('uniform','pin2lat','cvxr'))
+p3=pwr2df[pwr2df$Amp==p3Amp,] %>% ggplot(aes(x=acro,y=freq,fill=power))+geom_raster()+
+  facet_grid(solver~Nmeas)+
   scale_x_continuous(limits=c(0,2*pi),breaks =rad_brk[c(1,3,5)],labels = rad_lab[c(1,3,5)])+
   scale_fill_viridis_c(limits=c(0,1))+
   labs(x='acrophase (rad)',y='frequency (cycles/day)')
-p3
 ```
 
 ```{r}
-p4=pwr2df[pwr2df$Amp==1.5,] %>% ggplot(aes(x=acro,y=freq,fill=power))+geom_raster()+
-  facet_grid(Nmeas~solver)+
-  scale_fill_viridis_c()+labs(x='acrophase (rad)',y='frequency (cycles/day)')
+#p4=pwr2df[pwr2df$Amp==1.5,] %>% ggplot(aes(x=acro,y=freq,fill=power))+geom_raster()+
+#  facet_grid(Nmeas~solver)+
+#  scale_fill_viridis_c()+labs(x='acrophase (rad)',y='frequency (cycles/day)')
 
 ```
 
 ```{r}
-Fig=(p1+p2)/p3 + plot_layout(guides='collect',heights = c(1,1.5)) + plot_annotation(tag_levels='A')  &
+Fig=p1/p2/p3 + plot_layout(guides='collect',heights = c(.5,.5,1.5)) + plot_annotation(tag_levels='A')  &
    theme(
+     legend.position = 'bottom',
      strip.background=element_blank(),
      text=element_text(size=9),
      plot.margin=margin(0,0,0,0),
