@@ -1,8 +1,5 @@
-2. Motivation fig:
-- Use an actual optimal grid
-- Relabel x-axis "sampling time", y-axis "simulated expr"
-- Better frequencies, 4hr should be highest freq
-- Remove power curve
+(Y) 2. Motivation fig:
+TODO- Use an actual optimal grid
 
 7. Schematic fig:
 - Show step-by-step instead of all at once

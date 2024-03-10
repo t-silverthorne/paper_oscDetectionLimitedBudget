@@ -17,23 +17,22 @@ mc_cores=10
 ```{r}
 cols=viridisLite::viridisMap(3,begin=.3,end=.7,option='magma')
 freq_colors=c(rgb(cols[1,c(1:3)]),rgb(cols[2,c(1:3)]),rgb(cols[3,c(1:3)]))
-Nmeas =32
+Nmeas = 18
 mt_unif = c(1:Nmeas)/Nmeas-1/Nmeas
 
-Amp = 1.5
-Na  = 28
-Nb  = 4
+Amp = 3
+Na  = 14
+Nb  = Nmeas-Na
 mta = c(1:Na)/Na-1/Na
 mtb = c(1:Nb)/Nb-1/Nb
 mt_alt  =c(mta/2,.5 + mtb/2) 
-#if (length(mt_alt)!=Nmeas){
-#  stop('invalid comparison')
-#}
+
 source('figs_for_paper/Fig0_motivation/gen_panel.R')
-F1= as.ggplot(gen_panel(mt_unif))
-F2= as.ggplot(gen_panel(mt_alt))
+F1=gen_panel(mt_unif)
+F2=gen_panel(mt_alt)
+F1=as.ggplot(F1&theme(legend.position = 'none'))
+F2=as.ggplot(F2&theme(legend.position = 'bottom'))
 
-
-Fig = F1/F2 + plot_annotation(tag_levels ='A')
-ggsave(paste0(overleaf_plot_directory,'motivation_fig_v2.png'),Fig,width=6,height=7,device='png',dpi=600)
+Fig = F1/F2 + plot_annotation(tag_levels ='A')+plot_layout(guides='collect',heights = c(5,7))
+ggsave(paste0(overleaf_plot_directory,'motivation_fig_v2.png'),Fig,width=6,height=6,device='png',dpi=600)
 ```

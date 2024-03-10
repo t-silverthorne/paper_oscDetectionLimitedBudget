@@ -104,7 +104,7 @@ p3=p3+labs(
     x='true frequency (1/day)',
     y='estimate',
     color='FDR signif')
-(p1/p2/p3) + plot_layout(guides='collect') & theme(
+Fig = (p1/p2/p3) + plot_layout(guides='collect') & theme(
      strip.background=element_blank(),
      text=element_text(size=9),
      plot.margin=margin(0,0,0,0),
