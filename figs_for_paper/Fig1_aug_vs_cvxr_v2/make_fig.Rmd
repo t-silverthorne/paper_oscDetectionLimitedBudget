@@ -7,9 +7,10 @@ require(data.table)
 require(parallel)
 require(patchwork)
 load_all()
+source('plotConfig.R')
 Nfreq=2^10
 freqs=seq(1,24,length.out=Nfreq)
-Nmv = c(16,24,32)
+Nmv = c(16,32,48)
 flist = NULL
 p3Amp=1
 for (Nm in Nmv){
@@ -85,7 +86,7 @@ p2=pwrdf %>% ggplot(aes(x=Amp,y=power,group=solver,color=solver))+
   geom_line(show.legend=F)+
   geom_vline(aes(xintercept = p3Amp,linetype='Amp=1'),show.legend=F)+
   scale_linetype_manual(values='dashed')+
-  facet_wrap(~Nmeas,nrow=3)+labs(x='amplitude',y='min power')
+  facet_wrap(~Nmeas,ncol=3)+labs(x='amplitude',y='min power')
 p2
 
 ```
@@ -101,7 +102,7 @@ Nfreq_plt=2^7
 Nacro=2^5+1
 acros=seq(0,2*pi,length.out=Nacro)
 acros=acros[1:(length(acros)-1)]
-freqs_plt = seq(1,24,length.out=Nfreq_plt)
+freqs_plt = seq(1,26,length.out=Nfreq_plt)
 
 pars=expand.grid(Amp=Amps,solver=solvers,Nmeas=Nmv,acro=acros,freq=freqs_plt)
 
@@ -142,7 +143,7 @@ p3=pwr2df[pwr2df$Amp==p3Amp,] %>% ggplot(aes(x=acro,y=freq,fill=power))+geom_ras
 ```
 
 ```{r}
-Fig=p1/p2/p3 + plot_layout(guides='collect',heights = c(.5,.5,1.5)) + plot_annotation(tag_levels='A')  &
+Fig=p1/p2/p3 + plot_layout(guides='collect',heights = c(.3,.5,1.5)) + plot_annotation(tag_levels='A')  &
    theme(
      legend.position = 'bottom',
      strip.background=element_blank(),

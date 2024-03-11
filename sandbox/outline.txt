@@ -1,13 +1,13 @@
 (Y) 2. Motivation fig:
 TODO- Use an actual optimal grid
 
-7. Schematic fig:
+(omit) 7. Schematic fig:
 - Show step-by-step instead of all at once
 
-4. Results table:
+(omit) 4. Results table:
 - Unif performance, CVXR optimal, pin2lat optimal, pin2lat pars x4, amplitude-power
 
-3. Benchmark fig:
+(Y) 3. Benchmark fig:
 Remove cvxr and only show sparse result
 - A sideways
 - B sideways, add vertical line to indicate amp used in C
@@ -17,6 +17,9 @@ Remove cvxr and only show sparse result
 - Color by q-value significance
 
 5. Lomb-Scargle power fig:
+- facet with nice angular for cols
+- better x, y label
+- use actual optimal designs
 - Can you actually reconstruct spectrum
 - Power of this hypothesis test?
 
@@ -25,4 +28,10 @@ Are we better than random designs when it comes to
 - Lomb-Scargle accuracy
 - Hypervolume weight function vs regularity vs performance of design
 
-0. New script for computing optimal solutions
+
+Plan:
+
+- update table,
+- blackbox fig
+- use optimal grid for all figures
+- write
