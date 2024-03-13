@@ -8,7 +8,7 @@ require(patchwork)
 require(lomb)
 require(latex2exp)
 load_all()
-
+source('plotConfig.R')
 Nmeas = 32 
 mtu = c(1:Nmeas)/Nmeas - 1/Nmeas
 

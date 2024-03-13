@@ -5,13 +5,13 @@ require(stringr)
 require(CVXR)
 require(gurobi)
 require(ggplot2)
-require(igraph) # for hypervolume scalarization
+require(patchwork)
 load_all()
 
-Nfreq        =  48
-tlim         =  20  
-Nmeas        =  32 
-threads_glob =  8
+Nfreq        = 47
+tlim         = 10  
+Nmeas        = 32 
+threads_glob = 10
 
 mtdf=NULL
 control=list(
@@ -25,16 +25,23 @@ control=list(
   cvxr_verbose=T,
   time_limit=tlim,
   maxit=1e9,
-  MIPGapAbs=.005,
+  MIPGapAbs=.001,
   NodefileStart=Inf,
-  prob_formulation='hvolume'
+  prob_formulation='max_entries'
   )
 
 
+freqs=seq(1,24,length.out=control$Nfreq)
 res=solve_cvxr(control,Threads=threads_glob,cfuntype='ncp')
 
-data.frame(time=res$mtvalue) %>% ggplot(aes(x=time,y=1))+geom_point()
+p1=data.frame(time=res$mtvalue) %>% ggplot(aes(x=time,y=1))+geom_point()+xlim(c(0,1))
+p2=data.frame(time=c(1:control$Nfine)/control$Nfine-1/control$Nfine) %>% ggplot(aes(x=time,y=1))+geom_point()+xlim(c(0,1))
+p1/p2
 
-costfun_svdpower(res$mtvalue,freqs=seq(1,24,length.out=2^10),Amp=2,cfuntype = 'power')
-costfun_svdpower(c(1:Nmeas)/Nmeas,freqs=seq(1,24,length.out=2^10),Amp=1.5,cfuntype = 'power')
+#p2=data.frame(y=res$weight,x=freqs) %>% ggplot(aes(x=x,y=y))+geom_point()
+#
+#p1/p2
+
+#costfun_svdpower(res$mtvalue,freqs=seq(1,24,length.out=2^10),Amp=2,cfuntype = 'power')
+#costfun_svdpower(c(1:Nmeas)/Nmeas,freqs=seq(1,24,length.out=2^10),Amp=1.5,cfuntype = 'power')
 ```
