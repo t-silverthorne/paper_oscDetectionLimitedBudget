@@ -37,6 +37,7 @@
 #' @export
 solve_cvxr=function(control,Threads,...){
   start_time=Sys.time()
+  weight=NULL
   Aquad             = make_quadmats(control)
   x                 = make_variable(control)
   if (control$prob_formulation=='max_elemwise'){
@@ -44,11 +45,8 @@ solve_cvxr=function(control,Threads,...){
   }else if (control$prob_formulation=='max_entries'){
     prob = make_problem_entries(x,Aquad,control) 
   }else if (control$prob_formulation=='hvolume'){
-    weight = igraph::sample_sphere_surface(
-      dim=length(Aquad),
-      n=1,
-      positive=T
-    ) 
+    weight=rnorm(length(Aquad)) # sample positive orthant of unit sphere
+    weight=abs(weight/sqrt(sum(weight^2))) #TODO: verify
     prob = make_problem_hvolume(x,Aquad,control,weight)
   }else if(control$prob_formulation=='L1'){
     weight=rep(1,length(Aquad))/length(Aquad)
@@ -65,7 +63,7 @@ solve_cvxr=function(control,Threads,...){
   mtvalue    = tau[as.logical(xout[[1]]>1-1e-6)] # TODO: better way of catching this 
   
   freqs      = seq(from=control$fmin,to=control$fmax,length.out=control$Nfreq)
-  fvalue     = -costfun_svdpower(mt=mtvalue,freqs=freqs,...) 
+  fvalue     = costfun_svdpower(mt=mtvalue,freqs=freqs,...) 
   xindsvalue = xout[[1]]
   
   tstamp   = lubridate::now() %>% toString() %>% str_replace(' ','___')
@@ -77,5 +75,6 @@ solve_cvxr=function(control,Threads,...){
        xindsvalue = xindsvalue,
        timestamp  = tstamp,
        runtime    = end_time-start_time,
-       optim_raw  = xout)
+       optim_raw  = xout,
+       weight     = weight)
 }

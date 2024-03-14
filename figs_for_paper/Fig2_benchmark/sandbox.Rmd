@@ -16,7 +16,7 @@ mc_cores=10
 
 ```{r}
 Nmeas = 16 
-Nmc   = 5e3
+Nmc   = 5e2
 Amin  = log2(1)
 Amax  = log2(5)
 fmin  = 1
@@ -24,17 +24,18 @@ fmax  = 24
 
 Nfreq_test = 2^6
 fmin_test=fmin
-fmax_test=fmax*.99 #TODO fix detunig
+fmax_test=fmax*.99 #TODO fix detuning
 mt_all = readRDS('figs_for_paper/Fig1_aug_vs_cvxr/solns.RDS')
-names = c(unique(mt_all$solver),'uniform')
+
+Nms = mt_all$Nmeas %>% unique()
+
+for (Nm in Nms){
+  mt = c(1:Nm)/Nm-1/Nm
+  mt_all=rbind(mt_all,data.frame(time=mt,solver='uniform',Nmeas=Nm,ncp=NaN))
+}
+names=unique(mt_all$solver)
 mdf=names %>% lapply(function(solver){
-  if (solver=='uniform'){
-    mt = c(1:Nmeas)/Nmeas -1/Nmeas %>% matrix(nrow=Nmeas)
-  }else if(solver%in% names){
-    mt = sort(mt_all[mt_all$solver==solver & mt_all$Nmeas==Nmeas ,]$time)
-  }else{
-    stop('unrecognized solver')
-  }
+  mt = mt_all[mt_all$solver==solver & mt_all$Nmeas==Nmeas,]$time
   # make pars
   Amps    = 2^runif(Nmc,Amin,Amax) %>% matrix(nrow=Nmc)
   freqs   = runif(Nmc,fmin,fmax) %>% matrix(nrow=Nmc)
@@ -53,7 +54,8 @@ mdf=names %>% lapply(function(solver){
   
   ests = c(1:Nmc) %>% mclapply(mc.cores=mc_cores,function(jj){
     fits = Lfit %>% lapply(function(df){df[jj,]}) %>% rbindlist()
-    return(fits[which.min(fits$pvalue),])
+    return(cbind(data.frame(qval=p.adjust(fits$pvalue,method='fdr')),
+                 data.frame(fits[which.min(fits$pvalue),])))
   })
   
   res=ests %>% rbindlist()
@@ -70,9 +72,21 @@ Make plot
 ```{r}
 al_glob=.5
 sz_glob=.5
-p1=mdf %>% ggplot(aes(x=Amp_true,y=amplitude_est,color=freq_true))+geom_point(alpha=al_glob,size=sz_glob) + facet_wrap(~method,nrow=1)+scale_color_viridis_c()+scale_y_continuous(trans='log2')+scale_x_continuous(trans='log2')
-p2=mdf %>% ggplot(aes(x=acro_true,y=phase_est,color=freq_true))+geom_point(alpha=al_glob,size=sz_glob) + facet_wrap(~method,nrow=1)+scale_color_viridis_c()
-p3=mdf %>% ggplot(aes(x=freq_true,y=freq_est,color=freq_true))+geom_point(alpha=al_glob,size=sz_glob) + facet_wrap(~method,nrow=1)+scale_color_viridis_c()
+p1=mdf %>% ggplot(aes(x=Amp_true,y=amplitude_est,color=qval_est<.05))+
+  geom_point(alpha=al_glob,size=sz_glob) +
+  facet_wrap(~method,nrow=1)+
+  scale_color_manual(values=c('red','black'))+
+  scale_y_continuous(trans='log2')+scale_x_continuous(trans='log2')
+
+p2=mdf %>% ggplot(aes(x=acro_true,y=phase_est,color=qval_est<.05))+
+  geom_point(alpha=al_glob,size=sz_glob) + 
+  scale_color_manual(values=c('red','black'))+
+  facet_wrap(~method,nrow=1)
+
+p3=mdf %>% ggplot(aes(x=freq_true,y=freq_est,color=qval_est<.05))+
+  geom_point(alpha=al_glob,size=sz_glob) + 
+  scale_color_manual(values=c('red','black'))+
+  facet_wrap(~method,nrow=1)
 
 ```
 

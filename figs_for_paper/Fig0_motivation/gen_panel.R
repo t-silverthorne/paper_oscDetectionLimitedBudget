@@ -4,9 +4,9 @@ gen_panel=function(mt){
   
   # panel 1 
   t_fine = seq(0,1,.005)
-  freqs = c(1,6,16)
+  freqs = c(1,4,9*.99)
   cp_levels = sort(24/freqs) %>% rev()
-  cp_labels = circ_per_levels %>%  {paste0(.,' hr')}
+  cp_labels = round(cp_levels,2) %>%  {paste0(.,' hr')}
   phi_plt1=pi/2
   
   df = freqs %>% lapply(function(freq){
@@ -23,7 +23,9 @@ gen_panel=function(mt){
   df_noise$circ_per = factor(df_noise$circ_per,cp_levels,cp_labels)
   p1=ggplot()+geom_line(data=df,aes(x=24*time,y=expr,group=circ_per,color=circ_per))+
     scale_color_manual(values = freq_colors)+
-    geom_point(data=df_noise,aes(x=24*time,y=expr,color=circ_per),size=.5)+facet_wrap(~circ_per,nrow=3)+labs(y='expression',x='time (hr)')+
+    geom_point(data=df_noise,aes(x=24*time,y=expr,color=circ_per),size=.5)+
+    facet_wrap(~circ_per,nrow=3)+
+    labs(y='simulated expression',x='measurement time (hr)')+
     scale_x_continuous(limits=c(0,24),breaks = 4*c(0:6))
  
   # panel 2 
@@ -41,40 +43,43 @@ gen_panel=function(mt){
     freq=as.numeric(x['freq'])
     acro=as.numeric(x['acro'])
     return(data.frame(freq=freq,acro=acro,
-                      pvalue=monteCarloPval(mt,Amp,freq*.999,acro)))
+                      pvalue=monteCarloPval(mt,Amp,freq,acro)))
   }) %>% rbindlist() %>% data.frame()
   
   
   df$circ_per=24/df$freq
   df$circ_per = factor(df$circ_per,cp_levels,cp_labels)
   
-  p2=df %>% ggplot(aes(x=acro,y=pvalue,color=circ_per))+geom_point(size=.5,alpha=.2)+facet_wrap(~circ_per,nrow=3)+
-    scale_y_continuous(trans='log10')+
-    geom_hline(aes(yintercept =.05,linetype='p=0.05'),color='black')+
-    scale_x_continuous(limits=c(0,2*pi),breaks =rad_brk,labels = rad_lab)+labs(x='acrophase (rad)',linetype=element_blank())+
-    scale_color_manual(values=freq_colors)+scale_linetype_manual(values=c('dashed'))+guides(color='none')
-
-  # panel 3
-  acros = seq(0,2*pi,.01)
-  pars=expand.grid(freq=freqs,acro=acros) 
-  df= c(1:dim(pars)[1]) %>% lapply(function(ind){
-    x=pars[ind,]
-    param=list(
-      Amp=Amp,
-      freq=as.numeric(x['freq']),
-      acro=as.numeric(x['acro'])
-    )
-    return(data.frame(freq=param$freq,acro=param$acro,power=eval_exact_power(mt,param)))
-  }) %>% rbindlist() %>% data.frame()
-  
-  df$circ_per = 24/df$freq
-  df$circ_per = factor(df$circ_per,cp_levels,cp_labels)
-  
-  p3=df %>% ggplot(aes(x=acro,y=power,color=circ_per))+geom_line()+facet_wrap(~circ_per,nrow=3)+labs(x='acrophase (rad)')+
+  p2=df %>% ggplot(aes(x=acro,y=-log10(pvalue),color=circ_per))+
+    geom_point(size=.5,alpha=.2)+
+    facet_wrap(~circ_per,nrow=3)+
+    geom_hline(aes(yintercept =-log10(.05),linetype='p=0.05'),color='black')+
     scale_x_continuous(limits=c(0,2*pi),breaks =rad_brk,labels = rad_lab)+
-    scale_color_manual(values=freq_colors)+guides(color='none')+ylim(c(0,1))
+    labs(x='acrophase (rad)',y='-log(pvalue)',linetype=element_blank())+
+    scale_color_manual(values=freq_colors)+scale_linetype_manual(values=c('dashed'))+guides(color='none')+
+    ylim(c(0,10))
 
-  Fig=p1+p2+p3  + plot_layout(guides='collect') & theme(
+  ## panel 3
+  #acros = seq(0,2*pi,.01)
+  #pars=expand.grid(freq=freqs,acro=acros) 
+  #df= c(1:dim(pars)[1]) %>% lapply(function(ind){
+  #  x=pars[ind,]
+  #  param=list(
+  #    Amp=Amp,
+  #    freq=as.numeric(x['freq']),
+  #    acro=as.numeric(x['acro'])
+  #  )
+  #  return(data.frame(freq=param$freq,acro=param$acro,power=eval_exact_power(mt,param)))
+  #}) %>% rbindlist() %>% data.frame()
+  #
+  #df$circ_per = 24/df$freq
+  #df$circ_per = factor(df$circ_per,cp_levels,cp_labels)
+  #
+  #p3=df %>% ggplot(aes(x=acro,y=power,color=circ_per))+geom_line()+facet_wrap(~circ_per,nrow=3)+labs(x='acrophase (rad)')+
+  #  scale_x_continuous(limits=c(0,2*pi),breaks =rad_brk,labels = rad_lab)+
+  #  scale_color_manual(values=freq_colors)+guides(color='none')+ylim(c(0,1))
+
+  Fig=p1+p2 + plot_layout(guides='collect') & theme(
      strip.background=element_blank(),
      text=element_text(size=9),
      plot.margin=margin(0,0,0,0),
