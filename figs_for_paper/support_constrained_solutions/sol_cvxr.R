@@ -22,9 +22,9 @@ control=list(
   cvxr_verbose=T,
   time_limit=tlim,
   maxit=1e9,
-  MIPGapAbs=.001,
+  MIPGapAbs=1e-12,
   MIPGap=1e-5,
-  NodefileStart=0.45
+  NodefileStart=Inf
   )
 
 res=solve_cvxr_spt(control,Threads=threads_glob,

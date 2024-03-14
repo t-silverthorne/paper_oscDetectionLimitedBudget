@@ -33,8 +33,8 @@ solve_cvxr_spt= function(control,Threads,use_spt=F,drts=NULL,pads=NULL){
                        TimeLimit=control$time_limit,MIPGapAbs=control$MIPGapAbs,MIPGap=control$MIPGap,
                        Presolve=control$PreSolve,MIPFocus=control$MIPFocus,
                        Threads=Threads,NodefileStart=control$NodefileStart)
-  tau = c(1:control$Nfine)/control$Nfine - 1/control$Nfine
-  mtvalue    = tau[as.logical(xout[[1]]>1-1e-6)] # TODO: better way of catching this 
+  #tau = c(1:control$Nfine)/control$Nfine - 1/control$Nfine
+  #mtvalue    = tau[as.logical(xout[[1]]>1-1e-6)] # TODO: better way of catching this 
   
-  return(mtvalue)
+  return(xout)
 }

@@ -22,9 +22,9 @@ control=list(
   cvxr_verbose=T,
   time_limit=tlim,
   maxit=1e9,
-  MIPGapAbs=.001,
+  MIPGapAbs=1e-12,
   MIPGap=1e-5,
-  NodefileStart=0.45
+  NodefileStart=Inf
   )
 
 #res=solve_cvxr_spt(control,Threads=threads_glob,
@@ -39,4 +39,9 @@ res=solve_cvxr_spt(control,Threads=threads_glob,
                    use_spt=T,
                    drts=drts,
                    pads=pads)
-saveRDS(res,paste0('figs_for_paper/support_constrained_solutions/solns_spt_cvxr_',Nmeas,'.RDS'))
+saveRDS(res,paste0('figs_for_paper/support_constrained_solutions/solns_spt_cvxr_drts_',drts,
+                   '_pads_',pads,
+                   '_Nmeas_',Nmeas,'.RDS'))
+
+
+
