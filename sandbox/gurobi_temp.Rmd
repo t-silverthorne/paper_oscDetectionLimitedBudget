@@ -1,18 +1,41 @@
+
+```{r}
+require(devtools)
+require(annmatrix)
+require(stringr)
+require(CVXR)
 require(gurobi)
-require(dplyr)
+load_all()
 
 # discretization parameters
-Nfine = 144      
-Nfreq = 47 
-Nmeas = 48 
-fmin  = 1
-fmax  = 24
-tau   = c(1:Nfine)/Nfine -1/Nfine 
-fvec  = seq(from=fmin,to=fmax,length.out=Nfreq)
+Nfine        = 144      
+Nfreq        = 47 
+Nmeas        = 32 
+fmin         = 1
+fmax         = 24
+tau          = c(1:Nfine)/Nfine -1/Nfine 
+fvec         = seq(from=fmin,to=fmax,length.out=Nfreq)
 threads_glob = 12
-tlim_glob    = 60*60*2
-out_loc_glob = 'figs_for_paper/gurobi_raw/'
+tlim_glob    = 60 
 
+control=list(
+  Nmeas=Nmeas,
+  Nfine=Nfine,
+  Nfreq=Nfreq,
+  fmin=fmax,
+  fmax=fmin,
+  PreSolve=2,
+  MIPFocus=3,
+  cvxr_verbose=T,
+  time_limit=tlim_glob,
+  maxit=1e9,
+  MIPGapAbs=1e-12,
+  MIPGap=1e-5,
+  NodefileStart=Inf
+  )
+```
+# Solve using raw gurobi
+```{r}
 
 # construct gurobi model
 model=list()
@@ -48,5 +71,24 @@ params = list(TimeLimit=tlim_glob,MIPGap=1e-5,
               Presolve=2,MIPFocus=3,NumericFocus=3,Threads=threads_glob)
 
 # solve
-sol=gurobi(model,params)
-saveRDS(sol,file=paste0(out_loc_glob,'sol_gur_free_Nmeas_',Nmeas,'.RDS'))
+res1=gurobi(model,params)
+```
+# Solve using CVXR wrapper
+```{r}
+res2=solve_cvxr_spt(control,Threads=threads_glob,
+                   use_spt=F,
+                   drts=NULL,
+                   pads=NULL)
+
+```
+
+# Compare
+```{r}
+x1  = res1$x[1:Nfine]
+mt1 = tau[as.logical(x1)]
+mt2 = tau[as.logical(res2[[1]])]
+
+freqs_dense=seq(1,24,length.out=2^10)
+costfun_svdpower(mt1,freqs_dense,cfuntype ='ncp')
+costfun_svdpower(mt2,freqs_dense,cfuntype ='ncp')
+```
