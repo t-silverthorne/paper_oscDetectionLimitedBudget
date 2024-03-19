@@ -3,10 +3,10 @@ solve_cvxr_spt= function(control,Threads,use_spt=F,drts=NULL,pads=NULL){
   x     = Variable(control$Nfine,boolean=T)
  
   #  ensure support distributed throughout domain
-  rt_inds=seq(1,control$Nfine,drts)
   csts  = list(sum(x)==control$Nmeas)
   
   if (use_spt){
+    rt_inds=seq(1,control$Nfine,drts)
     for (ii in c(1:length(rt_inds))){
       cst_spt = sum(x[c(rt_inds[ii]:(rt_inds[ii]+pads))])>=1
       csts = append(csts,cst_spt)

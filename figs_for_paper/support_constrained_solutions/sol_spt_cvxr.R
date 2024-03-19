@@ -6,7 +6,7 @@ require(gurobi)
 load_all()
 
 Nfreq        =  47
-tlim         =  5*60*60 
+tlim         =  2*60*60 
 Nmeas=as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 threads_glob = Sys.getenv("SLURM_CPUS_PER_TASK") 
 
@@ -33,7 +33,7 @@ control=list(
 #                   pads=NULL)
 #saveRDS(res,paste0('figs_for_paper/support_constrained_solutions/solns_cvxr_',Nmeas,'.RDS'))
 
-drts=6*3
+drts=6*2
 pads=0
 res=solve_cvxr_spt(control,Threads=threads_glob,
                    use_spt=T,

@@ -6,7 +6,7 @@ require(gurobi)
 load_all()
 
 Nfreq        =  47
-tlim         =  5*60*60 
+tlim         =  2*60*60 
 Nmeas=as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 threads_glob = Sys.getenv("SLURM_CPUS_PER_TASK") 
 
