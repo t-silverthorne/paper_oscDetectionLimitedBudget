@@ -76,6 +76,8 @@ for (Nm in Nm_vals){
 
 res = rbind(res_cvxr,res_supp_6,res_supp_18,res_unif,res_p2l)
 df  = data.frame(res)
+
+saveRDS(df,file = 'figs_for_paper/summary_table/cvxr_summary.RDS')
 ```
 
 # assemble raw gurobi results
