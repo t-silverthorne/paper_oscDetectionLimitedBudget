@@ -2,21 +2,22 @@ require(gurobi)
 require(dplyr)
 
 # discretization parameters
-Nfine = 144
-Nfreq = 47 
-Nmeas = as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
-fmin  = 1
-fmax  = 24
-tau   = c(1:Nfine)/Nfine -1/Nfine 
-fvec  = seq(from=fmin,to=fmax,length.out=Nfreq)
-threads_glob = Sys.getenv("SLURM_CPUS_PER_TASK") 
-tlim_glob    = 60*60*2
-out_loc_glob = 'figs_for_paper/gurobi_raw_spt/'
-drts            = 6
+Nfine        = 144 
+Nfreq        = 47
+Nmeas        = 48 #as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
+fmin         = 1
+fmax         = 24
+tau          = c(1:Nfine)/Nfine -1/Nfine 
+fvec         = seq(from=fmin,to=fmax,length.out=Nfreq)
+threads_glob = 8 #Sys.getenv("SLURM_CPUS_PER_TASK") 
+tlim_glob    = 20 # 60*60*2
+out_loc_glob = NULL
+drts         = 6 
 
+model=list()
+
+lin_cstr_mode = 'single' # multi or single
 # construct linear constraint matrix
-
-# support constraints
 zero_vec        = rep(0,Nfine+1)
 rt_inds         = seq(1,Nfine,drts)
 lin_csts        = list()
@@ -25,15 +26,28 @@ sense_list      = list()
 lin_csts[[1]]   = c(rep(1,Nfine),0)
 rhs_list[[1]]   = Nmeas
 sense_list[[1]] = '=' 
-for (ii in c(1:length(rt_inds))){
-  qc_loc              = zero_vec
-  qc_loc[rt_inds[ii]] = 1
-  lin_csts[[ii+1]]    = qc_loc
-  rhs_list[[ii+1]]    = 1
-  sense_list[[ii+1]]  = '>'
+
+# support constraints
+if (lin_cstr_mode=='multi'){
+  for (ii in c(1:length(rt_inds))){
+    qc_loc              = zero_vec
+    qc_loc[rt_inds[ii]] = 1
+    lin_csts[[ii+1]]    = qc_loc
+    rhs_list[[ii+1]]    = 1
+    sense_list[[ii+1]]  = '>'
+  }
+}else if(lin_cstr_mode=='single'){
+  lin_cstr_vec          = rep(0,Nfine+1)
+  rt_inds               = seq(1,Nfine,drts)
+  lin_cstr_vec[rt_inds] = 1
+  lin_csts[[length(lin_csts)+1]] = lin_cstr_vec  
+  rhs_list[[2]]              = sum(lin_cstr_vec)
+  sense_list[[2]]            = '>'
+}else{
+  stop('unknown lin_cstr_mode')
 }
+
 # construct gurobi model
-model=list()
 model$A          = lin_csts %>% unlist() %>% matrix(byrow=T,ncol=Nfine+1)
 model$sense      = sense_list %>% unlist() 
 model$rhs        = rhs_list %>% unlist() 
@@ -68,6 +82,7 @@ params = list(TimeLimit=tlim_glob,MIPGap=1e-5,
 
 # solve
 sol=gurobi(model,params)
+
 saveRDS(sol,file=paste0(out_loc_glob,'sol_gur_',
                         'drts_',drts,
                         '_Nmeas_',Nmeas,'.RDS'))
