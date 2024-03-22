@@ -21,5 +21,8 @@ DiscoRhythm::lmCSmat(Xdat,mt, period)
 # for comparing to method from paper
 require(devtools)
 load_all()
+
 # since you are using units of hours, you need 24/period instead of 1/period
 costfun_svdpower(mt,freqs=c(24/period),Amp=Amp,alpha=.05,cfuntype='power')
+
+# TODO: ask Matt about multi-group T-test
