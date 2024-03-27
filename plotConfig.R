@@ -4,7 +4,7 @@ user='TurnerLinux'
 if (user == 'TurnerMac'){
 	overleaf_plot_directory = '/Users/turnersilverthorn/research/overleaf/samplingPaper/figures/'
 } else {
-  overleaf_plot_directory = '/home/turner/research/overleaf/rate_limited_sampling/figures/'
+  overleaf_plot_directory = '/home/turner/research/ms_powerCHORD_intro_results1/figures/'
 }
 
 get_legend <- function(p) {
@@ -36,6 +36,8 @@ control_labels <- function(plot,
   #TODO legend_vis option
   return(plot)
 }
+
+fs_glob=9
 
 rad_brk = c(0,pi/2,pi,3*pi/2,2*pi)
 rad_lab = c(expression(0),

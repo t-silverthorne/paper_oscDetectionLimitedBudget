@@ -1,4 +1,4 @@
-#'Evaluate pseudo window of a Lomb Scargle periodogram
+#'Compute pseudo window of a Lomb Scargle periodogram
 #'
 #'@description
 #' Given a frequency, acrophase, and collection of measurement times, the Lomb-Scargle 

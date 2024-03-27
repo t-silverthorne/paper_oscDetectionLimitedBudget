@@ -4,15 +4,15 @@ require(dplyr)
 # discretization parameters
 Nfine        = 144 
 Nfreq        = 47
-Nmeas        = 48 #as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
+Nmeas        = 32 #as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 fmin         = 1
 fmax         = 24
 tau          = c(1:Nfine)/Nfine -1/Nfine 
 fvec         = seq(from=fmin,to=fmax,length.out=Nfreq)
 threads_glob = 8 #Sys.getenv("SLURM_CPUS_PER_TASK") 
 tlim_glob    = 20 # 60*60*2
-out_loc_glob = NULL
-drts         = 6 
+out_loc_glob = NULL #'figs_for_paper/gurobi_raw_spt/' 
+drts         = 2*6 
 
 model=list()
 

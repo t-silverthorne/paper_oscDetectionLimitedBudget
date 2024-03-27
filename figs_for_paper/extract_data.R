@@ -1,4 +1,3 @@
-```{r setup}
 require(kableExtra)
 require(dplyr)
 require(ggplot2)
@@ -9,10 +8,9 @@ require(parallel)
 load_all()
 Nfreq = 2^10
 freqs = seq(1,24,length.out=Nfreq)
-```
 
+#######################
 # assemble cvxr results
-```{r}
 sol_dir_cvxr = 'transfer_fold/cvxr_results/'
 extract_cvxr = function(fname,sol_name){
   dat       = readRDS(paste0(sol_dir_cvxr,fname))
@@ -78,10 +76,9 @@ res = rbind(res_cvxr,res_supp_6,res_supp_18,res_unif,res_p2l)
 df  = data.frame(res)
 
 saveRDS(df,file = 'figs_for_paper/summary_table/cvxr_summary.RDS')
-```
 
+#######################
 # assemble raw gurobi results
-```{r}
 df=readRDS('figs_for_paper/summary_table/cvxr_summary.RDS')
 sol_dir_gurobi       =  'transfer_fold/gurobi_raw/'
 sol_dir_gurobi_spt   =  'transfer_fold/gurobi_spt/'
@@ -135,10 +132,10 @@ gdf3=extract_gurobi(sol_dir_gurobi_spt3,gur_spt3_files,'gurobi_spt3')
 
 gdf=rbind(gdf0,gdf1,gdf2,gdf3)
 gdf$Nmeas_good %>% summary()
-```
 
 
-```{r}
+###########################
+# merge results
 df$wrap = 'cvxr'
 df_all=rbind(df,gdf[,names(gdf) %in% names(df)])
 df_all$solver %>% unique()
@@ -156,11 +153,8 @@ df_all[df_all$solver=='cvxr_supp_3hr',]$solver = 'supp_3hr'
 df_all[df_all$solver=='gurobi_spt3',]$solver = 'supp_3hr' 
 
 saveRDS(df_all,file = 'figs_for_paper/summary_table/all_methods_summary.RDS')
-```
 
-```{r}
-pdf = df_all[df_all$solver %in% c('free','supp_1hr','supp_2hr','supp_3hr'),]
-
-pdf %>% ggplot(aes(x=Nmeas,y=ncp,group=solver,color=solver))+
-  geom_point(aes(shape=stat_code),size=2)+facet_wrap(~wrap)
-```
+#pdf = df_all[df_all$solver %in% c('free','supp_1hr','supp_2hr','supp_3hr'),]
+#
+#pdf %>% ggplot(aes(x=Nmeas,y=ncp,group=solver,color=solver))+
+#  geom_point(aes(shape=stat_code),size=2)+facet_wrap(~wrap)

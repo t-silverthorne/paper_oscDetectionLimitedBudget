@@ -16,11 +16,11 @@ mc_cores=10
 
 ```{r}
 Nmeas = 16 
-Nmc   = 5e2
+Nmc   = 5e1 
 Amin  = log2(1)
 Amax  = log2(5)
 fmin  = 1
-fmax  = 24
+fmax  = 24 
 
 Nfreq_test = 2^6
 fmin_test=fmin
@@ -129,12 +129,12 @@ p3c = p3+
   )
 
 sc=0
-Fig=(p1c/p2c/p3c) + plot_annotation(tag_levels = 'A')+plot_layout(guides='collect')&
-  theme(legend.position='right',
-        legend.title.position = 'right',
-        legend.title = element_text(angle=-90),
-        plot.margin=margin(-sc,-sc,-sc,-sc)
-        )
+Fig=(p1c/p2c/p3c) + plot_annotation(tag_levels = 'A')+plot_layout(guides='collect') #&
+#  theme(legend.position='right',
+#        legend.title.position = 'right',
+#        legend.title = element_text(angle=-90),
+#        plot.margin=margin(-sc,-sc,-sc,-sc)
+#        )
 Fig
 
 ggsave(paste0(overleaf_plot_directory,'accuracy_benchmark.png'),Fig,width = 6,height=6,device='png',dpi=600)
