@@ -74,4 +74,11 @@ res = rbind(res_cvxr,res_supp_6,res_supp_18,res_unif,res_p2l)
 df  = data.frame(res)
 
 df %>% ggplot(aes(x=Nmeas,y=ncp,group=solver,color=solver))+
-  geom_point(aes(shape=stat_code),size=2)
+  geom_point(aes(shape=stat_code),size=2) +
+  theme(
+   strip.background=element_blank(),
+   text=element_text(size=9),
+   plot.margin=margin(0,0,0,0),
+   panel.grid.major = element_blank(),
+   panel.grid.minor = element_blank()
+)
