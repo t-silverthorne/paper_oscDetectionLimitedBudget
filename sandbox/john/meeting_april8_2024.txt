@@ -2,6 +2,10 @@ Meeting notes:
 - Use R/cvxr_utils.R as template for documentation (summarised version of Word document)
 - Examples would also be useful to add, see here https://roxygen2.r-lib.org
 - devtools::build_manual() generates the PDF output
+- sandbox/montecarlo_utils.R more useful for high-level summary
+- sandbox/montecarlo_utils_examples.Rmd, more useful for teaching/thorough explanation
+    source('sandbox/montecarlo_utils.R')
+- examples/ex_....Rmd 
 
 Kernel density paper:
 - Likelihood ratio test is same as OLS? 
