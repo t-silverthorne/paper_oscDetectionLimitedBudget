@@ -6,6 +6,8 @@
 #' @param opts$Nfine the number of points in the underlying fine grid from which 
 #' measurement times are to be chosen.
 #'   
+#' 
+#'   
 #' @return \code{x} binary [CVXR::Variable] to be used as the decision variable in CVXR programming.
 #' @author Turner Silverthorne
 #' @export

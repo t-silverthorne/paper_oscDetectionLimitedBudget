@@ -1,0 +1,267 @@
+---
+title: "Monte_Carlo_Test"
+output: html_document
+---
+
+
+The Monte Carlo Power Estimation Works as Follows:
+1) Generate sample cosinor data using Simphony with the following parameters: 
+  - Outer loop (O): Forms the number of datasets to produce keeping other parameters the same
+  - Budget: The amount of measurements in a single outer - loop (uniform sampling)
+  - Amplitude: The maximal value the random variables can take
+  - Period: The total duration of the experiment
+  - Phase - Shift: The shift in original cosine wave centered at 0.
+  
+2) Fit a cosinor model using DiscoRhythm
+  - Using DiscoRhtyhm, perform a cosinor fit, to perform period detection. DiscoRhythm's OLS estimates will result in 
+  the estimated acrophase, amplitude, mesor, etc.
+  - Of interest in calculating the power - estimation, we retrieve the p-values of the cosinor fit from each outer loop.
+  
+3) Perform random permutations on each outer-loop
+  - We iterate over the O outer-loop datasets that we constructed. In each iteration, we produce I (Size of inner loop) number of randomly shuffled sample values from the iterated outer - loop. The shuffled sample values produced become its own feature data. We then fit DiscoRhythm cosinor fit on I features created from the shuffling done earlier. The resulting detected period also comes with its own p-values. We take the I p-values and calculate the proportion which is less than the p-value of the cosinor fit from that particular outer-loop 
+  - We repeat this process until O number of proportions from each outer-loops have been calculated. The final Monte - Carlo Estimate is the average of all O proportions.
+  
+4) Extrapolation
+  - To ensure robustness, we run the same monte-carlo (MC) power estimate but under varying size of the inner - loops. We then fit a linear regression under the OLS estimate on the MC power estimates produced. Using the OLS estimate, we estimate the MC power estimate as the size of inner loop increases.
+
+
+```{r generating_data}
+library('ggplot2')
+library('simphony')
+library('data.table')
+library(DiscoRhythm)
+library(SummarizedExperiment)
+library(dplyr)
+library(pracma)
+
+set.seed(1)
+
+
+#Outer loop
+O = 20
+#Budget
+B = 15
+#Amplitude
+A = 10
+#period
+P = 24
+#Phase-Shift
+ph = 0
+
+#Generate dataset with Simphony
+
+"
+We generate uniform sampling based on the amount of measurements specified to be performed across the period.
+"
+
+mt = linspace(0, P, B + 1)
+mt = mt[1:B]
+
+featureGroupsList = data.table(amp = A, period = P,  phase = ph)
+df <- data.frame(simphony(featureGroupsList, nFeatures = O, timepointsType = "specified", timepoints = mt, nReps = 1, family = 'gaussian')$abundData)
+print(df)
+
+#Begin Visualizing the Dataset
+
+#Create a new column called 'feature' to plot in GGPlot
+df$feature <- rownames(df)
+#With 'long' format, we can separate the data by features so it is easier to see with GGPlot
+df_long <- melt(df, id.vars = 'feature', variable.name = 'sample', value.name = 'value')
+df_long$sample <- as.numeric(gsub("sample_", "", df_long$sample))
+
+#Let us have a look at the dataset generated from this cleanup
+df_long
+
+#Plot using the data
+ggplot(df_long, aes(x = sample, y = value, group = feature, color = feature)) +
+  geom_line() + 
+  geom_point() +
+  theme_minimal() +
+  labs(title = 'Feature Values Over Time', x = 'Sample Number (Time)', y = 'Value') +
+  scale_color_discrete(name = "Feature")
+
+"
+DiscoRhythm has extensive documentation on the format of input cosinor data needed:
+https://www.bioconductor.org/packages/release/bioc/vignettes/DiscoRhythm/inst/doc/disco_workflow_vignette.html#4_Input_Format
+
+This chunk of the code reformats the output of Simphony earlier to the format needed as an input for DiscoRhythm
+"
+
+df_rf <- data.frame(IDs = rownames(df), df, check.names = FALSE)
+df_rf <- df_rf[-c(ncol(df_rf))]
+
+sample_numbers <- as.numeric(head(sub("sample_", "", colnames(df)), -1))
+new_colnames <- paste("hr", round(24/B * sample_numbers, 2), "_", "Sample",sample_numbers, "_",sample_numbers, sep="")
+colnames(df_rf)[-1] <- new_colnames
+
+df_rf
+
+SE <- discoDFtoSE(df_rf)
+selectDataSE <- discoCheckInput(SE)
+
+discoODAres <- discoODAs(SE,
+                         period=P,
+                         method="CS",
+                         ncores=1,
+                         circular_t=FALSE)
+
+data_p_val <- discoODAres$CS$pvalue
+
+discoODAres$CS
+data_p_val
+```
+Now, in each outer loop, we will perform permutations by randomly shuffling the sampling values of each feature. Here, we give an example by setting the size of the inner loop as 5: 
+
+```{r Permutation}
+library(pingers)
+
+#Simulation of the first run of outer loop
+permute_data <- data.frame(matrix(NA, nrow = 1, ncol = B + 1))
+permute_data <- unname(permute_data)
+pval <- rep(NA, O)
+
+I = 5
+for (i in 1:I){
+  vec <- as.vector(t(data.frame(c(paste("perm_", i, sep = ""), t(shuffle(t(df_rf[1,1:B + 1])))))))
+  permute_data <- rbind(permute_data, vec)
+}
+
+colnames(permute_data) <- colnames(df_rf)
+permute_data <- permute_data[-c(1),]
+rownames(permute_data) <- permute_data$IDs
+
+for (i in 2:ncol(permute_data)) {
+  permute_data[[i]] <- as.double(permute_data[[i]])
+}
+
+#Create a new column called 'feature' to plot in GGPlot
+permute_data$feature <- rownames(permute_data)
+#With 'long' format, we can separate the data by features so it is easier to see with GGPlot
+permute_data_long <- melt(permute_data[,-1], id.vars = 'feature', variable.name = 'sample', value.name = 'value')
+
+#Let us have a look at the dataset generated from this cleanup
+permute_data_long
+
+#Plot using the data
+ggplot(permute_data_long, aes(x = sample, y = value, group = feature, color = feature)) +
+  geom_line() + 
+  geom_point() +
+  theme_minimal() +
+  labs(title = 'Random Permutations of original cosinor feature values', x = 'Sample Number (Time)', y = 'Value') +
+  scale_color_discrete(name = "Feature") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+permute_data
+```
+
+
+
+```{r MC_Pow_i}
+"
+This chunk initializes the function MC_Pow_I and returns the Monte Carlo Power Estimation given:
+1) Reformatted rhythmic data which fulfills the formatting requirements for DiscoRhythm (Denoted as DiscoData)
+2) I: Size of the inner loop (Positive Integer)
+"
+
+
+MC_Pow_I <- function(DiscoData, I){
+  pval <- rep(NA, O)
+  
+    for (o in 1:O){
+      permute_data <- data.frame(matrix(NA, nrow = 1, ncol = B + 1))
+      permute_data <- unname(permute_data)
+      
+      for (i in 1:I){
+        "Remember, 'shuffle' shuffles by the row. In our case, we take one row at a time
+        So, we need to transpose the row first to do the shufflling and transpose back to get the permuted value.
+        "
+        vec <- as.vector(t(data.frame(c(paste("perm_", i, sep = ""), t(shuffle(t(DiscoData[o, 1:B+1])))))))
+        permute_data <- rbind(permute_data, vec) #Add this one iteration of permutation
+      }
+      
+      #Reformat the data to DiscoRhythm requirement
+      colnames(permute_data) <- colnames(DiscoData)
+      permute_data <- permute_data[-c(1),]
+      rownames(permute_data) <- permute_data$IDs
+      
+      #Ensures values are numeric
+      for (i in 2:ncol(permute_data)) {
+        permute_data[[i]] <- as.double(permute_data[[i]])
+      }
+      
+      #Fit DiscoRhythm for this particular observation
+      SE <- discoDFtoSE(permute_data)
+      selectDataSE <- discoCheckInput(SE)
+      
+      discoODAres <- discoODAs(SE,
+                               period= P,
+                               method="CS",
+                               ncores=1,
+                               circular_t=FALSE)
+      
+      #Obtain p-value from each of the permutations
+      new_p_val <- discoODAres$CS$pvalue
+      
+      #At this iteration, the entry gives the proportion of the p-value which is smaller than the current p-value
+      pval[o] <- mean(new_p_val < data_p_val[o])
+    }
+  
+return (1 - mean(pval))
+}
+```
+Now, having constructed the function to calculate Monte Carlo Power Estimation given only the data and the size of inner loop, we can work to applying various inner loop sizes from the sample data generated earlier to calculate power under different inner loop sizes
+
+```{r extrapolation}
+ind = c(99, 79, 59, 39, 19) #As recommended by the paper
+vec <- NULL
+  
+for (i in ind){
+  vec <- append(vec, MC_Pow_I(df_rf, i))
+}
+
+pow <- data.frame(x = 1/ind,
+                  y = vec)
+```
+
+```{r display_extrapolation}
+data.frame("Inverse_of_the_size_of_inner_loop" = pow$x, "Monte_Carlo_power_estimate" = pow$y)
+```
+Now, we perform extrapolation by fitting a linear regression using OLS. Note that the Monte - Carlo estimate from extrapolation is the intercept coefficient of the OLS coefficient estimates.
+
+```{r extrapolation_2}
+lm <- lm(y ~ x + I(x^2), data = pow)
+summary(lm)
+
+ggplot(pow, aes(x = x, y = y)) +
+  geom_line() + 
+  geom_point() +
+  theme_minimal() +
+  labs(title = 'Power Estimation Across Distinct Inner Loop Sizes', x = '1 / (Size of Inner Loop)', y = 'Power Estimate')
+```
+
+```{r Final_Power}
+library(pracma)
+
+Sigma = 1
+f = 1/P
+phi = 0
+alpha <- 0.05
+
+
+calculate_lambda <- function(A, N, Sigma, phi, samp){
+  summation <- sum(cos(2 * pi * f * (linspace(1, N,  n = samp) - phi))^2)
+  return ((A^2 / (Sigma)) * summation)
+}
+
+calculate_gamma <- function(lambda, alpha) {
+  F_central_inverse <- qf(1 - alpha, df1 = 2, df2 = P - 3)
+  return (1 - pf(F_central_inverse, df1 = 2, df2 = P - 3, ncp = lambda))
+}
+
+l = calculate_lambda(A,P,Sigma,phi,B)
+
+paste("The power of the test is: ", calculate_gamma(l, 0.05))
+paste("Monte carlo Estimate is:", lm$coefficients[1])
+```

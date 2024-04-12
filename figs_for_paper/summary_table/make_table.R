@@ -9,9 +9,9 @@ load_all()
 res=NULL
 Nfreq = 2^10
 freqs = seq(1,24,length.out=Nfreq)
-sol_dir = 'transfer_fold/'
+sol_dir_cvxr = 'transfer_fold/cvxr_results/'
 extract_cvxr = function(fname,sol_name){
-  dat       = readRDS(paste0(sol_dir,fname))
+  dat       = readRDS(paste0(sol_dir_cvxr,fname))
   xinds     = dat[[1]] 
   Nfine     = length(xinds)
   Nmeas     = sum(xinds)
@@ -32,22 +32,22 @@ extract_cvxr_files = function(fname_list,sol_name){
 
 
 # get CVXR solutions
-cvxr_files = list.files(sol_dir,pattern = 'solns_cvxr*')
+cvxr_files = list.files(sol_dir_cvxr,pattern = 'solns_cvxr*')
 res_cvxr   = extract_cvxr_files(cvxr_files,'cvxr') 
 
 
 # get CVXR supp solutions
-cvxr_supp_files_6 = list.files(sol_dir,pattern = 'solns_spt_cvxr_drts_6*')
+cvxr_supp_files_6 = list.files(sol_dir_cvxr,pattern = 'solns_spt_cvxr_drts_6*')
 res_supp_6   = extract_cvxr_files(cvxr_supp_files_6,'cvxr_supp_1hr') 
 
-cvxr_supp_files_18 = list.files(sol_dir,pattern = 'solns_spt_cvxr_drts_18*')
+cvxr_supp_files_18 = list.files(sol_dir_cvxr,pattern = 'solns_spt_cvxr_drts_18*')
 res_supp_18   = extract_cvxr_files(cvxr_supp_files_18,'cvxr_supp_3hr') 
 
 # get pin2lat solutions
-pin2lat_files = list.files(sol_dir,pattern='solns_pin2lat')
+pin2lat_files = list.files(sol_dir_cvxr,pattern='solns_pin2lat')
 res_p2l = c(1:length(pin2lat_files)) %>% mclapply(function(ii){
   fname = pin2lat_files[ii]
-  dat       = readRDS(paste0(sol_dir,fname))
+  dat       = readRDS(paste0(sol_dir_cvxr,fname))
   dat$ncp   = abs(dat$ncp)
   best_rep  = dat[which.max(dat$ncp),]$rep
   mt        = dat[dat$rep==best_rep,] %>% {.$time} %>% unlist()
@@ -74,4 +74,11 @@ res = rbind(res_cvxr,res_supp_6,res_supp_18,res_unif,res_p2l)
 df  = data.frame(res)
 
 df %>% ggplot(aes(x=Nmeas,y=ncp,group=solver,color=solver))+
-  geom_point(aes(shape=stat_code),size=2)
+  geom_point(aes(shape=stat_code),size=2) +
+  theme(
+   strip.background=element_blank(),
+   text=element_text(size=9),
+   plot.margin=margin(0,0,0,0),
+   panel.grid.major = element_blank(),
+   panel.grid.minor = element_blank()
+)

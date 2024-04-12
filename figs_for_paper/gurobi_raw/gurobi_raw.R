@@ -9,7 +9,6 @@ fmin  = 1
 fmax  = 24
 tau   = c(1:Nfine)/Nfine -1/Nfine 
 fvec  = seq(from=fmin,to=fmax,length.out=Nfreq)
-
 threads_glob = Sys.getenv("SLURM_CPUS_PER_TASK") 
 tlim_glob    = 2*60*60
 out_loc_glob = 'figs_for_paper/gurobi_raw/'
