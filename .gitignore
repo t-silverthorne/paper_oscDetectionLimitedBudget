@@ -1,4 +1,6 @@
 transfer_fold/*
+figs_for_paper/gurobi_raw/*.RDS
+figs_for_paper/gurobi_raw/*.out
 # History files
 .Rhistory
 .Rapp.history
@@ -53,4 +55,5 @@ results/compute_canada/gurobi.env
 figs_for_paper/Fig1_aug_vs_cvxr/p2.RDS
 figs_for_paper/Fig1_aug_vs_cvxr/p3.RDS
 figs_for_paper/Fig1_aug_vs_cvxr/solns.RDS
+results/compute_canada/slurm-44965279.out
 cvxr_vs_gurobi.png
