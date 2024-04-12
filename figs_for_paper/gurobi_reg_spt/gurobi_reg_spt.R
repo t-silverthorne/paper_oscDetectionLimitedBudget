@@ -1,10 +1,17 @@
 require(gurobi)
 require(dplyr)
 
+Nmeas_vals=c(16:48)
+w_reg_vals=c(1e-5,1)
+drts_vals =c(Inf,1*6,3*6)
+
+setgs =expand.grid(Nmeas=Nmeas_vals,w_reg=w_reg_vals,drts=drts_vals)
+
 # discretization parameters
+st_idx       = as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 Nfine        = 144 
-Nfreq        = 2 #47 
-Nmeas        = 48 #as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
+Nfreq        = 47 
+Nmeas        = setgs[st_idx,]$Nmeas #as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 fmin         = 1 
 fmax         = 24  # 24
 tau          = c(1:Nfine)/Nfine -1/Nfine 
@@ -12,8 +19,8 @@ fvec         = seq(from=fmin,to=fmax,length.out=Nfreq)
 threads_glob = 12 #Sys.getenv("SLURM_CPUS_PER_TASK") 
 tlim_glob    = 10 # 60*60*2
 out_loc_glob = NULL #'figs_for_paper/gurobi_raw_spt/' 
-drts         = 1*6 
-w_reg        = 1#1e-5
+drts         = setgs[st_idx,]$drts
+w_reg        = setgs[st_idx,]$w_reg
 
 model=list()
 
