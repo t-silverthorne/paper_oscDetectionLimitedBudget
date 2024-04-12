@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --account=def-stinch   # replace this with your own account
-#SBATCH --array=1-168          # for iterating through settings array 
+#SBATCH --array=1-176          # for iterating through settings array 
 #SBATCH --cpus-per-task=32     # number of processes
 #SBATCH --mem-per-cpu=500      # memory; default unit is megabytes
 #SBATCH --time=0-01:10         # time (DD-HH:MM)
