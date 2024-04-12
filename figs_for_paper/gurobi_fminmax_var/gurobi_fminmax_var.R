@@ -106,7 +106,13 @@ params = list(TimeLimit=tlim_glob,MIPGap=1e-5,
 sol=gurobi(model,params)
 
 saveRDS(sol,file=paste0(out_loc_glob,'sol_gur_',
+<<<<<<< HEAD
                         'fmin',fmin,
                         '_df_',df,
                         '_Nmeas_',Nmeas,'.RDS'))
 
+=======
+                        'wreg_',w_reg,
+                        '_drts_',drts,
+                        '_Nmeas_',Nmeas,'.RDS'))
+>>>>>>> 059268a5e0f4305a807039fa4bad4d4d1f0e8f1f
