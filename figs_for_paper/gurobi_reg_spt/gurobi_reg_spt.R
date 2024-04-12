@@ -16,9 +16,9 @@ fmin         = 1
 fmax         = 24  # 24
 tau          = c(1:Nfine)/Nfine -1/Nfine 
 fvec         = seq(from=fmin,to=fmax,length.out=Nfreq)
-threads_glob = 12 #Sys.getenv("SLURM_CPUS_PER_TASK") 
-tlim_glob    = 10 # 60*60*2
-out_loc_glob = NULL #'figs_for_paper/gurobi_raw_spt/' 
+threads_glob = Sys.getenv("SLURM_CPUS_PER_TASK") 
+tlim_glob    = 60*60*2
+out_loc_glob = 'figs_for_paper/gurobi_reg_spt/' 
 drts         = setgs[st_idx,]$drts
 w_reg        = setgs[st_idx,]$w_reg
 
@@ -101,9 +101,6 @@ params = list(TimeLimit=tlim_glob,MIPGap=1e-5,
 sol=gurobi(model,params)
 
 saveRDS(sol,file=paste0(out_loc_glob,'sol_gur_',
-                        'drts_',drts,
+                        'wreg_',w_reg,
+                        '_drts_',drts,
                         '_Nmeas_',Nmeas,'.RDS'))
-
-require(ggplot2)
-require(dplyr)
-data.frame(mt=tau[sol$x[1:Nfine]>0]) %>% ggplot(aes(x=mt,y=0))+geom_point()+xlim(c(0,1))
