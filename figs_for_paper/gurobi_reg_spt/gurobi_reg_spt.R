@@ -3,17 +3,17 @@ require(dplyr)
 
 # discretization parameters
 Nfine        = 144 
-Nfreq        = 47
-Nmeas        = 8 #as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
-fmin         = 1
-fmax         = 24 
+Nfreq        = 2 #47 
+Nmeas        = 48 #as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
+fmin         = 1 
+fmax         = 24  # 24
 tau          = c(1:Nfine)/Nfine -1/Nfine 
 fvec         = seq(from=fmin,to=fmax,length.out=Nfreq)
-threads_glob = 8 #Sys.getenv("SLURM_CPUS_PER_TASK") 
-tlim_glob    = 20 # 60*60*2
+threads_glob = 12 #Sys.getenv("SLURM_CPUS_PER_TASK") 
+tlim_glob    = 10 # 60*60*2
 out_loc_glob = NULL #'figs_for_paper/gurobi_raw_spt/' 
-drts         = Inf #2*6 
-w_reg        = 0#1e-3
+drts         = 1*6 
+w_reg        = 1#1e-5
 
 model=list()
 
@@ -99,4 +99,4 @@ saveRDS(sol,file=paste0(out_loc_glob,'sol_gur_',
 
 require(ggplot2)
 require(dplyr)
-data.frame(mt=tau[sol$x[1:Nfine]>0]) %>% ggplot(aes(x=mt,y=0))+geom_point()
+data.frame(mt=tau[sol$x[1:Nfine]>0]) %>% ggplot(aes(x=mt,y=0))+geom_point()+xlim(c(0,1))
