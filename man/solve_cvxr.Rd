@@ -4,9 +4,11 @@
 \alias{solve_cvxr}
 \title{Solve power optimization using CVXR}
 \usage{
-solve_cvxr(control)
+solve_cvxr(control, Threads, ...)
 }
 \arguments{
+\item{Threads}{how many threads should CVXR use}
+
 \item{control$Nmeas}{number of measurements to be collected}
 
 \item{control$Nfine}{number of points in fine grid from which measurement times are to be chosen}
@@ -28,14 +30,20 @@ solve_cvxr(control)
 \item{control$MIPGapAbs}{stopping criterion for CVXR solver}
 
 \item{control$time_limit}{max time allowed for computation}
+
+\item{control$prob_formualtion}{either max_elemwise, max_entries, or hvolume, see description}
 }
 \value{
 the result of calling \link[CVXR:psolve]{CVXR::solve} with specified user controls
 }
 \description{
-Solve power optimization using CVXR
+Performs DCP if \code{control$prob_formulation = 'max_elemwise'} or \code{'max_entries'}.
+Performs hypervolume scalarization if \code{control$prob_formulation == 'hvolume'}.
 }
 \note{
+the \code{...} argument is only relevant for computing the cost function value
+at the end of this method, it is not relevant to the optimization stage.
+
 \code{time_limit} does not count the time taken to complete the pre-solve.
 
 if iterations exceed \code{num_iter}, it is difficultto access output of the computation.

@@ -2,7 +2,7 @@
 % Please edit documentation in R/lsp_pseudowindow.R
 \name{lsp_pseudowindow}
 \alias{lsp_pseudowindow}
-\title{Evaluate pseudo window of a Lomb Scargle periodogram}
+\title{Compute pseudo window of a Lomb Scargle periodogram}
 \usage{
 lsp_pseudowindow(mt, freqs, acros, type = "null")
 }

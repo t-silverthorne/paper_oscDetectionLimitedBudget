@@ -13,6 +13,7 @@ require(latex2exp)
 load_all()
 source('plotConfig.R')
 
+slide_version_directory='/home/turner/research/misc_tex/committee_meeting/figs/'
 run_import=F
 if (run_import){
   source('figs_for_paper/extract_data.R') 
@@ -51,9 +52,10 @@ gen_panel_loc=function(mt){
   p1=ggplot()+geom_line(data=df,aes(x=24*time,y=expr,group=circ_per,color=circ_per))+
     scale_color_manual(values = freq_colors)+
     geom_point(data=df_noise,aes(x=24*time,y=expr,color=circ_per),size=.5)+
-    facet_wrap(~circ_per,ncol=3)+
-    labs(y='simulated expression',x='measurement time (hr)')+
-    scale_x_continuous(limits=c(0,24),breaks = 4*c(0:6))
+    facet_wrap(~circ_per,nrow=3)+
+    labs(y='simulated signal',x='measurement time (hr)')+
+    scale_x_continuous(limits=c(0,24),breaks = 4*c(0:6))+
+    scale_y_continuous(limits=c(-3,3),n.breaks=3)
  
   # panel 2 
   Nmc=1e2
@@ -76,25 +78,29 @@ gen_panel_loc=function(mt){
   
   df$circ_per=24/df$freq
   df$circ_per = factor(df$circ_per,cp_levels,cp_labels)
-  
+   
   p2=df %>% ggplot(aes(x=acro,y=-log10(pvalue),color=circ_per))+
     geom_point(size=.5,alpha=.2)+
     facet_wrap(~circ_per,nrow=3)+
     geom_hline(aes(yintercept =-log10(.05),linetype='p=0.05'),color='black')+
     scale_x_continuous(limits=c(0,2*pi),breaks =rad_brk,labels = rad_lab)+
+    scale_y_continuous(limits =c(0,12),n.breaks = 2) +
     labs(x='acrophase (rad)',y='-log(pvalue)',linetype=element_blank())+
-    scale_color_manual(values=freq_colors)+scale_linetype_manual(values=c('dashed'))+guides(color='none')+
-    ylim(c(0,10))
-
-  Fig=p1+p2 + plot_layout(guides='collect') & theme(
-     strip.background=element_blank(),
-     text=element_text(size=9),
-     plot.margin=margin(0,0,0,0),
-     panel.grid.major = element_blank(),
-     panel.grid.minor = element_blank(),
-     axis.text.x = element_text(vjust = 0.25)
-  )& labs(color='period')
- return(Fig) 
+    scale_color_manual(values=freq_colors)+scale_linetype_manual(values=c('dashed'))+guides(color='none')
+  plots=list()
+  
+  plots[[1]]=p1
+  plots[[2]]=p2
+  return(plots)
+#  Fig=p1+p2 + plot_layout(guides='collect') & theme(legend.position='bottom',
+#     strip.background=element_blank(),
+#     text=element_text(size=9),
+#     plot.margin=margin(0,0,0,0),
+#     panel.grid.major = element_blank(),
+#     panel.grid.minor = element_blank(),
+#     axis.text.x = element_text(vjust = 0.25)
+#  )& labs(color='period')
+# return(Fig) 
 }
 
 
@@ -110,14 +116,49 @@ mta = c(1:Na)/Na-1/Na
 mtb = c(1:Nb)/Nb-1/Nb
 mt_alt  =c(mta/2,.5 + mtb/2) 
 
-F1=gen_panel_loc(mt_unif)
-F2=gen_panel_loc(mt_alt)
-F1=as.ggplot(F1&theme(legend.position = 'none'))
-F2=as.ggplot(F2&theme(legend.position = 'bottom'))
+F1raw=gen_panel_loc(mt_unif)
+F2raw=gen_panel_loc(mt_alt)
 
+F1_slide = ((F1raw[[1]]+labs(title='A'))+F1raw[[2]] +
+              (F2raw[[1]]+labs(title='B')) + F2raw[[2]])+
+plot_layout(guides='collect',nrow=1)&
+  theme(legend.position='bottom',
+     strip.background=element_blank(),
+     text=element_text(size=14),
+     axis.title.x=element_text(size=12),
+     axis.title.y=element_text(size=12),
+     plot.margin=margin(0,0,0,0),
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.text.x = element_text(vjust = 0.25)
+  )& labs(color='period') #&scale_y_continuous(n.breaks=3)
+F1_slide
+ggsave(paste0(slide_version_directory,'motivation_fig_v2.png'),F1_slide,width=10,height=6,device='png',dpi=600)
+```
+
+```{r}
+F1raw$p1
+```
+
+```{r}
+F1=as.ggplot(F1raw&theme(legend.position = 'none'))
+F2=as.ggplot(F2raw&theme(legend.position = 'bottom'))
+
+fs_slide=15
+F1_slide =as.ggplot(F1raw&theme(legend.position = 'none',text=element_text(size=fs_slide)))
+F2_slide =as.ggplot(F2raw&theme(legend.position = 'bottom',text=element_text(size=fs_slide)))
+
+ggsave(paste0(slide_version_directory,'motivation_fig_v2_unif.png'),F1_slide,width=8,height=6,device='png',dpi=600)
+ggsave(paste0(slide_version_directory,'motivation_fig_v2_alt.png'),F2_slide,width=8,height=6,device='png',dpi=600)
+```
+```{r}
 Fig = F1/F2 + plot_annotation(tag_levels ='A')+plot_layout(guides='collect',heights = c(5,6.5))
 ggsave(paste0(overleaf_plot_directory,'motivation_fig_v2.png'),Fig,width=6,height=6,device='png',dpi=600)
 
+Fig_slide = F1raw+F2raw + plot_annotation(tag_levels ='A')+plot_layout(guides='collect')&
+  theme(legend.position = 'bottom',text=element_text(size=fs_slide))
+Fig_slide
+ggsave(paste0(slide_version_directory,'motivation_fig_v2.png'),Fig_slide,width=8,height=6,device='png',dpi=600)
 ```
 
 # Fig 1: power sweep 
@@ -137,8 +178,8 @@ for (Nm in Nmv){
   flist=c(f1,f3,f4,flist) 
 }
 flist
-sol_factor_levels = c('uniform','pCHORD 2hr','pCHORD 3hr',
-                                 'pCHORD free')
+sol_factor_levels = c('uniform','2hr','3hr',
+                                 'free')
 ```
 
 ```{r}
@@ -154,10 +195,10 @@ for (ff in flist){
   }
 }
 mtdf %>% head()
-mtdf[grepl('sol_gur_free',mtdf$solver),]$solver='pCHORD free'
-#mtdf[grepl('drts_6',mtdf$solver),]$solver='pCHORD 1hr'
-mtdf[grepl('drts_12',mtdf$solver),]$solver='pCHORD 2hr'
-mtdf[grepl('drts_18',mtdf$solver),]$solver='pCHORD 3hr'
+mtdf[grepl('sol_gur_free',mtdf$solver),]$solver='free'
+#mtdf[grepl('drts_6',mtdf$solver),]$solver='1hr'
+mtdf[grepl('drts_12',mtdf$solver),]$solver='2hr'
+mtdf[grepl('drts_18',mtdf$solver),]$solver='3hr'
 ```
 
 ```{r}
@@ -266,7 +307,36 @@ Fig=p1/p2/p3 + plot_layout(guides='collect',heights = c(.23,.3,1.5)) + plot_anno
      axis.text.x = element_text(vjust = 0.25)
   ) 
 ggsave(paste0(overleaf_plot_directory,'cvxrVaug_powerFDR.png'),Fig,width=6,height=7,device='png',dpi=600)
-
+```
+```{r}
+fig=(p1+labs(y='measurement method')+theme(legend.position='none'))/p3 + plot_layout(heights=c(1,2),guides='collect') & theme(
+     strip.background=element_blank(),
+     text=element_text(size=14),
+     axis.title.x=element_text(size=12),
+     axis.title.y=element_text(size=12),
+     plot.margin=margin(0,0,0,0),
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.text.x = element_text(vjust = 0.25) 
+)
+ggsave(paste0(slide_version_directory,'numerical_res.png'),fig,width=10,height=6,device='png',dpi=600)
+```
+```{r}
+p1c = p1+theme(legend.position='none')
+p3c = p3 +theme(
+     legend.position = 'bottom',
+     legend.box = 'vertical')
+Fig_slide=p1c/p3c + plot_layout(heights = c(.3,1.5)) + plot_annotation(tag_levels='A')  &
+   theme(
+     legend.position='bottom',
+     strip.background=element_blank(),
+     text=element_text(size=fs_slide),
+     plot.margin=margin(0,0,0,0),
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.text.x = element_text(vjust = 0.25)
+  ) 
+ggsave(paste0(slide_version_directory,'cvxrVaug_powerFDR.png'),Fig_slide,width=8,height=6,device='png',dpi=600)
 
 ```
 

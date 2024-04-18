@@ -159,8 +159,31 @@ saveRDS(df_all,file = 'figs_for_paper/summary_table/all_methods_summary.RDS')
 ```
 
 ```{r}
+df_all = readRDS('figs_for_paper/summary_table/all_methods_summary.RDS')
+```
+```{r}
+source("plotConfig.R")
 pdf = df_all[df_all$solver %in% c('free','supp_1hr','supp_2hr','supp_3hr'),]
 
-pdf %>% ggplot(aes(x=Nmeas,y=ncp,group=solver,color=solver))+
-  geom_point(aes(shape=stat_code),size=2)+facet_wrap(~wrap)
+pdf[pdf$solver== 'supp_1hr',]$solver = '1hr'
+pdf[pdf$solver== 'supp_2hr',]$solver = '2hr'
+pdf[pdf$solver== 'supp_3hr',]$solver = '3hr'
+
+pdf$solver = fct_expand(factor(pdf$solver),'uniform')
+Fig=pdf[pdf$wrap=='gurobi_raw',] %>% ggplot(aes(x=Nmeas,y=ncp,group=solver,color=solver))+
+  geom_point(aes(shape=stat_code),size=3)+
+  theme(
+   strip.background=element_blank(),
+   text=element_text(size=15),
+   plot.margin=margin(0,0,0,0),
+   panel.grid.major = element_blank(),
+   panel.grid.minor = element_blank()
+)+labs(x='measurement budget',
+       y='non-centrality parameter',
+       color='measurement \nmethod',
+       shape='result',
+       )
+ggsave(paste0(overleaf_plot_directory,'optimality_compare.png'),Fig,width = 10,height=6,device='png',dpi=600)
+
+
 ```
