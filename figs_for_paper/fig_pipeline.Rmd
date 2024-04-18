@@ -272,8 +272,8 @@ ggsave(paste0(overleaf_plot_directory,'cvxrVaug_powerFDR.png'),Fig,width=6,heigh
 
 # Fig 2: param accuracy 
 ```{r}
-Nmeas = 16 
-Nmc   = 5e2
+Nmeas = 32 
+Nmc   = 5e3
 Amin  = log2(1)
 Amax  = log2(5)
 fmin  = 1
@@ -304,8 +304,8 @@ mdf=names %>% lapply(function(solver){
   
   ests = c(1:Nmc) %>% mclapply(mc.cores=mc_cores,function(jj){
     fits = Lfit %>% lapply(function(df){df[jj,]}) %>% rbindlist()
-    return(cbind(data.frame(qval=p.adjust(fits$pvalue,method='fdr')),
-                 data.frame(fits[which.min(fits$pvalue),])))
+    fits$qval = p.adjust(fits$pvalue,method='fdr')
+    return(fits[which.min(fits$qval),])
   })
   
   res=ests %>% rbindlist()
@@ -331,6 +331,8 @@ p1=mdf %>% ggplot(aes(x=Amp_true,y=amplitude_est,color=qval_est<.05))+
 
 p2=mdf %>% ggplot(aes(x=acro_true,y=phase_est,color=qval_est<.05))+
   geom_point(alpha=al_glob,size=sz_glob) + 
+  scale_x_continuous(limits=c(0,2*pi),breaks =rad_brk[c(1,3,5)],labels = rad_lab[c(1,3,5)])+
+  scale_y_continuous(limits=c(0,2*pi),breaks =rad_brk[c(1,3,5)],labels = rad_lab[c(1,3,5)])+
   scale_color_manual(values=c('red','black'))+
   facet_wrap(~method,nrow=1)
 
@@ -352,7 +354,7 @@ p1c = p1+
   labs(
     x='true amplitude',
     y='estimate',
-    color='true frequency (1/day)'
+    color='FDR signif'
   )
 p2c = p2+
   theme(
@@ -362,8 +364,8 @@ p2c = p2+
     )+
   labs(
     x='true acrophase (rad)',
-    y='estimate',
-    color='true frequency (1/day)'
+    y='estimate (rad)',
+    color='FDR signif'
   )
 
 p3c = p3+
@@ -375,26 +377,128 @@ p3c = p3+
   labs(
     x='true frequency (1/day)',
     y='estimate',
-    color='true frequency (1/day)'
+    color='FDR signif'
   )
 ```
 
 ```{r}
 sc=0
 Fig=(p1c/p2c/p3c) + plot_annotation(tag_levels = 'A')+plot_layout(guides='collect')&
-  theme(legend.position='right',
-        legend.title.position = 'left',
-        legend.title = element_text(angle=-90),
+  theme(legend.position='bottom',
         plot.margin=margin(-sc,-sc,-sc,-sc)
         )
-ggsave(paste0(overleaf_plot_directory,'accuracy_benchmark.png'),Fig,width = 6,height=6,device='png',dpi=100)
+ggsave(paste0(overleaf_plot_directory,'accuracy_benchmark.png'),Fig,width = 6,height=6,device='png',dpi=300)
 
 ```
 
 # Fig 3: Lomb-Scargle 
+
+## read in files
 ```{r}
+require(dplyr)
+require(devtools)
+require(ggplot2)
+require(data.table)
+require(parallel)
+require(patchwork)
+require(lomb)
+require(latex2exp)
+load_all()
+source('plotConfig.R')
+Nmeas = 24 
 
+# get best P-Chord 
+df_pchordf=readRDS(paste0('transfer_fold/gurobi_raw/sol_gur_free_Nmeas_',Nmeas,'.RDS'))
+df_pchord1=readRDS(paste0('transfer_fold/gurobi_spt/sol_gur_drts_6_Nmeas_',Nmeas,'.RDS'))
+df_pchord2=readRDS(paste0('transfer_fold/gurobi_spt2/sol_gur_drts_12_Nmeas_',Nmeas,'.RDS'))
+df_pchord3=readRDS(paste0('transfer_fold/gurobi_spt3/sol_gur_drts_18_Nmeas_',Nmeas,'.RDS'))
 
+# get best uniform
+mtu = c(1:Nmeas)/Nmeas - 1/Nmeas
+
+# get best p2l
+
+mt_alt     = c(0,0.25,0.5,0.75,1,1.25,1.5,1.75,2,2.25,2.5,2.75,3,4,5,6,8,10,12,14,16,18,20,22)/24
+convert_to_time=function(df_pc){
+  Nfine_loc = length(df_pc$x)-1
+  tau = c(1:Nfine_loc)/Nfine_loc -1/Nfine_loc
+  return(tau[df_pc$x[1:Nfine_loc]>.99])
+}
+
+mt_pchordf=convert_to_time(df_pchordf)
+mt_pchord1=convert_to_time(df_pchord1)
+mt_pchord2=convert_to_time(df_pchord2)
+mt_pchord3=convert_to_time(df_pchord3)
+
+if(all(c(length(mt_pchordf)==Nmeas,
+length(mt_pchord1)==Nmeas,
+length(mt_pchord2)==Nmeas,
+length(mt_pchord3)==Nmeas))){
+  'correct length of meas times'
+}else{
+  stop('bad extraction')
+}
+```
+
+```{r}
+fmin=1
+fmax=24
+freqs = c(1,2,4,8,12) 
+acros=c(0,pi/4,pi/2,pi)
+ldf = rbind(
+  lsp_pseudowindow(mtu,freqs,acros,type='uniform'),
+  lsp_pseudowindow(mt_pchordf,freqs,acros,type='pchord_free'),
+  lsp_pseudowindow(mt_pchord1,freqs,acros,type='pchord_supp1'),
+  lsp_pseudowindow(mt_pchord2,freqs,acros,type='pchord_supp2'),
+  lsp_pseudowindow(mt_pchord3,freqs,acros,type='pchord_supp3'),
+  lsp_pseudowindow(mt_alt,freqs,acros,type='alt')
+) 
+ldf=data.frame(ldf)
+head(ldf)
+
+ldf$type %>% unique()
+#ldf$type=factor(ldf$type,c('uniform','alt','pin2lat',
+#                           'pchord_supp1','pchord_supp2','pchord_supp3',
+#                           'pchord_free'),
+#                          c('uniform','alt','pin2lat',
+#                           'pchord Supp1','pchord Supp2','pchord Supp3',
+#                           'pchord Free'))
+
+names(ldf)[names(ldf)=='type']='solver'
+
+ldf$acro_fac = round(ldf$acro,2)
+af_vals = ldf$acro_fac %>% unique()
+ldf$acro_fac = factor(ldf$acro_fac, 
+                      levels=af_vals, 
+                      c('0','pi/4','pi/2','3pi/4'))
+
+appender = function(string){
+  if (any(grep('pi',string))){
+    TeX(paste('$\\',string,'$'))
+  }else{
+    string
+  }
+    
+}
+Fig=ldf[ldf$freq==8,] %>% 
+  ggplot(aes(x=lfreq,y=lpower,group=solver,color=solver))+geom_line()+
+  facet_grid(solver~acro_fac,
+             labeller = as_labeller(appender,default=label_parsed))+
+  geom_vline(aes(xintercept = freq),linewidth=.45)+
+  labs(x='frequency (cycles/day)',y='intensity')+
+  theme(
+     strip.background=element_blank(),
+     text=element_text(size=9),
+     plot.margin=margin(0,0,0,0),
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.text.x = element_text(vjust = 0.25),
+     legend.position = 'bottom'
+  ) 
+
+Fig
+
+ggsave(paste0(overleaf_plot_directory,'lomgscargle.png'),Fig,width=6,height=5,device='png',dpi=600)
 ```
 
 # Fig 4: Distribution of optimal designs 
