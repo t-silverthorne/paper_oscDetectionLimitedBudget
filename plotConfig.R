@@ -1,6 +1,6 @@
 theme_set(theme_classic()) #ggplot global setting
-user='TurnerLinux'
-#user='TurnerMac'
+#user='TurnerLinux'
+user='TurnerMac'
 if (user == 'TurnerMac'){
 	overleaf_plot_directory = '/Users/turnersilverthorn/research/overleaf/samplingPaper/figures/'
 } else {
