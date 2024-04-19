@@ -1,0 +1,43 @@
+```{r}
+require(devtools)
+require(ggplot2)
+require(annmatrix)
+require(ggplotify)
+require(patchwork)
+require(parallel)
+require(data.table)
+require(stringr)
+require(dplyr)
+require(latex2exp)
+require(annmatrix)
+load_all()
+source('plotConfig.R')
+source('results/data/extract_data.R') 
+
+#slide_version_directory='/home/turner/research/misc_tex/committee_meeting/figs/'
+#mc_cores=10
+```
+
+# Power curves
+```{r}
+wreg_val =1
+drts_val =6
+panel_filtA = sols@wreg==0        & sols@drts==Inf 
+panel_filtB = sols@wreg==wreg_val & sols@drts==Inf 
+panel_filtC = sols@wreg==0        & sols@drts==drts_val
+panel_filtD = sols@wreg==wreg_val & sols@drts==drts_val
+
+amp_vals = c(1,2,3)
+Nmeas_vals = c(24,32,48)
+
+
+
+
+```
+
+
+# Compare optimal solutions
+```{r}
+
+
+```
