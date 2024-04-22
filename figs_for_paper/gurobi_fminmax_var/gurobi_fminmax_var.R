@@ -10,17 +10,17 @@ setgs      = expand.grid(Nmeas = Nmeas_vals,
                          df    = df_vals)
 
 # only consider priors with at most 1hr rhythms
-setgs      = setgs[(setgs$fmin+setgs$df)<=24,] 
+setgs      = setgs[(setgs$fmin+setgs$df)<24,] 
 
 # discretization parameters
 st_idx       = as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 Nfine        = 144 
+Nfreq        = 47 
 Nmeas        = setgs[st_idx,]$Nmeas #as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 fmin         = setgs[st_idx,]$fmin 
 fmax         = setgs[st_idx,]$fmin + setgs[st_idx,]$df
 tau          = c(1:Nfine)/Nfine -1/Nfine 
-fvec         = seq(from=fmin,to=fmax,0.5) # changing to uniform discretization
-Nfreq        = length(fvec)
+fvec         = seq(from=fmin,to=fmax,length.out=Nfreq)
 threads_glob = Sys.getenv("SLURM_CPUS_PER_TASK") 
 tlim_glob    = 60*60*1 #TODO: comment that this is only 1hr run
 out_loc_glob = 'figs_for_paper/gurobi_fminmax_var/' 
