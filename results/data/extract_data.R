@@ -1,11 +1,19 @@
-require(dplyr)
-require(data.table)
 require(devtools)
+require(ggplot2)
+require(annmatrix)
+require(ggplotify)
+require(patchwork)
+require(parallel)
+require(data.table)
+require(stringr)
+require(dplyr)
+require(latex2exp)
+require(annmatrix)
 devtools::load_all()
-sol_dir   = 'results/data/'
+sol_dir   = 'results/data/multi/'
 sol_files = list.files(sol_dir,pattern='sol_gur')
 
-Nfreq = 2^10
+Nfreq = 47*4 
 freqs = seq(1,24,length.out=Nfreq)
 Nfine=144
 tau = c(1:Nfine)/Nfine-1/Nfine
@@ -27,28 +35,31 @@ for (ii in c(1:length(sol_files))){
   
   if (Nfine==144){
     mtloc = tau[gres$x[1:Nfine]>gur_thresh]
-  }else{
-    stop('inconsistent fine grid')
+  
+    Nmeas = length(mtloc)
+    Nmeas_good = Nmeas==f_Nmeas
+    
+    ncp = costfun_svdpower(mtloc,freqs,Amp=NaN,cfuntype = 'ncp')
+    stat_code = gres$status
+   
+    rowdat=data.frame(
+      Nmeas       = Nmeas,
+      wreg        = f_wreg,
+      drts        = f_drts,
+      ncp         = ncp,
+      stat_code   = stat_code,
+      Nmeas_match = Nmeas_good
+      )
+    mtloc=c(mtloc,rep(Inf,48-Nmeas))
+    mtloc
+    am=annmatrix(matrix(mtloc,nrow=1),
+                 rowdat,
+                 data.frame(real_meas=mtloc<Inf))
+    sols=rbind(sols,am)
   }
-  
-  Nmeas = length(mtloc)
-  Nmeas_good = Nmeas==f_Nmeas
-  
-  ncp = costfun_svdpower(mtloc,freqs,Amp=NaN,cfuntype = 'ncp')
-  stat_code = gres$status
- 
-  rowdat=data.frame(
-    Nmeas       = Nmeas,
-    wreg        = f_wreg,
-    drts        = f_drts,
-    ncp         = ncp,
-    stat_code   = stat_code,
-    Nmeas_match = Nmeas_good
-    )
-  mtloc=c(mtloc,rep(Inf,48-Nmeas))
-  mtloc
-  am=annmatrix(matrix(mtloc,nrow=1),
-               rowdat,
-               data.frame(real_meas=mtloc<Inf))
-  sols=rbind(sols,am)
 }
+
+sols_plt = sols[sols@wreg %in% c(0,1),]
+sols_plt@''%>% 
+  ggplot(aes(x=Nmeas,y=ncp,
+             shape=as.factor(wreg),color=as.factor(drts)))+geom_point(size=2)+facet_wrap(~stat_code)

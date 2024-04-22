@@ -4,7 +4,7 @@ user='TurnerMac'
 if (user == 'TurnerMac'){
 	overleaf_plot_directory = '/Users/turnersilverthorn/research/overleaf/samplingPaper/figures/'
 } else {
-  overleaf_plot_directory = '/home/turner/research/ms_powerCHORD_intro_results1/figures/'
+  overleaf_plot_directory = '/home/turner/research/ms_powerCHORD/figures/'
 }
 
 get_legend <- function(p) {
