@@ -16,8 +16,8 @@ setgs      = setgs[(setgs$fmin+setgs$df)<=24,]
 st_idx       = as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 Nfine        = 144 
 Nmeas        = setgs[st_idx,]$Nmeas #as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
-fmin         = stgs[st_idx,]$fmin 
-fmax         = stgs[st_idx,]$fmin + stgs[st_idx,]$df
+fmin         = setgs[st_idx,]$fmin 
+fmax         = setgs[st_idx,]$fmin + setgs[st_idx,]$df
 tau          = c(1:Nfine)/Nfine -1/Nfine 
 fvec         = seq(from=fmin,to=fmax,0.5) # changing to uniform discretization
 Nfreq        = length(fvec)
@@ -107,6 +107,6 @@ sol=gurobi(model,params)
 
 saveRDS(sol,file=paste0(out_loc_glob,'sol_gur_',
                         'fmin',fmin,
-                        '_df_',df,
+                        '_df_',setgs[st_idx,]$df,
                         '_Nmeas_',Nmeas,'.RDS'))
 

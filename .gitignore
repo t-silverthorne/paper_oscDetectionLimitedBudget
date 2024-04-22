@@ -1,5 +1,8 @@
 figs_for_paper/gurobi_raw_spt*/*.RDS
 
+*.out
+*.RDS
+
 transfer_fold/*
 figs_for_paper/gurobi_raw/*.RDS
 figs_for_paper/gurobi_raw/*.out
