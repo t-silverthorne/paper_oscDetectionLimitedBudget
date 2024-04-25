@@ -100,9 +100,11 @@ plt = plt + theme(
   axis.text.x = element_text(vjust = 0.25)
   )
 
-plt_path <- tempfile(fileext = ".png")
-ggsave(plt_path, plt, width =plt_width, height = plt_height, units = "in",
-       dpi = 96)
-
-viewer <- getOption("viewer")
-viewer(plt_path)
+show_temp_plt=function(plt,plt_width,plt_height){
+  plt_path <- tempfile(fileext = ".png")
+  ggsave(plt_path, plt, width =plt_width, height = plt_height, units = "in",
+         dpi = 96)
+  
+  viewer <- getOption("viewer")
+  viewer(plt_path)
+}

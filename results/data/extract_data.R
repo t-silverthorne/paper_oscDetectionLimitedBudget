@@ -10,10 +10,10 @@ require(dplyr)
 require(latex2exp)
 require(annmatrix)
 devtools::load_all()
-sol_dir   = 'results/data/multi/'
+sol_dir   = 'results/data/multi_highres/'
 sol_files = list.files(sol_dir,pattern='sol_gur')
 
-Nfreq = 47*4 
+Nfreq = 47*8 
 freqs = seq(1,24,length.out=Nfreq)
 Nfine=144
 tau = c(1:Nfine)/Nfine-1/Nfine
