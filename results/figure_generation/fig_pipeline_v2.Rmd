@@ -15,10 +15,10 @@ source('plotConfig.R')
 source('results/data/extract_data.R') 
 
 #slide_version_directory='/home/turner/research/misc_tex/committee_meeting/figs/'
-mc_cores=10
+mc_cores=8
 ```
 
-# Motivation figure
+# Motivation: empirical p-values
 ```{r}
 gen_panel_loc=function(mt){
   Nmeas =length(mt)
@@ -119,7 +119,122 @@ ggsave(paste0('~/research/ms_powerCHORD/figures/','motivation_fig_v2.png'),Fig,w
 
 ```
 
-# Power heatmaps 
+# Motivation: power variability
+
+## First version of figure
+```{r}
+#Nfreq=2^8
+#Nacro=2^6+1
+#
+#Nmeas=12
+#mt = c(1:Nmeas)/Nmeas-1/Nmeas
+#
+#freqs=seq(1,24,length.out=Nfreq)
+#acros=seq(0,2*pi,length.out=Nacro)
+#acros=acros[1:(length(acros)-1)]
+#
+#Amps  = seq(1,2,.2)
+#Nmvec = seq(10,30,2)
+#
+#pars=expand.grid(Amp=Amps,Nmeas=Nmvec)
+#
+#pars$delta = c(1:dim(pars)[1]) %>% mclapply(mc.cores = mc_cores,function(ind){
+#  # unpack
+#  x     = pars[ind,]
+#  Nmeas = x$Nmeas
+#  Amp   = x$Amp
+#  mt    = c(1:Nmeas)/Nmeas-1/Nmeas
+#
+#  # for each freq, compute power variation 
+#  delta_vec = rep(NaN,length(freqs)) 
+#  for (fr_ind in c(1:length(freqs))){
+#    freq_loc = freqs[fr_ind]
+#    pwrs = sapply(acros,function(acro){
+#      eval_exact_power(t=mt,param=list(Amp=Amp,acro=acro,freq=freq_loc))
+#    }) 
+#    delta_vec[fr_ind] = max(pwrs)-min(pwrs)
+#  } 
+#  return(max(abs(delta_vec)))
+#})
+#pars$delta=as.numeric(pars$delta)
+#pars %>% ggplot(aes(x=Amp,y=Nmeas,fill=delta))+geom_raster()+
+#  scale_fill_viridis_c(limits=c(0,1))
+```
+
+## Second version
+```{r}
+Amps  = seq(0.5,2,.05)
+Nmvec = c(12,24,32)
+
+Nacro=2^6+1
+acros=seq(0,2*pi,length.out=Nacro)
+acros=acros[1:(length(acros)-1)]
+
+Nmeas=12
+mt = c(1:Nmeas)/Nmeas-1/Nmeas
+
+Nfreq=2^8
+freqs=seq(1,24,length.out=Nfreq)
+pars=expand.grid(Amp=Amps,Nmeas=Nmvec,freq=freqs)
+
+delta_vec = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ind){
+  # unpack
+  x     = pars[ind,] 
+  Amp   = x$Amp
+  Nmeas = x$Nmeas
+  freq  = x$freq
+  mt    = c(1:Nmeas)/Nmeas-1/Nmeas
+  
+  pwrs = sapply(acros,function(acro){
+    eval_exact_power(t=mt,param=list(Amp=Amp,acro=acro,freq=freq))
+  }) 
+  return(max(pwrs)-min(pwrs))
+})
+pars$delta=as.numeric(delta_vec)
+
+plt_raw =  pars %>% ggplot(aes(x=Amp,y=freq,fill=delta))+geom_raster()+facet_wrap(~Nmeas)+
+  scale_fill_viridis_c(limits=c(0,1))
+
+
+```
+
+Aesthetics
+```{r}
+theme_set(theme_classic()) 
+plt=plt_raw
+plt_height = 3
+plt_width  = 6
+
+plt=plt+theme(text=element_text(size=9))
+
+plt = plt + labs(x=element_text('amplitude'),
+                 y=element_text('frequency (cycles/day)'),
+                 fill ='power variation')
+
+plt=plt+guides(fill=guide_colorbar(title.position='right'))
+plt=plt+theme(legend.key.height = unit(plt_height*.15, "in"),
+               legend.title = element_text(angle = 90),
+               legend.title.align = 0.5,
+               legend.direction = "vertical")
+
+  
+plt = plt + theme(
+  strip.background=element_blank(),
+  plot.margin = margin(0,0,0,0),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.text.x = element_text(vjust = 0.25)
+  )
+
+show_temp_plt(plt,plt_width,plt_height)
+```
+
+```{r}
+ggsave(paste0('~/research/ms_powerCHORD/figures/','motivation_power_var.png'),plt,width=plt_width,height=plt_height,device='png',dpi=600)
+```
+
+
+# Result: Power heatmap
 ```{r}
 wreg_val = 1 
 drts_val = 12 
@@ -208,11 +323,20 @@ fs_glob=9
 (pA+pB)/(pC+pD)
 ```
 
+# Result: Power heatmap
 
-# Compare optimal solutions
+# Result: Regularised/constrained heatmap
+
+# Result: Performance and convergence
 ```{r}
 sols_plt = sols[sols@wreg %in% c(0,1),]
 sols_plt@''%>% 
   ggplot(aes(x=Nmeas,y=ncp,
-             shape=as.factor(wreg),color=as.factor(drts)))+geom_point(size=2)+facet_wrap(~stat_code)
+             shape=as.factor(wreg),color=as.factor(drts)))+
+  geom_point(size=2)+
+  facet_wrap(~stat_code)
 ```
+
+# Result: Gain of non-uniformity
+
+# Result: Non-uniqueness of maximizers
