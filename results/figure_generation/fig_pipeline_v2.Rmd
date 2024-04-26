@@ -570,9 +570,38 @@ ggsave(paste0('~/research/ms_powerCHORD/figures/','result_multi_hmap.png'),PLT,w
 
 # Result: Gain of non-uniformity
 ```{r}
+source('results/data/extract_fminfmax_data.R')
 
 ```
+```{r}
+fdf$fmax = fdf$fmin+fdf$df
+plt = fdf %>% ggplot(aes(x=fmin,y=fmax,fill=d_power))+geom_raster()+facet_wrap(~Nmeas)+scale_fill_viridis_c() 
 
+plt_height = 3
+plt_width  = 6
+
+plt=plt+theme(text=element_text(size=fsize))
+
+plt = plt + labs(x=element_text('minimum frequency (cycles/day)'),
+                 y=element_text('maximum frequency (cycles/day)'),
+                 fill='gain of power')
+
+plt=plt+guides(fill=guide_colorbar(title.position='top'))
+plt=plt+theme(legend.position='bottom',
+               legend.key.width = unit(plt_width*.15, "in"),
+               legend.title.align = 0.5,
+               legend.direction = "horizontal")
+plt = plt + theme(
+  strip.background=element_blank(),
+  plot.margin = margin(0,0,0,0),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.text.x = element_text(vjust = 0.25)
+  )
+plt
+
+
+```
 
 # Result: Non-uniqueness of maximizers
 ```{r}
