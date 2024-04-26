@@ -1,5 +1,6 @@
 figs_for_paper/gurobi_raw_spt*/*.RDS
 
+*.asv
 *.out
 *.RDS
 
