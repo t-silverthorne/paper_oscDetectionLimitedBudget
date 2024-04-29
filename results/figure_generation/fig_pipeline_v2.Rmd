@@ -116,7 +116,7 @@ F1=as.ggplot(F1raw&theme(legend.position = 'none'))
 F2=as.ggplot(F2raw&theme(legend.position = 'bottom'))
 
 Fig = F1/F2 + plot_annotation(tag_levels ='A')+plot_layout(guides='collect',heights = c(5,6.5))
-ggsave(paste0('~/research/ms_powerCHORD/figures/','motivation_fig_v2.png'),Fig,width=6,height=6,device='png',dpi=600)
+ggsave(paste0('~/research/ms_powerCHORD/figures/','motivation_fig_v2.png'),Fig,width=plt_width,height=plt_height,device='png',dpi=600)
 
 ```
 
@@ -571,11 +571,9 @@ ggsave(paste0('~/research/ms_powerCHORD/figures/','result_multi_hmap.png'),PLT,w
 # Result: Gain of non-uniformity
 ```{r}
 source('results/data/extract_fminfmax_data.R')
-
-```
-```{r}
+theme_set(theme_classic()) 
 fdf$fmax = fdf$fmin+fdf$df
-plt = fdf %>% ggplot(aes(x=fmin,y=fmax,fill=d_power))+geom_raster()+facet_wrap(~Nmeas)+scale_fill_viridis_c() 
+plt = fdf %>% ggplot(aes(x=fmin,y=fmax,fill=d_power))+geom_tile(height=2)+facet_wrap(~Nmeas,nrow=1)+scale_fill_viridis_c(limits=c(0,1)) 
 
 plt_height = 3
 plt_width  = 6
@@ -585,6 +583,17 @@ plt=plt+theme(text=element_text(size=fsize))
 plt = plt + labs(x=element_text('minimum frequency (cycles/day)'),
                  y=element_text('maximum frequency (cycles/day)'),
                  fill='gain of power')
+
+xmin=0
+xmax=13
+ymax=25
+plt = plt + scale_x_continuous(limits =c(xmin,xmax),
+                         breaks=seq(xmin,12,4),
+                         labels=seq(xmin,12,4)) 
+
+plt = plt + scale_y_continuous(limits =c(xmin,ymax),
+                         breaks=seq(xmin,24,8),
+                         labels=seq(xmin,24,8)) 
 
 plt=plt+guides(fill=guide_colorbar(title.position='top'))
 plt=plt+theme(legend.position='bottom',
@@ -600,15 +609,80 @@ plt = plt + theme(
   )
 plt
 
+show_temp_plt(plt,plt_width,plt_height)
 
+ggsave(paste0('~/research/ms_powerCHORD/figures/','gain_of_non_unif.png'),plt,width=plt_width,height=plt_height,device='png',dpi=600)
 ```
 
 # Result: Non-uniqueness of maximizers
+## Visualize surface
 ```{r}
+nt    = 50
+Nfreq = 2^10
+Nm    = 24 
+Amps  = c(1,5)
+fmaxs = c(10,12)
+mt_unif = c(1:Nm)/Nm - 1/Nm
+
+ta_vals = seq(0,1,length.out=nt)
+tb_vals = seq(0,1,length.out=nt)
+pars    = expand.grid(ta=ta_vals,tb=tb_vals,Amp=Amps,fmax=fmaxs)
+
+pars    = pars[pars$ta <= pars$tb,]
+pars    = pars[!(pars$ta %in% mt_unif),]
+pars    = pars[!(pars$tb %in% mt_unif),]
+
+pars$power = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
+  x     = pars[ii,]
+  ta    = x$ta %>% as.numeric()
+  tb    = x$tb %>% as.numeric()
+  Amp   = x$Amp %>% as.numeric()
+  fmax  = x$fmax %>% as.numeric()
+  
+  mt    = c(mt_unif,ta,tb) 
+  
+  freqs = seq(fmin,fmax,length.out=Nfreq)
+  
+  return(costfun_svdpower(mt,freqs,Amp,cfuntype = 'power'))
+})
+pars$power = as.numeric(pars$power)
+
+pars %>% ggplot(aes(x=ta,y=tb,fill=power))+geom_raster()+scale_fill_viridis_c(limits=c(0,1))+
+  facet_grid(fmax~Amp)
+```
+
+## Optimization
+```{r}
+source('results/source/powerChord.R')
+require(gurobi)
+require(dplyr)
+ds = 1 # down sampling factor
+
+Nmeas       = 26
+fmin        = 1
+fmax        = 24 
+drts        = 6/ds
+w_reg       = 0
+Nfreq       = 100
+Nfine       = 144/ds 
+num_threads = 1
+tlim        = 10 
+uu=powerChord(Nmeas=Nmeas,
+           fmin=fmin,
+           fmax=fmax,
+           drts=drts,
+           w_reg=w_reg,
+           Nfine=Nfine,
+           Nfreq=Nfreq,
+           num_threads=num_threads,
+           tlim=tlim)
+
+
+
 
 ```
 
+## Compare adding a point to redistributing 
+```{r}
 
-
-
-
+```
