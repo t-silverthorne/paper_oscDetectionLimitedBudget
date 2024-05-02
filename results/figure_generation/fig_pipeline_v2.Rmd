@@ -12,10 +12,11 @@ require(latex2exp)
 require(annmatrix)
 load_all()
 source('plotConfig.R')
+source('plot_template.R')
 source('results/data/extract_data.R') 
 
 #slide_version_directory='/home/turner/research/misc_tex/committee_meeting/figs/'
-mc_cores=10
+mc_cores=12
 fsize=9
 ```
 
@@ -116,6 +117,10 @@ F1=as.ggplot(F1raw&theme(legend.position = 'none'))
 F2=as.ggplot(F2raw&theme(legend.position = 'bottom'))
 
 Fig = F1/F2 + plot_annotation(tag_levels ='A')+plot_layout(guides='collect',heights = c(5,6.5))
+
+plt_width  = 6
+plt_height = 5
+show_temp_plt(Fig,plt_width,plt_height)
 ggsave(paste0('~/research/ms_powerCHORD/figures/','motivation_fig_v2.png'),Fig,width=plt_width,height=plt_height,device='png',dpi=600)
 
 ```
@@ -197,13 +202,9 @@ plt_raw =  pars %>% ggplot(aes(x=Amp,y=freq,fill=delta))+geom_raster()+facet_wra
   scale_fill_viridis_c(limits=c(0,1))
 
 
-```
-
-Aesthetics
-```{r}
 theme_set(theme_classic()) 
 plt=plt_raw
-plt_height = 3
+plt_height = 1.8 
 plt_width  = 6
 
 plt=plt+theme(text=element_text(size=fsize))
@@ -228,9 +229,7 @@ plt = plt + theme(
   )
 
 show_temp_plt(plt,plt_width,plt_height)
-```
 
-```{r}
 ggsave(paste0('~/research/ms_powerCHORD/figures/','motivation_power_var.png'),plt,width=plt_width,height=plt_height,device='png',dpi=600)
 ```
 
@@ -411,10 +410,10 @@ phmap = plt
 
 ```{r}
 PLT = psol/pcurve/phmap + plot_annotation(tag_levels='A')+
-  plot_layout(heights=c(1,1,2))&theme(text=element_text(size=9))
+  plot_layout(heights=c(2,1,1))&theme(text=element_text(size=9))
 
 plt_width=6
-plt_height=7
+plt_height=5
 show_temp_plt(PLT,plt_width,plt_height)
 
 ggsave(paste0('~/research/ms_powerCHORD/figures/','result_first_heatmap.png'),PLT,width=plt_width,height=plt_height,device='png',dpi=600)
@@ -545,7 +544,7 @@ plt = pdf %>% ggplot(aes(x=mt,y=0))+geom_point(size=1)+facet_grid(drts~wreg)
 
 plt = plt + theme(axis.title.y=element_blank()) 
 plt = plt + theme(axis.text.y=element_blank()) 
-plt = plt + labs(x=element_text('time'))
+plt = plt + labs(x=element_text('time (days)'))
 plt = plt+scale_x_continuous(limits=c(0,1),breaks=c(0,1))
 plt = plt + theme(
   strip.background=element_blank(),
@@ -559,10 +558,10 @@ plt_raw = plt
 
 ```{r}
 
-PLT = plt_conv /plt_mhmap/ plt_raw + plot_annotation(tag_levels='A')+
-  plot_layout(heights = c(.75,1.5,1.5))
+PLT = plt_raw/plt_mhmap/plt_conv  + plot_annotation(tag_levels='A')+
+  plot_layout(heights = c(.7,1.5,1))
 
-plt_height=8
+plt_height=6
 show_temp_plt(PLT,plt_width,plt_height)
 
 ggsave(paste0('~/research/ms_powerCHORD/figures/','result_multi_hmap.png'),PLT,width=plt_width,height=plt_height,device='png',dpi=600)
@@ -617,15 +616,18 @@ ggsave(paste0('~/research/ms_powerCHORD/figures/','gain_of_non_unif.png'),plt,wi
 # Result: Non-uniqueness of maximizers
 ## Visualize surface
 ```{r}
-nt    = 50
-Nfreq = 2^10
+plt_height = 2
+plt_width  = 6
+nt    = 100
+Nfreq = 2^7
 Nm    = 24 
-Amps  = c(1,5)
-fmaxs = c(10,12)
+Amps  = c(3)
+fmin  = 1
+fmaxs = c(seq(6,24,2),24)
 mt_unif = c(1:Nm)/Nm - 1/Nm
 
-ta_vals = seq(0,1,length.out=nt)
-tb_vals = seq(0,1,length.out=nt)
+ta_vals = seq(0,.25,length.out=nt)
+tb_vals = seq(0,.25,length.out=nt)
 pars    = expand.grid(ta=ta_vals,tb=tb_vals,Amp=Amps,fmax=fmaxs)
 
 pars    = pars[pars$ta <= pars$tb,]
@@ -646,36 +648,77 @@ pars$power = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
   return(costfun_svdpower(mt,freqs,Amp,cfuntype = 'power'))
 })
 pars$power = as.numeric(pars$power)
+theme_set(theme_classic()) 
+plt=pars %>% ggplot(aes(x=ta,y=tb,fill=power))+geom_tile()+scale_fill_viridis_c(limits=c(0,1))+
+  facet_wrap(~fmax,nrow=1)+
+  geom_hline(yintercept =mt_unif[mt_unif<.25])+
+  geom_vline(xintercept =mt_unif[mt_unif<.25])
 
-pars %>% ggplot(aes(x=ta,y=tb,fill=power))+geom_raster()+scale_fill_viridis_c(limits=c(0,1))+
-  facet_grid(fmax~Amp)
+
+plt=plt+theme(text=element_text(size=fsize))
+
+xmin=0
+xmax=.25
+ymin=0
+ymax=.25
+plt = plt + scale_x_continuous(limits =c(xmin,xmax),
+                               breaks=c(xmin,xmax),
+                               labels=round(c(xmin,xmax),2)) 
+plt = plt + scale_y_continuous(limits =c(ymin,ymax),
+                               breaks=c(ymin,ymax),
+                               labels=round(c(ymin,ymax),2)) 
+
+plt = plt + labs(x=TeX('$t_1$'),
+                 y=TeX('$t_2$'),
+                 fill='power')
+
+plt=plt+guides(fill=guide_colorbar(title.position='right'))
+plt=plt+theme(legend.key.height = unit(plt_height*.12, "in"),
+               legend.title = element_text(angle = 90),
+               legend.title.align = 0.5,
+               legend.direction = "vertical")
+
+
+plt = plt + theme(
+  strip.background=element_blank(),
+  plot.margin = margin(0,0,0,0),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.text.x = element_text(vjust = 0.25))
+
+show_temp_plt(plt,plt_width,plt_height)
+
+```
+
+```{r}
+ggsave(paste0('~/research/ms_powerCHORD/figures/','degenerate_optima.png'),plt,width=plt_width,height=plt_height,device='png',dpi=600)
 ```
 
 ## Optimization
 ```{r}
-source('results/source/powerChord.R')
-require(gurobi)
-require(dplyr)
-ds = 1 # down sampling factor
-
-Nmeas       = 26
-fmin        = 1
-fmax        = 24 
-drts        = 6/ds
-w_reg       = 0
-Nfreq       = 100
-Nfine       = 144/ds 
-num_threads = 1
-tlim        = 10 
-uu=powerChord(Nmeas=Nmeas,
-           fmin=fmin,
-           fmax=fmax,
-           drts=drts,
-           w_reg=w_reg,
-           Nfine=Nfine,
-           Nfreq=Nfreq,
-           num_threads=num_threads,
-           tlim=tlim)
+#source('results/source/powerChord.R')
+#require(gurobi)
+#require(dplyr)
+#ds = 1 # down sampling factor
+#
+#Nmeas       = 26
+#fmin        = 1
+#fmax        = 24 
+#drts        = 6/ds
+#w_reg       = 0
+#Nfreq       = 100
+#Nfine       = 144/ds 
+#num_threads = 1
+#tlim        = 10 
+#uu=powerChord(Nmeas=Nmeas,
+#           fmin=fmin,
+#           fmax=fmax,
+#           drts=drts,
+#           w_reg=w_reg,
+#           Nfine=Nfine,
+#           Nfreq=Nfreq,
+#           num_threads=num_threads,
+#           tlim=tlim)
 
 
 
