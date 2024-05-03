@@ -2,10 +2,10 @@
 powerChord=function(Nmeas,fmin=1,fmax=24,
                      drts=Inf,w_reg=1,
                      Nfine=144,Nfreq=47,
-                     num_threads=1,tlim=60){
+                     num_threads=1,tlim=60,
+                     w_wc=1,MIPGap=1e-5){
   
   tau  = c(1:Nfine)/Nfine -1/Nfine 
-  fvec = seq(from=fmin,to=fmax,length.out=Nfreq)
   
   model=list()
   
@@ -45,26 +45,36 @@ powerChord=function(Nmeas,fmin=1,fmax=24,
   
   # first set of quadratic constraints
   model$quadcon=list()
-  for (ii in c(1:Nfreq)){
-    freq  = fvec[ii]
-    cvec  = matrix(cos(2*pi*freq*tau),nrow=Nfine)
-    svec  = matrix(sin(2*pi*freq*tau),nrow=Nfine)
-    
-    a11   = cvec*cvec
-    a22   = svec*svec
-    a12   = cvec*svec
-    
-    qcmat  = a11%*%t(a11) + a22%*%t(a22) +4*a12%*%t(a12)-a11%*%t(a22) - a22%*%t(a11)+w_reg*ncp_reg_mat
+  if (w_wc==0){
+    qcmat  = w_reg*ncp_reg_mat
     qcmat  = cbind(rbind(qcmat,rep(0,Nfine)),rep(0,Nfine+1))
     qc     = c(rep(0,Nfine),-1)
     beta   = 0
     sense  = '<'
-    model$quadcon[[ii]] = list(Qc=qcmat,q=qc,rhs=beta,sense=sense)
+    model$quadcon[[1]] = list(Qc=qcmat,q=qc,rhs=beta,sense=sense)
+  }else if (w_wc>0){
+    fvec = seq(from=fmin,to=fmax,length.out=Nfreq)
+    for (ii in c(1:Nfreq)){
+      freq  = fvec[ii]
+      cvec  = matrix(cos(2*pi*freq*tau),nrow=Nfine)
+      svec  = matrix(sin(2*pi*freq*tau),nrow=Nfine)
+      
+      a11   = cvec*cvec
+      a22   = svec*svec
+      a12   = cvec*svec
+      
+      qcmat  = w_wc*(a11%*%t(a11) + a22%*%t(a22) +4*a12%*%t(a12)-a11%*%t(a22) - a22%*%t(a11))+w_reg*ncp_reg_mat
+      qcmat  = cbind(rbind(qcmat,rep(0,Nfine)),rep(0,Nfine+1))
+      qc     = c(rep(0,Nfine),-1)
+      beta   = 0
+      sense  = '<'
+      model$quadcon[[ii]] = list(Qc=qcmat,q=qc,rhs=beta,sense=sense)
+    }
+    
   }
   
-   
   # gurobi settings
-  params = list(TimeLimit=tlim,MIPGap=1e-5,Presolve=2,
+  params = list(TimeLimit=tlim,MIPGap=MIPGap,Presolve=2,
                 MIPFocus=3,NumericFocus=3,Threads=num_threads)
   
   # solve
