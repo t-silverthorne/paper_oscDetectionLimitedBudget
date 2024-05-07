@@ -4,7 +4,6 @@ require(ggplot2)
 source('results/source/powerChord.R')
 
 
-
 ## Example of non-uniform optimal solution
 #Nfine = 144/4
 #sol=powerChord(Nmeas       = 24,
@@ -30,17 +29,17 @@ source('results/source/powerChord.R')
 # for scale 1, the cutoff happens before fmax=12
 # for scale 1.15, the cutoff happens after fmax=12
 # for scale 1.45, the cutoff happens after fmax=14
-scale=1.45
+scale=1
 Nfine = floor(144*scale/3)
 Nmeas = floor(40*scale)
 fmin  = 1
-fmax  = 14
+fmax  = 29
 sol=powerChord(Nmeas       = Nmeas,
                drts        = Inf,
                w_reg       = 1,
                Nfreq       = 8,
                num_threads = 12,
-               tlim        = 35,
+               tlim        = 2,
                Nfine       = Nfine,
                w_wc        = 0,
                fmin        = fmin,
