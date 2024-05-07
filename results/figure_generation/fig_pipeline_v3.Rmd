@@ -610,9 +610,11 @@ p_hmap = plt
 #TODO check font sizing is consistent, does it depend on where you put plot_annotation
 Fig = plt_conv/p_hmap + plot_annotation(tag_levels='A')
 
-show_temp_plt(Fig,6,4)
+plt_width=6
+plt_height=4
+show_temp_plt(Fig,plt_width,plt_height)
 
-ggsave(paste0('~/research/ms_powerCHORD/figures/','regularization.png'),Fig,width=plt_width,height=plt_height,device='png',dpi=600)
+ggsave(paste0('~/research/ms_powerCHORD/figures/','sampling_constraint_hmap.png'),Fig,width=plt_width,height=plt_height,device='png',dpi=600)
 
 ```
 

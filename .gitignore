@@ -1,5 +1,7 @@
 figs_for_paper/gurobi_raw_spt*/*.RDS
 
+matlab_checks/*.png
+
 *.asv
 *.out
 *.RDS

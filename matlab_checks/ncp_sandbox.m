@@ -1,3 +1,7 @@
+set(groot,'defaultAxesTickLabelInterpreter','latex');  
+set(groot,'defaulttextinterpreter','latex');
+set(groot,'defaultLegendInterpreter','latex');
+
 %% what happens if measuring at single point in time
 clf
 t=0:.01:2;
@@ -11,18 +15,29 @@ g = @(t,f,delta) ncp(t+delta,f) - ncp(t,f);
 
 N = ncp(T,F);
 
-tiledlayout(1,2)
+tiledlayout(1,2,'TileSpacing','tight')
 nexttile(1)
 contourf(T,F,N,100,'LineStyle','none')
+xlabel('time (days)')
+ylabel('frequency (cycles/day)')
+title('$\lambda(t,f)$')
 
 nexttile(2)
 dncp = @(t,f) -4*pi*t.*cos(2*pi*f.*t).*sin(2*pi*f.*t);
 dg = @(t,f,delta) dncp(t+delta,f)-ncp(t,f);
-dN = dncp(T,F)
+dN = dncp(T,F);
 contourf(T,F,dN,100,'LineStyle','none')
-%%
-clf
-plot(t,g(t,2.01,1))
+xlabel('time (days)')
+ylabel('frequency (cycles/day)')
+title('$\partial_{f}\lambda(t,f)$')
+
+
+plot_filename='1_single_measurement.png';
+ht=3; % height (inches)
+wd=6; % width  (inches)
+set(gcf,'PaperUnits','inches')
+set(gcf,'PaperPositionMode','manual','PaperSize',[wd,ht],'PaperPosition',[0 0 wd ht])
+print(gcf,plot_filename,'-dpng','-r600') % -r sets the resolution
 
 %% what happens if measuring at several points in time
 clf
@@ -31,16 +46,38 @@ mt  = 0:.1:1;
 mt  = mt(1:end-1);
 mt  = reshape(mt,1,1,length(mt));
 
-ncp = @(delta,f) sum(cos(2*pi*(mt+delta).*f).^2,3)
+ncp  = @(delta,f) sum(cos(2*pi*(mt+delta).*f).^2,3);
+dncp = @(delta,f) sum(-4*pi*(mt+delta).*cos(2*pi*f.*(mt+delta)).*sin(2*pi*f.*(mt+delta)),3);
 plot(ncp(0:.01:1,1))
 
 
-del=0:.01:8;
+del=0:.01:2;
 f=1:.01:8;
 [D,F]=meshgrid(del,f);
-
+clf
 Z=ncp(D,F)
+dZ=dncp(D,F)
+clf
+tiledlayout(1,2,'TileSpacing','tight')
+nexttile(1)
 contourf(D,F,Z,100,'LineStyle','none')
+xlabel('shift (days)')
+ylabel('frequency (cycles/day)')
+title('$\lambda(t,f)$')
+
+nexttile(2)
+contourf(D,F,dZ,100,'LineStyle','none')
+xlabel('shift (days)')
+ylabel('frequency (cycles/day)')
+title('$\partial_{f}\lambda(t,f)$')
+
+plot_filename='2_uniform_measurement.png';
+ht=3; % height (inches)
+wd=6; % width  (inches)
+set(gcf,'PaperUnits','inches')
+set(gcf,'PaperPositionMode','manual','PaperSize',[wd,ht],'PaperPosition',[0 0 wd ht])
+print(gcf,plot_filename,'-dpng','-r600') % -r sets the resolution
+
 %%
 clf
 plot(del,ncp(del,5))
@@ -55,7 +92,7 @@ plot(del,h(del,mt))
 
 [u,v]=findpeaks(h(del,mt))
 mod(del(v),1)
-%% checing
+%% checking
 h(0,0)
 
 fmax=1.5
