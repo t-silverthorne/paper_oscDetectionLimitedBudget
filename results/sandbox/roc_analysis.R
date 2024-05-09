@@ -1,8 +1,7 @@
 require(lomb)
 Nmeas = 48
-Nmc   = 1e3
+Nmc   = 1e4
 Amp   = 1 
-freq  = 5.05
 
 estimate_TPR = function(alpha_val,p_osc,tvec,Nmc,Amp,freq,type){
   # generate simulated data
@@ -25,6 +24,7 @@ estimate_TPR = function(alpha_val,p_osc,tvec,Nmc,Amp,freq,type){
   num_TP3 = sum(pvdf$pcosinor<alpha_val &pvdf$plomb <alpha_val & state=='osc')
   return(data.frame(alpha_val=alpha_val,
                     freq=freq,
+                    Amp =Amp,
                     type=type,
                     TPR1=num_TP1/num_P,
                     TPR2=num_TP2/num_P,
@@ -35,23 +35,47 @@ p_osc     = 0.1
 
 
 alpha_vals = seq(0,1,.1)
-freq_vals  = c(1,2,4,24) 
+freq_vals  = c(1,2,4,8,16,24) 
 mt_unif    = c(1:Nmeas)/Nmeas-1/Nmeas
 mt_opt     = sols[sols@wreg==0 & sols@drts==Inf & sols@Nmeas==Nmeas,]
-pars       = expand.grid(alpha_val=alpha_vals,freq=freq_vals,type=c('uniform','optimal'))
+mt_rob     = sols[sols@wreg==1 & sols@drts==6 & sols@Nmeas==Nmeas,]
+pars       = expand.grid(alpha_val=alpha_vals,
+                         freq=freq_vals,
+                         Amp = c(1,2,10),
+                         type=c('uniform','optimal','robust'))
 
 dfTPR = c(1:dim(pars)[1]) %>% lapply(function(ind){
   alpha_val = pars[ind,]$alpha_val
   freq      = pars[ind,]$freq
+  Amp       = pars[ind,]$Amp
   if (pars[ind,]$type=='uniform'){
     tvec_loc = mt_unif
-  }else{
+  }else if(pars[ind,]$type=='optimal'){
     tvec_loc = mt_opt
+  }else if(pars[ind,]$type=='robust'){
+    tvec_loc = mt_rob
+  }else{
+    stop('unrecognized type')
   }
   estimate_TPR(alpha_val,p_osc,tvec_loc,Nmc,Amp,freq,pars[ind,]$type)
 }
 ) %>%  rbindlist() %>% data.frame()
 pdf =dfTPR %>% gather(key='TPR_type',value='TPR',TPR1,TPR2,TPR3)
-pdf %>% ggplot(aes(x=alpha_val,y=TPR,group=type,color=type))+geom_line()+
-  scale_y_continuous(limits = c(0,1))+
+saveRDS(pdf,'results/data/hilo_ROC.RDS')
+pdf = readRDS('results/data/hilo_ROC.RDS')
+plt1 =pdf %>% filter(Amp==1)%>% ggplot(aes(x=alpha_val,y=TPR,group=type,color=type))+
+  geom_line(position=position_jitter(w=0.02, h=0.02))+
+  scale_y_continuous(limits = c(0,1.1))+
   facet_grid(TPR_type~freq)
+
+plt2 =pdf %>% filter(Amp==2) %>% ggplot(aes(x=alpha_val,y=TPR,group=type,color=type))+
+  geom_line(position=position_jitter(w=0.02, h=0.02))+
+  scale_y_continuous(limits = c(0,1.1))+
+  facet_grid(TPR_type~freq)
+
+plt3 =pdf %>% filter(Amp==10) %>% ggplot(aes(x=alpha_val,y=TPR,group=type,color=type))+
+  geom_line(position=position_jitter(w=0.02, h=0.02))+
+  scale_y_continuous(limits = c(0,1.1))+
+  facet_grid(TPR_type~freq)
+require(patchwork)
+plt1/plt2/plt3
