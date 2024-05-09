@@ -78,13 +78,13 @@ plt=plt+scale_color_gradient2(
                               )
 
 if (legend_vert){
-  plt=plt+guides(color=guide_colorbar(title.position='right'))
+  plt=plt+guides(fill=guide_colorbar(title.position='right'))
   plt=plt+theme(legend.key.height = unit(plt_height*.15, "in"),
                  legend.title = element_text(angle = 90),
                  legend.title.align = 0.5,
                  legend.direction = "vertical")
 }else{
-  plt=plt+guides(color=guide_colorbar(title.position='top'))
+  plt=plt+guides(fill=guide_colorbar(title.position='top'))
   plt=plt+theme(legend.position='bottom',
                  legend.key.width = unit(plt_width*.15, "in"),
                  legend.title.align = 0.5,

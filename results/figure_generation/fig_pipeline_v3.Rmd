@@ -3,6 +3,7 @@ require(devtools)
 require(annmatrix)
 require(ggplot2)
 require(ggplotify)
+require(gurobi)
 require(ggpubr)
 require(patchwork)
 require(parallel)
@@ -14,6 +15,7 @@ require(annmatrix)
 load_all()
 source('plotConfig.R')
 source('plot_template.R')
+source('results/source/powerChord.R')
 source('results/data/extract_data.R') 
 get_legend <- function(p) {
    tmp <- ggplot_gtable(ggplot_build(p))
@@ -395,9 +397,7 @@ ggsave(paste0('~/research/ms_powerCHORD/figures/','result_first_heatmap.png'),Fi
 ```
 
 # Degeneracy and regularization
-## Pure regularization figure
-
-### Function heatmap
+## Ultradian/infradian figure 
 ```{r}
 ncp = function(mt,f){
   sum(cos(2*pi*mt*f)^2)
@@ -431,16 +431,18 @@ head(pars)
 theme_set(theme_classic()) 
 plt_width=2
 # function plot
+plt_width=6
+plt_height=2
+
 plt = pars %>% ggplot(aes(x=delta,y=freq,fill=ncp))+geom_raster()+scale_fill_viridis_c()
 plt = plt + labs(x=element_text('shift (days)'),
                  y=element_text('frequency (cycles/day)'),
                  fill='ncp')
-plt=plt+guides(fill=guide_colorbar(title.position='top'))
-plt=plt+theme(legend.position='bottom',
-               legend.key.width = unit(plt_width*.15, "in"),
+plt=plt+guides(fill=guide_colorbar(title.position='right'))
+plt=plt+theme(legend.key.height = unit(plt_height*.1, "in"),
+               legend.title = element_text(angle = 90),
                legend.title.align = 0.5,
-               legend.direction = "horizontal")
-plt=plt+theme(text=element_text(size=9))
+               legend.direction = "vertical")
 plt_f = plt
 
 # derivative plot
@@ -448,17 +450,21 @@ plt = pars %>% ggplot(aes(x=delta,y=freq,fill=dncp))+geom_raster()+scale_fill_vi
 plt = plt + labs(x=element_text('shift (days)'),
                  y=element_text('frequency (cycles/day)'),
                  fill='d_f ncp')
-plt=plt+guides(fill=guide_colorbar(title.position='top'))
-plt=plt+theme(legend.position='bottom',
-               legend.key.width = unit(plt_width*.15, "in"),
+plt=plt+guides(fill=guide_colorbar(title.position='right'))
+plt=plt+theme(legend.key.height = unit(plt_height*.1, "in"),
+               legend.title = element_text(angle = 90),
                legend.title.align = 0.5,
-               legend.direction = "horizontal")
+               legend.direction = "vertical")
 plt=plt+theme(text=element_text(size=9))
 plt_df = plt
 
 plt_hmap = plt_f | plt_df
+plt_hmap = plt_hmap & theme(text=element_text(size=fsize))
+show_temp_plt(plt_hmap,plt_width,plt_height)
+ggsave(paste0('~/research/ms_powerCHORD/figures/','regularization_fig0.png'),plt_hmap,width=plt_width,height=plt_height,device='png',dpi=600)
 ```
 
+## Pure regularization
 ### Raw solutions 
 ```{r}
 scale=1.4
@@ -475,7 +481,7 @@ sols = c(1:length(fmin_vals)) %>% lapply(function(ii){
                  w_reg       = 1,
                  Nfreq       = 8,
                  num_threads = 12,
-                 tlim        = 2,
+                 tlim        = 10,
                  Nfine       = Nfine,
                  w_wc        = 0,
                  fmin        = fmin,
@@ -486,7 +492,7 @@ sols = c(1:length(fmin_vals)) %>% lapply(function(ii){
 }) %>% rbindlist() %>% data.frame()
 head(sols)
 
-plt = sols %>% ggplot(aes(x=mt,y=1))+geom_point()+
+plt = sols %>% ggplot(aes(x=mt,y=1))+geom_point(size=1)+
   facet_wrap(~fmin,nrow=3)+
   scale_x_continuous(limits=c(0,1))
 plt = plt + theme(axis.title.y=element_blank()) 
@@ -503,6 +509,7 @@ plt = plt + theme(
   )
 plt=plt+theme(text=element_text(size=9))
 plt_raw = plt
+plt_raw 
 ```
 
 ### Applicability 
@@ -510,7 +517,7 @@ plt_raw = plt
 pdf = readRDS('results/data/pure_reg.RDS')
 pdf = pdf %>% mutate(outcome = ifelse(status=='TIME_LIMIT','time_out',is_unif))
 pdf = pdf %>% filter(cfactor<=2)
-pdf$outcome = factor(pdf$outcome,c(T,F,'time_out'),c('uniform optimal','non-uniform optimal','time limit'))
+pdf$outcome = factor(pdf$outcome,c(T,F,'time_out'),c('uniform optimal','non-uniform optimal','timeout'))
 plt = pdf %>% ggplot(aes(x=Nmeas,y=fmax,fill=outcome))+ geom_raster()+
   facet_wrap(~cfactor)
 
@@ -525,11 +532,12 @@ theme_set(theme_classic())
 
 plt = plt + labs(x=element_text('measurement budget'),
                  y=element_text('max frequency (cycles/day)'))
-#plt=plt+guides(fill=guide_colorbar(title.position='top'))
+plt=plt+guides(fill=guide_legend(title.position='top'))
 plt=plt+theme(legend.position='bottom',
                legend.key.width = unit(plt_width*.05, "in"),
                legend.title.align = 0.5,
-               legend.direction = "horizontal")
+               legend.direction = "horizontal",
+                text = element_text(size=9))
 # misc visuals
 plt = plt + theme(
   strip.background=element_blank(),
@@ -541,15 +549,17 @@ plt = plt + theme(
 plt=plt+theme(text=element_text(size=9))
 plt_app = plt
 
-
+plt_app
 ```
 
 ### Combine
 ```{r}
 plt_width =6 
-plt_height=7
-Fig = plt_hmap/plt_raw/plt_app + plot_annotation(tag_levels='A')+
-  plot_layout(heights=c(1,.8,1.5))
+plt_height=5
+plt_raw = plt_raw
+plt_app = plt_app
+Fig = plt_raw/plt_app  + plot_annotation(tag_levels='A')+
+  plot_layout(heights=c(1.5,2))
 show_temp_plt(Fig,plt_width,plt_height)
 ggsave(paste0('~/research/ms_powerCHORD/figures/','pure_regularization.png'),Fig,width=plt_width,height=plt_height,device='png',dpi=600)
 ```
