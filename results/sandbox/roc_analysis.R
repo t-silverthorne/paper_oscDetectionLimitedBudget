@@ -12,16 +12,19 @@ estimate_TPR = function(alpha_val,p_osc,tvec,Nmc,Amp,freq,type){
  
   pvdf = c(1:dim(Ydat)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
     x              = Ydat[ii,]
-    lomb           = lsp(x,alpha=alpha_val,tvec,plot=F)
+    lomb_std       = lsp(x,alpha=alpha_val,tvec,plot=F,normalize = 'standard')
+    lomb_press     = lsp(x,alpha=alpha_val,tvec,plot=F,normalize = 'press')
     freq_est       = lomb$peak.at[1]
     pcosinor       = rowCosinor(matrix(x,nrow=1),matrix(tvec,ncol=1),freq_est) %>% {.$pvalue}
-    return(data.frame(plomb=lomb$p.value,pcosinor=pcosinor))
+    return(data.frame(plomb_std=lomb_std$p.value,
+                      plomb_press=lomb_press$p.value,
+                      pcosinor=pcosinor))
   }) %>% rbindlist() %>% data.frame()
   num_P  = sum(state=='osc')
   
   num_TP1 = sum(pvdf$pcosinor<alpha_val & state=='osc')
-  num_TP2 = sum(pvdf$plomb <alpha_val & state=='osc')
-  num_TP3 = sum(pvdf$pcosinor<alpha_val &pvdf$plomb <alpha_val & state=='osc')
+  num_TP2 = sum(pvdf$plomb_std <alpha_val & state=='osc')
+  num_TP3 = sum(pvdf$plomb_press <alpha_val & state=='osc')
   return(data.frame(alpha_val=alpha_val,
                     freq=freq,
                     Amp =Amp,
@@ -60,6 +63,7 @@ dfTPR = c(1:dim(pars)[1]) %>% lapply(function(ind){
   estimate_TPR(alpha_val,p_osc,tvec_loc,Nmc,Amp,freq,pars[ind,]$type)
 }
 ) %>%  rbindlist() %>% data.frame()
+
 pdf =dfTPR %>% gather(key='TPR_type',value='TPR',TPR1,TPR2,TPR3)
 saveRDS(pdf,'results/data/hilo_ROC.RDS')
 pdf = readRDS('results/data/hilo_ROC.RDS')
