@@ -68,18 +68,55 @@ pdf =dfTPR %>% gather(key='TPR_type',value='TPR',TPR1,TPR2,TPR3)
 saveRDS(pdf,'results/data/hilo_ROC.RDS')
 pdf = readRDS('results/data/hilo_ROC.RDS')
 plt1 =pdf %>% filter(Amp==1)%>% ggplot(aes(x=alpha_val,y=TPR,group=type,color=type))+
-  geom_line(position=position_jitter(w=0.02, h=0.02))+
-  scale_y_continuous(limits = c(0,1.1))+
+  geom_line()+
+  #geom_line(position=position_jitter(w=0.02, h=0.02))+
+  scale_y_continuous(limits = c(0,1))+
   facet_grid(TPR_type~freq)
 
 plt2 =pdf %>% filter(Amp==2) %>% ggplot(aes(x=alpha_val,y=TPR,group=type,color=type))+
-  geom_line(position=position_jitter(w=0.02, h=0.02))+
-  scale_y_continuous(limits = c(0,1.1))+
+  geom_line()+
+  scale_y_continuous(limits = c(0,1))+
   facet_grid(TPR_type~freq)
 
 plt3 =pdf %>% filter(Amp==10) %>% ggplot(aes(x=alpha_val,y=TPR,group=type,color=type))+
-  geom_line(position=position_jitter(w=0.02, h=0.02))+
-  scale_y_continuous(limits = c(0,1.1))+
+  geom_line()+
+  scale_y_continuous(limits = c(0,1))+
   facet_grid(TPR_type~freq)
-require(patchwork)
-plt1/plt2/plt3
+
+theme_set(theme_classic()) 
+plt_width  = 6 
+plt_height = 6
+plt = plt1/plt2
+
+modify_plt=function(plt){
+  plt = plt + labs(x=element_text('FPR'),
+                   y=element_text('TPR'),
+                   color='schedule')
+  
+  xmin=0
+  xmax=1
+  plt = plt + scale_x_continuous(limits =c(xmin,xmax),
+                                 breaks=seq(xmin,xmax,.25),
+                                 labels=seq(xmin,xmax,.25)) 
+  plt = plt + scale_y_continuous(limits =c(xmin,xmax),
+                                 breaks=seq(xmin,xmax,.25),
+                                 labels=seq(xmin,xmax,.25)) 
+  
+  #plt=plt+guides(color=guide_colorbar(title.position='top'))
+  #plt=plt+theme(legend.position='bottom',
+  #              legend.key.width = unit(plt_width*.05, "in"),
+  #              legend.title.align = 0.5,
+  #              legend.direction = "horizontal")
+  plt=plt+theme(text=element_text(size=9))
+  return(plt)
+}
+plt1_mod = modify_plt(plt1)
+plt2_mod = modify_plt(plt2)
+
+Fig = (plt1_mod/plt2_mod)+plot_annotation(tag_levels='A') + plot_layout(guides='collect') &
+  theme(legend.position='bottom',
+               legend.key.width = unit(plt_width*.05, "in"),
+               legend.title.align = 0.5,
+               legend.direction = "horizontal")
+ggsave(paste0('~/research/ms_powerCHORD/figures/','roc_analysis.png'),Fig,
+       width=plt_width,height=plt_height,device='png',dpi=600)
