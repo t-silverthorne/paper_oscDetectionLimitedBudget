@@ -41,8 +41,7 @@ costfun_svdpower=function(mt,freqs,
   }
   
   if (regFder!=0){
-    #dlambda_dfreq = freqs %>% sapply(function(freq){deig_dfreq(mt,freq)}) %>% abs() %>% max() 
-    dlambda_dfreq = freqs %>% sapply(function(freq){deig_dfreq(mt,freq)}) %>% {.^2} %>% sum()
+    dlambda_dfreq = freqs %>% sapply(function(freq){getDeigDFreq(mt,freq)}) %>% {.^2} %>% sum()
     dlambda_dfreq = sqrt(dlambda_dfreq/length(freqs))
     if (is.numeric(regFder)&regFder>0){
       cval = cval-regFder*dlambda_dfreq

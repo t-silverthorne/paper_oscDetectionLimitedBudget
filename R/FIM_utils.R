@@ -50,7 +50,7 @@ getMinEig <- function(Mat,is_symmetric=F){
 #' 
 #' @author Turner Silverthorne 
 #' @export
-deig_dfreq=function(mt,freq){
+getDeigDfreq=function(mt,freq){
   cvec=cos(2*pi*freq*mt)
   svec=sin(2*pi*freq*mt)
   

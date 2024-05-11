@@ -372,4 +372,382 @@ solve_cvxr=function(control,Threads,...){
        runtime    = end_time-start_time,
        optim_raw  = xout,
        weight     = weight)
+}tfun_auglattice=function(N1,N2,shift2,scale2,freqs,control){
+  if (N1<control$N1min){
+    stop('too few points in lattice1')
+  }
+  if (N1>control$N1max){
+    stop('too many points in lattice1')
+  }
+  # update number of points in each lattice
+  N1cands=c(N1,min(N1+5,control$N1max),max(N1-5,control$N1min))
+  N1new = sample(N1cands,1) 
+  N2new = N2+N1-N1new
+  
+  shift2new = runif(1,0,1/N1new)
+  scale2new = runif(1,0,N2new*(1-shift2new)/(N2new-1))
+  return(c(N1new,N2new,shift2new,scale2new))
 }
+
+#' Requires control$tfun_choice
+#'          control$mean_scale1
+#'          control$sd_scale1
+#'          control$mean_scale2
+#'          control$sd_scale2
+#'          control$mean_shift2
+#'          control$sd_shift2
+tfun_2lattice_svdpower=function(shift1,shift2,scale1,scale2,lat1,lat2,
+                                control){
+if(control$tfun_choice=='unif-with-bdry'){
+  scale1=helper_unif_update_scale(scale1,shift1,lat1,control$tscale_unif_with_bdry)
+  scale2=helper_unif_update_scale(scale2,shift2,lat2,control$tscale_unif_with_bdry)
+  shift2=helper_unif_update_shift(scale2,shift2,lat2,control$tscale_unif_with_bdry)
+  return(list(scale1=scale1,
+              scale2=scale2,
+              shift2=shift2)) 
+}else if (control$tfun_choice=='default'){ # keeps shift1=0
+  stop('Reflecting boundaries not yet tested/implemented')
+}else{
+  stop('unknown control$tfun_choice')
+  
+}
+}
+
+#' requires control$tfun_choice
+#'          control$tfun_mean
+#'          control$tfun_sd 
+tfun_svdpower=function(mt,control){
+  if(control$tfun_choice=='brownian-torus'){
+    mt=mt+rnorm(length(mt),mean=control$tfun_mean,sd = control$tfun_sd) 
+    mt=mt%%1
+  }else{
+    stop('unknown control$tfun_choice')
+  }
+  return(mt)
+}
+
+
+#' requires control$tfun_choice
+tfun_svdpower_discrete=function(xinds,Nfine,control){
+  if (control$tfun_choice=='single-flip'){
+    flip_index        = sample(length(xinds),1)
+    new_val           = sample(setdiff(c(1:Nfine),xinds),1) 
+    xinds[flip_index] = new_val
+    #TODO: add discretized Brownian motion
+  }else{
+    stop('unknown control$tfun_choice')
+  }
+  return(xinds)
+}
+
+#' requires control$tfun_choice
+tfun_2lattice_svdpower_discrete=function(N1,dx1,N2,dx2,xshift2,Nfine,control){
+  if(control$tfun_choice=='unif-with-bdry-discrete'){
+    accept_state=F
+    while(accept_state==F){
+      dx1_new     =  helper_unif_update_scale_discrete(dx1,0,N1,control$tscale,Nfine)
+      dx2_new     =  helper_unif_update_scale_discrete(dx2,xshift2,N2,control$tscale,Nfine)
+      xshift2_new =  helper_unif_update_shift_discrete(dx2_new,xshift2,N2,control$tscale,Nfine)
+      
+      if(!anyDuplicated(xinds_from_lat1lat2_pars(N1,dx1_new,N2,dx2_new,xshift2_new))){
+        accept_state = T
+      }
+    }
+  }else if (control$tfun_choice=='reflecting-brownian'){
+    stop('reflecting-brownian is depracated')
+  }else{
+    stop('unknown control$tfun_choice')
+  }
+  return(list(dx1=dx1_new,dx2=dx2_new,xshift2=xshift2_new)) 
+  
+}#'Solve power optimization using simulated annealing and a pinned 2-lattice
+#'
+#' @param x0$N1 number of points in the roots of unity grid
+#' @param x0$N2 number of points in secondary grid
+#' @param x0$shift2 shift of secondary grid relative to start of experiment
+#' @param x0$scale2 scale of secondary grid
+#' @param freqs list of frequencies for evaluating ojective function
+#' @param control$N1min min number of points allowed in N1 lattice, see [tfun_auglattice]
+#' @param control$N1max max number of points allowed in N1 lattice, see [tfun_auglattice]
+#' @param control$maxit how many iterations of simulated annealing to run. 
+#' @param control$trace determines how verbose simulated annealing should be
+#' @param control$REPORT determines how verbose simulated annealing should be
+#' @param cfuntype set to \code{'ncp'} if non-centrality parameter should be used
+#' or \code{'power'} if power should be used in defining cost function.
+#' 
+#' @note additional inputs \code{...} are passed to [costfun_auglattice] 
+#' 
+#' @seealso [stats::optim] in the \code{method='SANN'} section for more information 
+#' on how iterations are counted. There may be multiple function calls within each iteration.
+#'
+#'@return result of running simulated annealing using [stats::optim]
+#'
+#'@author Turner Silverthorne
+#'@export
+solve_pin2lat=function(x0,freqs,control,...){
+  start_time=Sys.time()
+  
+  N1_init     = x0[['N1']]
+  N2_init     = x0[['N2']]
+  shift2_init = x0[['shift2']]
+  scale2_init = x0[['scale2']]
+  
+  x0 = c(N1_init,N2_init,shift2_init,scale2_init)
+  cfun = function(x){-costfun_auglattice(N1     = x[1],
+                                         N2     = x[2],
+                                         shift2 = x[3],
+                                         scale2 = x[4],
+                                         freqs  = freqs,
+                                         ...)}
+  tfun = function(x){tfun_auglattice(N1     = x[1],
+                                     N2     = x[2],
+                                     shift2 = x[3],
+                                     scale2 = x[4],
+                                     freqs  = freqs,
+                                     control=control)}
+  xout=stats::optim(x0,fn=cfun,gr=tfun,
+                    method='SANN',
+                    control=list(trace  = control$trace,
+                                 REPORT = control$REPORT,
+                                 maxit  = control$maxit))
+  end_time = Sys.time()
+  fvalue     = -xout$value
+  mtvalue    = helper_auglattice_to_state(N1=xout$par[1],N2=xout$par[2],
+                                     shift2=xout$par[3],scale2=xout$par[4])
+  xindsvalue = xout$par
+  
+  tstamp   = lubridate::now() %>% toString() %>% str_replace(' ','___')
+  
+  res_full = list(fvalue     = fvalue,
+       mtvalue    = mtvalue,
+       xindsvalue = xindsvalue,
+       timestamp  = tstamp,
+       runtime    = end_time-start_time,
+       optim_raw  = xout)
+}#' Maximize worst-case power for cosinor-based rhythm detection
+#' @description
+#' Template function for wrapping all optimization methods in suite.
+#' 
+#' 
+#' svdpower with L-BFGS-B requires:
+#'  control$trace
+#'  control$REPORT
+#'  control$maxit
+#' svdpower with simul_anneal requires:
+#'  same as previous, in additionlpha
+#'  control options necessary for specifying transition function 
+#' @author Turner Silverthorne
+opt_osc_power=function(dvar0=NULL,freqs,control,
+                       nlattice_opts=NULL,tau=NULL,...){
+#' TODO add warning for passing args to control that should 
+#' appear explicitly in this function (i.e. cfuntype)
+require(lubridate)
+require(stringr)
+start_time=Sys.time()
+if (control$costfun_choice=='svdpower'){
+  xout       = solve_svdpower(dvar0,freqs=freqs,control=control,...)
+  fvalue     = xout$value
+  mtvalue    = xout$par
+  xindsvalue = NULL
+}else if(control$costfun_choice=='svdpower_2lattice'){
+  xout       = solve_svdpower_2lattice(dvar0,freqs=freqs,control=control,...)
+  fvalue     = xout$value
+  mtvalue    = convert_2lattice_to_state(shift1=dvar0$x0[['shift1']],shift2=xout$par[1],
+                                         scale1=xout$par[2],scale2=xout$par[3],dvar0$lat1,dvar0$lat2) 
+  xindsvalue = xout$par 
+}else if(control$costfun_choice=='svdpower_discrete'){
+  xinds      = dvar0
+  xout       = solve_svdpower_discrete(xinds=xinds,tau=tau,freqs=freqs,
+                                       control=control,...)
+  if (control$optim_method=='cvxr'){
+    mtvalue    = tau[as.logical(xout[[1]]>1-1e-6)] # TODO: better way of catching this 
+    fvalue     = -costfun_svdpower(mt=mtvalue,freqs=freqs,...) 
+    xindsvalue = xout[[1]]
+  }else if(control$optim_method=='simul_anneal'){
+    fvalue     = xout$value
+    mtvalue    = tau[xout$par]
+    xindsvalue = as.numeric(c(1:control$Nfine) %in% xout$par)
+  }else{
+    stop('unknown control$optim_method')
+  }
+}else if(control$costfun_choice=='svdpower_2lattice_discrete'){
+  xout=solve_2lattice_svdpower_discrete(dvar0=dvar0,freqs=freqs,
+                                        tau=tau,control=control,...)
+  fvalue     = xout$value 
+  mtvalue    = tau[xinds_from_lat1lat2_pars(N1=dvar0$N1,N2=dvar0$N2,
+                                        dx1=xout$par[1],dx2=xout$par[2],
+                                        xshift2=xout$par[3])]
+  xindsvalue = xout$par 
+}else if(control$costfun_choice=='auglattice'){
+  xout       = solve_auglattice(dvar0=dvar0,freqs=freqs,control=control,...) 
+  fvalue     = xout$value
+  mtvalue    = helper_auglattice_to_state(N1=xout$par[1],N2=xout$par[2],
+                                     shift2=xout$par[3],scale2=xout$par[4])
+  xindsvalue = xout$par
+}else if(control$costfun_choice=='nlattice_power_discrete'){
+  stop("Currently not able to handle n-lattice constraints. No simulated annealing routine implemented")
+  #xout=solve_nlattice_power_discrete(Nfine,freqs,Amp,control,alpha)
+  #return(xout)
+}else{
+  stop('unknown control$costfun_choice')
+}
+  end_time = Sys.time()
+  tstamp   = lubridate::now() %>% toString() %>% str_replace(' ','___')
+  
+  # return optimizer output and optimization settings
+  res_full = list(fvalue     = fvalue,
+       mtvalue    = mtvalue,
+       xindsvalue = xindsvalue,
+       timestamp  = tstamp,
+       runtime    = end_time-start_time,
+       optim_raw  = xout)
+  return(res_full)
+}solve_svdpower=function(mt0,freqs,control,...){
+  cfun=function(mt){-costfun_svdpower(mt,freqs,...)}
+  if(control$optim_method=='L-BFGS-B'){
+    xopt=stats::optim(mt0,fn=cfun,gr=NULL,
+                 lower=rep(0,length(mt0)),
+                 upper=rep(1,length(mt0)),
+                 method='L-BFGS-B',
+                 control=list(trace  = control$trace,
+                              REPORT = control$REPORT,
+                              maxit  = control$maxit))
+    return(xopt)
+  }else if(control$optim_method=='simul_anneal'){
+    tfun=function(mt){tfun_svdpower(mt,control)}
+    xopt=stats::optim(mt0,fn=cfun,gr=tfun,
+                  method='SANN',
+                  control=list(trace  = control$trace,
+                               REPORT = control$REPORT,
+                               maxit  = control$maxit))
+    return(xopt)
+  }else{stop('unknown control$optim_method')}
+}
+
+solve_svdpower_discrete=function(xinds,tau,freqs,control,...){
+  if(control$optim_method=='simul_anneal'){
+    cfun=function(xinds){-costfun_svdpower_discrete(xinds=xinds,tau=tau,freqs=freqs,...)}
+    tfun=function(xinds){tfun_svdpower_discrete(xinds,length(tau),control)}
+    xopt=stats::optim(xinds,fn=cfun,gr=tfun,
+                  method='SANN',
+                  control=list(trace  = control$trace,
+                               REPORT = control$REPORT,
+                               maxit  = control$maxit))
+    return(xopt)
+  }else if(control$optim_method=='cvxr'){
+    #if(seq(from=control$fmin,to=control$fmax,length.out=Nfreq)!=freqs){
+    #  stop('inconsistent freq specification in cvxr')
+    #}
+    Aquad             = make_quadmats(control)
+    x                 = make_variable(control)
+    prob              = make_problem(x,Aquad,control,...)
+    result = CVXR::solve(prob,verbose=control$cvxr_verbose,solver="GUROBI",
+                         num_iter=control$maxit,
+                         TimeLimit=control$time_limit,MIPGapAbs=control$MIPGapAbs,
+                         Presolve=2,MIPFocus=3)
+  }else{stop('unknown control$optim_method')}
+}
+
+solve_svdpower_2lattice=function(dvar0,freqs,control,...){
+  #unpack
+  x0     = dvar0[['x0']]
+  lat1   = dvar0[['lat1']]
+  lat2   = dvar0[['lat2']]
+   
+  shift1 = x0[['shift1']]
+  shift2 = x0[['shift2']]
+  scale1 = x0[['scale1']]
+  scale2 = x0[['scale2']]
+  
+  x0 = c(shift2,scale1,scale2) 
+  cfun=function(x){-costfun_2lattice_svdpower(shift1=0,shift2=x[1],scale1=x[2],
+                                              scale2=x[3],
+                                              lat1=lat1,lat2=lat2,
+                                              freqs=freqs,...)}
+  if(control$optim_method=='L-BFGS-B'){
+    xopt=stats::optim(x0,fn=cfun,gr=NULL,
+                 lower=rep(0,length(x0)),
+                 upper=rep(1,length(x0)),
+                 method='L-BFGS-B',
+                 control=list(trace  = control$trace,
+                              REPORT = control$REPORT,
+                              maxit  = control$maxit))
+    return(xopt)
+  }else if(control$optim_method=='simul_anneal'){
+    tfun=function(x){
+      raw=tfun_2lattice_svdpower(shift1=0,shift2=x[1],scale1=x[2],scale2=x[3],
+                             lat1,lat2,control)
+      return(c(raw$shift2,raw$scale1,raw$scale2))}
+    xopt=stats::optim(x0,fn=cfun,gr=tfun,
+                  method='SANN',
+                  control=list(trace  = control$trace,
+                               REPORT = control$REPORT,
+                               maxit  = control$maxit))
+    return(xopt)
+  }else{stop('unknown control$optim_method')}
+}
+
+
+solve_auglattice=function(dvar0,freqs,control,cfuntype='ncp',...){
+  N1_init     = dvar0[['N1']]
+  N2_init     = dvar0[['N2']]
+  shift2_init = dvar0[['shift2']]
+  scale2_init = dvar0[['scale2']]
+ 
+  x0 = c(N1_init,N2_init,shift2_init,scale2_init)
+  cfun = function(x){-costfun_auglattice(N1     = x[1],
+                                         N2     = x[2],
+                                         shift2 = x[3],
+                                         scale2 = x[4],
+                                         freqs  = freqs,
+                                         cfuntype=cfuntype,
+                                         ...)}
+  tfun = function(x){tfun_auglattice(N1     = x[1],
+                                     N2     = x[2],
+                                     shift2 = x[3],
+                                     scale2 = x[4],
+                                     freqs  = freqs,
+                                     control=control)}
+   xopt=stats::optim(x0,fn=cfun,gr=tfun,
+                  method='SANN',
+                  control=list(trace  = control$trace,
+                               REPORT = control$REPORT,
+                               maxit  = control$maxit))
+   return(xopt)
+}
+
+solve_2lattice_svdpower_discrete=function(dvar0,freqs,tau,control,...){
+x0      = dvar0[['x0']]
+N1      = dvar0[['N1']]
+N2      = dvar0[['N2']]
+dx1     = x0[['dx1']]
+dx2     = x0[['dx2']]
+xshift2 = x0[['xshift2']]
+
+if (control$optim_method=='simul_anneal'){
+  cfun=function(x){
+    if (any(is.na(x))){
+      stop('NA value in meastimes')
+    }else{
+      return(-costfun_2lattice_svdpower_discrete(N1=N1,dx1=x[1],N2=N2,
+                                                  dx2=x[2],xshift2=x[3],
+                                                  tau=tau,freqs=freqs,...))
+    }
+  }
+  tfun=function(x){
+    if (any(is.na(tau[xinds_from_lat1lat2_pars(N1=N1,dx1=x[1],N2=N2,dx2=x[2],xshift2=x[3])]))){
+      stop('NA value generated by pars')
+    }else{
+      raw=tfun_2lattice_svdpower_discrete(N1=N1,dx1=x[1],N2=N2,dx2=x[2],xshift2=x[3],Nfine=length(tau),control=control)
+      return(c(raw$dx1,raw$dx2,raw$xshift2))  
+    }
+    }
+  xopt=stats::optim(x0,fn=cfun,gr=tfun,
+                method='SANN',
+                control=list(trace  = control$trace,
+                             REPORT = control$REPORT,
+                             maxit  = control$maxit))
+  return(xopt)
+}else{stop('unknown control$optim_method')}
+}
+  
