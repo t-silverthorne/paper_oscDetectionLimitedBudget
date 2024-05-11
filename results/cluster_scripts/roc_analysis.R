@@ -113,11 +113,19 @@ modify_plt=function(plt){
 plt1_mod = modify_plt(plt1)
 plt2_mod = modify_plt(plt2)
 
+
 Fig = (plt1_mod/plt2_mod)+plot_annotation(tag_levels='A') + plot_layout(guides='collect') &
   theme(legend.position='bottom',
                legend.key.width = unit(plt_width*.05, "in"),
                legend.title.align = 0.5,
                legend.direction = "horizontal")
+Fig = Fig & theme(
+  strip.background=element_blank(),
+  plot.margin = margin(0,0,0,0),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.text.x = element_text(vjust = 0.25)
+)
 
 show_temp_plt(Fig,plt_width,plt_height)
 ggsave(paste0('~/research/ms_powerCHORD/figures/','roc_analysis.png'),Fig,

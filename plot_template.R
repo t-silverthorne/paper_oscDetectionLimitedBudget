@@ -112,3 +112,5 @@ show_temp_plt=function(plt,plt_width,plt_height){
 plt + 
   scale_y_continuous(sec.axis = sec_axis(~ . , name = "SECOND Y AXIS", breaks = NULL, labels = NULL)) +
   scale_x_continuous(sec.axis = sec_axis(~ . , name = "SECOND X AXIS", breaks = NULL, labels = NULL))
++theme(axis.line.x.top = element_blank())
++theme(axis.line.y.right = element_blank())
