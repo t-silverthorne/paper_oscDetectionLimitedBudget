@@ -1,0 +1,102 @@
+Introduction:
+- What problem are we trying to solve? Intrinsically multiscale, ethical and financial issues
+- Many different ways to think about maximally informative experiments
+- In practice, power seems like a practical definition.
+- Idea that power developes unwanted phase dependence at high frequencies
+- How do you control this rigorously/systematically?
+- Question becomes, how close can you get to the optimal choice using this kind of technique?
+
+FIG: Show unwanted power oscillations, resolution using staggered grid, comparison of several staggered grids
+
+- In this paper we present an algorithm for selecting optimal measurement collection times for rhythm detection. By rhythm detection we mean cosinor-based rhythmometry where frequency parameter has for instance been estimated from spectral analysis
+- We assume that there is uncertainty in frequency and phase, and for this reason seak designs that perform well for several possible frequencies and phases.
+- Using results from optimization theory, we reduce problem to a simpler mathematical form.
+- Using simplified form, we are able to effectively survey various regimes relevant to sampling and experiments. Understanding of when there is/isn't something worth optimizing.
+- One may wonder why we are ignoring effect size? This comes from an analytical expression which shows that effect size decopules from the other harmonic features.
+- i.e. if you do better at one effect size, you automatically do better at all other ones
+
+- Some discussion of advanced topics, what did we not cover, bigger context, zoom back out
+- What does this paper contain
+
+
+Methods:
+
+- Harmonic regression model, assumptions 
+- Exact expression for power analysis
+- How do you read the MedStat result, amplitude decouples letting you focus on non-centrality
+- Fisher information matrix
+- Reduced Fisher information matrix
+
+Results 1: Optimization framework
+- Harmonic regression is not the same thing as what we are doing
+- Their result about uniform designs is over-simplified
+- State our main result: you can optimize power for a known frequency and budget for all acrophases at once, regardless of amplitude (effect size)
+- Easy to extend this to a window of frequencies, choice of augmented cost function
+
+FIG: Comparison of uniform and optimal design for a frequency, and frequency window
+
+- Numerically what do you do? You can use either gradient-based for speed, or convex programming for proving theoretical optimum.
+- Given that we are working with 2x2 design, easy to simplify eigenvalue formula. Since it's harmonic regression, trace is fixed and you can reduce eigenvalue optimization to D-optimality.
+- Simple linear algebra lets you rewrite this as something close to a quadratic programming problem
+- Disciplined convex programming can then handle that. CVXR + Gurobi
+- We provide code for doing this in R
+
+
+Results 2: Application to ultradian rhythm detection
+- Consider reduced design space. Useful to know how close this gets to the theoretical optimum, probably much more preferable than arbitrarily weird sampling
+- We consider either polyrhythmic or sequential uniform designs. 
+- Reduces setup to a family of one-dimensional optimization problem. Family indexed by partition of measurement budget $N=N_1+N_2$. Once you choose partition, it's one-dimensional bounded optimization
+- Solve full convex problem for comparison
+
+
+
+Results 3: Simplest use of replicates
+Here we present derivation of our main theorem
+
+
+Results 4: Derivation of method
+
+Discussion:
+
+- Add on more sophisticated idea of biological vs technical replicates and how they tell you different things.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

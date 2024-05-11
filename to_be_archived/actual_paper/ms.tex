@@ -1,0 +1,170 @@
+\RequirePackage{etex}
+\documentclass{article}
+\usepackage{xcolor}
+\usepackage[utf8]{inputenc}
+\newcommand{\LB}{\mathrm{LB}}
+\usepackage[margin=1.25in]{geometry}
+\newcommand*\pFq[2]{{}_{#1}F_{#2}\genfrac[]{0pt}{}}
+\usepackage{todonotes}
+\title{Oscillation detection with a limited sampling budget}
+\author{Turner Silverthorne$^{1,2,3}$, Matthew Carlucci$^{2,3}$, Arturas Petronis$^{2,3}$, and Adam Stinchcombe$^{1}$}
+\date{
+{\small $^1$ Department of Mathematics, University of Toronto, Toronto, Canada\\
+$^2$ The Krembil Family Epigenetics Laboratory, The Campbell Family Mental Health Research Institute, Centre for Addiction and Mental Health, Toronto, Canada\\
+$^3$ Institute of Biotechnology, Life Sciences Center, Vilnius University, Vilnius, Lithuania\\}
+\vspace{1em}
+August 2023}
+
+
+
+\input{math_header}
+\newcommand{\tr}[1]{\operatorname{tr}\left({#1}\right)}
+
+\begin{document}
+\maketitle
+\listoftodos
+\section{Introduction}
+Biological oscillators serve a variety of roles essential to the normal functioning of living systems \cite{goldbeter1997biochemical}. \todo{More discussion of osc papers} Our understanding of these complex oscillators relies upon the availability of high temporal resolution data. While some systems can be repeatedly measured at extremely high rates, there are many relevant examples where the sampling rate is a limiting factor in experimental design. For instance, studies with human participants may have ethical and financial constraints on the total number of samples that can be collected in one day.  Our goal in this paper is to understand the extent to which signal quality can be improved, assuming that only measurement collection times can be controlled. In this way, we aim to characterize the limitations of oscillation detection assuming that the total number of samples to be collected (the measurement budget) is fixed.
+
+
+Periodicity of the signal is a key feature for determining if variations in the measurement schedule can produce meaningful improvements to signal quality. We assume that the primary goal of the study is to reliably detect oscillations of unknown periodicities, and estimate their amplitudes and acrophases using a one-frequency cosinor model. Later, we will show that this is a necessary assumption for optimization to offer any benefit. Indeed, for a signal of known periodicity, there are known conditions for achieving optimality \cite{}.  In a setting where the period is unknown, it is common to infer the frequency of the signal using spectral analysis, and then perform regression to estimate the other parameters in the model. Given that acrophase of a signal may be heterogeneous and is rarely known prior to data collection, we will seek designs that perform well for a variety of acrophases. Performance will primarily be quantified using the statistical power of the cosinor-based hypothesis test. Uniform designs -- where data is collected in equally spaced intervals -- are likely the most familiar sampling strategy for rhythm detection. While these designs perform well for  oscillations of low-frequency relative to the sampling rate, we find that there is a threshold at half the sampling frequency (i.e. the Nyquist rate) where the statistical power becomes heavily dependent on the acrophase of the signal. This dependence may induce artificial correlations in the data, and uncontrollable bias in the resulting analysis. 
+
+Our main contribution is an efficient numerical method for optimizing the statistical power for signals of all acrophases  for a given amplitude, sampling budget, and frequency. Derivation of our method relies upon an expression for the statistical power of a one-frequency cosinor model under the assumption of homoscedastic Gaussian noise \cite{wei2023circpower}. Using this formula, we avoid Monte Carlo simulations, substantially improving our optimization procedure and its performance.  The reduction to a convex programming problem shows that power optimization is equivalent to maximizing the largest eigenvalue of the inverse Fisher information matrix. The latter problem is known as E-optimality and has been well-studied in the field of optimal experimental design \cite{pukelsheim1993,oed2,oed3}. This connection makes our  optimization method orders of magnitude faster than naive power optimization. 
+
+
+%We quantify the robustness of the sampling strategy using the statistical power of the cosinor model.  Given that acrophase of a signal may be heterogeneous and is rarely known prior to data collection, we will seek designs that perform well for a variety of acrophases. Using an explicit formula for the statistical power of the one-frequency cosinor model \cite{}, we show that maximizing the power of a study across several acrophases is equivalent to a much simpler optimization problem.
+
+
+\section{Methods}
+Harmonic regression, or the ``cosinor model'', is a common statistical framework for studying systems with a dominant frequency \cite{cornelissen2014cosinor}. The single-frequency cosinor model with mesor $Y_0$, amplitude $A$, acrophase $\phi$, and frequency $f$ is given by 
+\begin{align}
+    Y(t) =Y_0+ A \cos(2\pi f t - \phi) + \veps(t) \label{eqn:cosinorAmp},
+\end{align}
+in which $\veps \sim N(0,\sigma)$ is homoscedastic Gaussian white noise. In applications, the frequency parameter $f$ is often estimated from a periodogram or related spectral estimator prior to fitting Eq.~\eqref{eqn:cosinorAmp}  to data. This allows parameter estimation to be recast as a linear regression problem
+\begin{align}
+    Y(t) = \beta_0 + \beta_1 \cos(2\pi f t ) + \beta_2 \sin(2\pi f t) + \veps(t), \label{eqn:cosinorlin}
+\end{align}
+in which the unknown parameters $\beta_0,\beta_1, \beta_2 \in \bR$ all appear linearly. Given data $\vb{y}=\{y_i\}_{i=1}^{N}$ measured at distinct times $\{t_i\}_{i=1}^{N} \subset [0,1]^N$, the optimal solution for estimating the coefficients in Eq.~\eqref{eqn:cosinorlin} is 
+\begin{align}
+    \hat{\beta} = (X^T X)^{-1}X^T \vb{y},\label{eqn:betahat}
+\end{align}
+in which the matrix $X\in \mathbb{R}^{N\times 3}$ is given by
+\begin{align}\label{eqn:matX}
+    X := \begin{pmatrix}
+        1 & \cos(2\pi f t_1) & \sin(2\pi f t_1) \\
+       \vdots  &  \vdots             & \vdots \\
+        1 & \cos(2\pi f t_N) & \sin(2\pi f t_N). 
+    \end{pmatrix}
+\end{align}
+The columns of $X$ are linearly independent since the measurement times are asummed to be distinct. The amplitude and acrophase of the signal can be estimated from $\hat{\beta}$, to obtain
+\begin{align}
+    \hat{A}    &= \sqrt{\hat{\beta}_1^2 + \hat{\beta}_2^2}, \label{eqn:amp}\\
+    \hat{\phi} &= \arctan{(\hat{\beta}_2/\hat{\beta}_1)}\label{eqn:acro}.
+\end{align}
+We set the noise strength $\sigma=1$ to reduce the number of parameters in the model. In these units, the amplitude parameter $A$ can be interpreted as the signal-to-noise ratio. 
+
+
+\todo{Merge next three paragraphs, introducing FIM and power}
+
+Equipped with a statistical model, we can ask questions about the influence of the experimental design $\vb{t}$ on the signal quality. Two classical objects from statistics are useful to this end: the  statistical power and Fisher information matrix.
+
+
+The goal of this work is to understand how the amplitude $A$, frequency $f$, and measurement schedule $\vb{t}=(t_1,\ldots,t_N)$ influence the statistical power of our study through the estimator $\hat{\beta}$. Often this is quantified using information matrices. In our case, two definitions are relevant.
+
+We will use the statistical power to quantify how choices of measurement schedules influence the reliability of oscillation detection at various frequencies, amplitudes, and acrophases. A thorough introduction to power analysis is provided in \cite{wassermanTextbook}. The power of a hypothesis test is often estimated through permutation tests \cite{Boos2000-hd}. These tests can are computationally expensive and limit the numerical methods available for power optimization. For instance, the power estimates would be too noisy for directly estimating a gradient, ruling out gradient-based optimizers. We avoid Monte Carlo simulations by assuming that the noise in our model is homoscedastic, justifying the following exact expression for statistical power.
+
+
+\begin{defn}[Fisher information matrix]
+The Fisher information matrix $M$ is given by
+\begin{align}
+ M = X^T X
+\end{align}
+in which $X$ is given in Eq.~\eqref{eqn:matX}. Similarly, the reduced Fisher information matrix is given by
+\begin{align}
+\tilde{M} = \tilde{X}^T \tilde{X}
+\end{align}
+in which  $\tilde{X} := [\cos(2\pi f \vb{t}) \;\; \sin(2\pi f \vb{t})]$.
+\end{defn}
+
+
+
+\begin{theorem}[Power of one-frequency F test, \cite{wei2023circpower}]
+  \label{thm:circapower}
+Consider the one-frequency cosinor model applied to data $\{y_i\}_{i=1}^{N}$ collected at times $(t_i)_{i=1}^{N}$, with amplitude $A$, noise level $\sigma$, frequency $f$, acrophase $\phi$, and type I error rate $\alpha\in (0,1)$. Suppose we test the hyoptheses
+\begin{align}
+    H_0 : \beta_1=0=\beta_2, \quad\quad H_1 : \beta_1\neq0 \textrm{ or } \beta_2 \neq 0 
+\end{align}
+with $H_0$ as the null and $H_1$ as the alternative, using the test statistic
+\begin{equation}
+F = \frac{ \frac{\textrm{TSS} - \textrm{RSS}}{r-1} }{ \frac{\textrm{RSS}}{N-r}},
+\end{equation}
+in which $\textrm{TSS} = || \vb{y} - X\hat{\beta}||_2^2$, $\textrm{RSS} =  ||\vb{y}-\langle\vb{y} \rangle||_2^2$, and $r=3$ is the number of degrees of freedom in the model. Then, the power $\gamma(A,\sigma,f,\phi)$ is given by the expression
+\begin{align}
+  \gamma(A,\sigma,f,\phi)=1- F_{\lambda(\vb{t};A,\sigma,f,\phi)}\left(F_0^{-1}\left( 1-\alpha;2,N-3\right);2,N-3\right) \label{eqn:cpower}
+\end{align}
+in which
+\begin{align}
+\lambda(\vb{t};A,\sigma,f,\phi)=\frac{A^2}{\sigma^2}\sum_{i=1}^{N}  \cos^2(2\pi ft_i - \phi),\label{eqn:lambda}
+\end{align}
+$F(x;n_1,n_2)$ is the F-distribution on $(n_1,n_2)$ degrees of freedom, and $F_\lambda(x;n_1,n_2)$ is the non-central F distribution with $(n_1,n_2)$ degrees of freedom with non-centrality parameter $\lambda\geq 0$. For $\lambda=0$, the non-central distribution $F_0$ agrees with the standard F distribution.
+\todo{explain why acrophase for us is in angular rather than temporal units}
+\end{theorem}
+
+\section{Results}
+\subsection{Optimization framework}
+What can you see immediately from MedStat?
+
+Notice that the non-centrality parameter $\lambda(\vb{t};A,\sigma,f,\phi)$  summarizes the influence of the measurement schedule on the statistical power in Theorem~\ref{thm:circapower}. A corollary from \cite{wei2023circpower} is also of relevance to our work, since it outlines the limitations of power optimization for harmonic regression.
+\begin{corollary}\label{cor:unif}
+If a measurement schedule is made up of $N\geq3$ measurements per cycle and the measurements are equally spaced over the course of the cycle, the power function in Eq.~\eqref{eqn:cpower} is independent of the acrophase.
+\end{corollary}
+Based on the corollary above, it only makes sense to consider alternatives to uniform designs when the sampling rate is low in comparison to the frequencies under investigation. Otherwise the power is only dependent on factors outside the experimentalist's immediate control. \todo{explain why this is over-simplification}
+
+
+What do we do with this?
+\begin{theorem}
+Power optimization is equivalent to Elfving optimality.
+\end{theorem}
+We defer the proof of this theorem to Sec.~\ref{sec:derivmeth} and focus instead on its numerical consequences. Two algorithms for solving are given below.
+
+The first method is a standard approach to convex optimization problems in optimal experimental design. Instead of having arbitrary choices of measurement times, we fix a discrete grid $\{\tau_{j}\}_{j=1}^{M}$ where $M\gg N$ and assume that we collect data at $N$ of the $M$ times on this grid. Under these assumptions, the Fisher information matrix can be expressed as
+\begin{align}
+ \tilde{M} = \sum_{j=1}^{M}  \mu_j \begin{bmatrix}
+        \cos(2\pi f \tau_j)\\ 
+        \sin(2\pi f \tau_j)
+    \end{bmatrix}
+    \begin{bmatrix} \cos(2\pi f \tau_j) & \sin(2\pi f \tau_j) \end{bmatrix},\label{eqn:disc}
+\end{align}
+in which the weight function $\{\mu_{j}\}_{j=1}^{M}$ obeys $\mu_{j}\in \{0,1\}$ for $j=1,\ldots, M$ and $ \sum_{j=1}^{M} \mu_{j} = N$. 
+The upside of discretizing our choices is that the decision variables $\mu_{j}$ appear linearly in Eq.~\eqref{eqn:disc}. As a consequence, any convex functional of the Fisher information matrix will now be convex in our decision variables. As mentioned in Sec.~\ref{sec:oed}, we may treat this problem as an integer constrained semi-definite program. Such problems can be readily solved by open-source solvers in the JuMP package available in Julia \cite{Lubin2023}.
+
+Our second method is usually faster, but relies on the additional assumption that the Fisher information matrix has distinct eigenvalues. Assuming the eigenvalues and eigenvectors are distinct, we may use the fact that for a symmetric and real matrix $A$ with non-degenerate spectrum
+\begin{align}
+    \nabla_{\vb{t}} \lambda_{i} (A(\vb{t})) = \vb{v}_{i}^T \nabla_{\vb{t}} A(\vb{t}) \vb{v}_i = \begin{bmatrix}
+         \vb{v}_{i}^T \partial_{t_{1}}  A(\vb{t}) \vb{v}_i\\
+         \vdots \\
+         \vb{v}_{i}^T \partial_{t_{N}}  A(\vb{t}) \vb{v}_i
+    \end{bmatrix}\label{eqn:grad}
+\end{align}
+in which $A\vb{v}_{i} = \lambda_i \vb{v}_{i}$, see \cite{horn2012matrix} for a proof.
+
+% Explain this when you see eigenvalue plot. Simple conditions for optimality when doing Fourier regression
+Equation ~\eqref{eqn:cosinorAmp} also appears in Fourier regression, with the important difference that the frequency must be an integer multiple of the fundamental frequency \cite{Fourier1,Fourier2,Fourier3}. This additional constraint on the frequency simplifies the optimization procedure, and in many cases, uniformly spaced measurements are known to be optimal. For this reason it is important that we are not considering Fourier models. 
+
+
+\subsection{Application to ultradian rhythms}
+\todo{Replicates?}	
+
+
+\subsection{Derivation of method}\label{sec:derivmeth}
+
+
+
+\section{Discussion}
+Our main contribution is an efficient numerical method for optimizing the statistical power for signals of all acrophases  for a given amplitude, sampling budget, and frequency. Derivation of our method relies upon an expression for the statistical power of a one-frequency cosinor model under the assumption of homoscedastic Gaussian noise \cite{wei2023circpower}. Using this formula, we avoid Monte Carlo simulations, substantially improving our optimization procedure and its performance.  The reduction to a convex programming problem shows that power optimization is equivalent to maximizing the largest eigenvalue of the inverse Fisher information matrix. The latter problem is known as E-optimality and has been well-studied in the field of optimal experimental design \cite{pukelsheim1993,oed2,oed3}. This connection makes our  optimization method orders of magnitude faster than naive power optimization. 
+\begin{itemize}
+    \item Theoretical extensions: other ways of talking about power in OED Relation to KL optimality \cite{KLpaper}, weaker assumptions on the residuals. For instance, two moments method \cite{wasserman2022} together with Weingarten calculus could give estimates for this setting. Another relevant question is extension to period uncertainty and bayesian OED \cite{bayesian}. Question of closed-from expressions. Closely related area of Fourier regression \cite{dette1,dette2} has exact expressions, but the starting assumption is different, there you are assuming you have dominant period. Can in fact prove uniform is optimal, important that we are not doing Fourier \cite{fourierEoptimality}. 
+    \item Practical extensions: Another relevant idea is aliasing and spectral features \cite{stoica2009}. Using an aliasing heuristic, you can frame anti aliasing as convex problem and integrate this with our method. Application to particular experiments is another interesting idea, how do you do this for different datasets, how much power could you expect to obtain. 
+    \item Specific experimental applications
+\end{itemize}
+\end{document}

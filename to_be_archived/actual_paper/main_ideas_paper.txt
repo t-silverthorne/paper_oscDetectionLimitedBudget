@@ -1,0 +1,44 @@
+                          INTRODUCTION
+SAMPLING THEORY IN BIOLOGY:
+- Dynamic rather than static measurements
+- Many systems are sampling-rate limited, challenging when there is frequency uncertainty
+- How close can an experimental design get to the theoretical limit. Challenging because until recently only had simulation at disposal and no obvious mathematical structure. 
+
+OUR RESULT:
+- We investigate this paper by proving mathematically that power optimization is equivalent to a much simpler optimization problem.
+- We make use of the recent exact expression for power from MedStat
+- Allows us to understand influence of budget, frequency window, and distribution of times on figure of merit
+- Convex formulation of E-optimality for low-dimensional regression, more broadly applicable
+
+NOTATION:
+- Cosinor model, power, Fisher information matrix, reduced Fisher information matrix
+                            RESULTS 
+POWER AND INFORMATION IN SAMPLING:
+- We begin by stating the main result and defer its derivation to our methods section found later in article
+- Some things are immediate from the result in MedStat article
+- A reduction theorem
+- Heuristics for simplest non-uniform
+- A method for optimization
+
+NUMERICAL RESULTS:
+- 
+
+
+DERIVATION OF METHOD:
+
+
+                          DISCUSSION
+                          
+Reduction of optimization:
+- Amplitude decouples from optimization problem, doing better at one effect size for given phase/freq window means you will do better at all effect sizes
+- Want to maximize the information contained in your design. This is measured by the Fisher information matrix, and as we prove later in the document, it is equivalent to power optimization. 
+- Technical aspect of the models considered here, you can reduce E-optimality to D-optimality
+- Theory of convex design lets you know how close your experimental design is to the theoretical optimal design. Supposing that you are willing to leave something on the table for the sake of convenience, can solve considerably simpler optimization problem
+- For our purposes, consider two alternative simplifications, initially under assumption that replicates are evenly distributed across the (distinct) measurement times. Polyrhythmic design or sequential design
+- Measurement budget very small => can improve over uniform but unlikely to see much in specttrum
+- Intermediate budget, similar performance to uniform but just a question of moving the dips from one freq to another
+- Higher budget, scale where it may be worth it to kill the dips without sacrifyi
+
+- When to double up vs not, usage of technical and biological replicates
+- Distinction from harmonic regression
+- Technicality from MedStat, you get phase-independent power when sampling uniformly and equally spaced over frequency. When there is frequency uncertainty, you would technically have phase dependence
