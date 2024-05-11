@@ -1,3 +1,6 @@
+require(lomb)
+require(parallel)
+require(data.table)
 #' Estimate TPR for multi-frequency hypothesis testing
 #' 
 #' @param alpha the false positive rate
@@ -12,9 +15,6 @@
 #' 
 #' @author Turner Silverthorne
 #' @export 
-require(lomb)
-require(parallel)
-require(data.table)
 estimateTPR=function(alpha,Nmc,tvec,
                        Amp=1,freq=1,p_osc=.1,mc_cores=1){
   # simulated data
