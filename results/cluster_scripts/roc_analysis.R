@@ -85,7 +85,7 @@ plt3 =pdf %>% filter(Amp==10) %>% ggplot(aes(x=alpha_val,y=TPR,group=type,color=
 
 theme_set(theme_classic()) 
 plt_width  = 6 
-plt_height = 6
+plt_height = 7
 plt = plt1/plt2
 
 modify_plt=function(plt){
@@ -118,5 +118,7 @@ Fig = (plt1_mod/plt2_mod)+plot_annotation(tag_levels='A') + plot_layout(guides='
                legend.key.width = unit(plt_width*.05, "in"),
                legend.title.align = 0.5,
                legend.direction = "horizontal")
+
+show_temp_plt(Fig,plt_width,plt_height)
 ggsave(paste0('~/research/ms_powerCHORD/figures/','roc_analysis.png'),Fig,
        width=plt_width,height=plt_height,device='png',dpi=600)

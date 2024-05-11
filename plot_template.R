@@ -108,3 +108,7 @@ show_temp_plt=function(plt,plt_width,plt_height){
   viewer <- getOption("viewer")
   viewer(plt_path)
 }
+
+plt + 
+  scale_y_continuous(sec.axis = sec_axis(~ . , name = "SECOND Y AXIS", breaks = NULL, labels = NULL)) +
+  scale_x_continuous(sec.axis = sec_axis(~ . , name = "SECOND X AXIS", breaks = NULL, labels = NULL))

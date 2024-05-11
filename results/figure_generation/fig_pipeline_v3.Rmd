@@ -161,6 +161,9 @@ plt = pars %>% ggplot(aes(x=freq,y=acro,fill=power))+
 
 ## Combine
 ```{r}
+plt = plt + 
+  scale_y_continuous(sec.axis = sec_axis(~ . , name = "Amplitude", breaks = NULL, labels = NULL)) +
+  scale_x_continuous(sec.axis = sec_axis(~ . , name = "Measurement budget", breaks = NULL, labels = NULL))+theme(axis.line.y.right = element_blank())+theme(axis.line.x.top = element_blank())
 Fig = ((F1raw[[1]]|F1raw[[2]]|F2raw[[1]]| F2raw[[2]])/plt)+
   plot_annotation(tag_levels=list(c('A','','B','','C')))+
   plot_layout(guides='collect') &theme(legend.position='bottom') + 
@@ -190,10 +193,10 @@ plt_width  = 6
 
 plt=plt+theme(text=element_text(size=fsize))
 
-plt = plt + labs(x=element_text('minimum frequency (cycles/day)'),
-                 y=element_text('maximum frequency (cycles/day)'),
+plt = plt + labs(x=element_text('min frequency (cycles/day)'),
+                 y=element_text('max frequency (cycles/day)'),
                  color='gain of power')
-
+plt
 xmin=0
 xmax=13
 ymax=25
@@ -219,6 +222,8 @@ plt = plt + theme(
   )
 plt
 
+plt = plt + 
+  scale_x_continuous(sec.axis = sec_axis(~ . , name = "Measurement budget", breaks = NULL, labels = NULL))+theme(axis.line.x.top = element_blank())
 show_temp_plt(plt,plt_width,plt_height)
 
 ggsave(paste0('~/research/ms_powerCHORD/figures/','gain_of_non_unif.png'),plt,width=plt_width,height=plt_height,device='png',dpi=600)
@@ -376,7 +381,7 @@ phmap = plt
 ## Combine
 
 ```{r}
-Fig = (psol + pcurve) / phmap +
+Fig =  phmap/(psol + pcurve)  +
   plot_annotation(tag_levels='A')+
   plot_layout(heights=c(1,1))+
   plot_layout(guides='collect') & theme(
@@ -437,7 +442,7 @@ plt_height=2
 plt = pars %>% ggplot(aes(x=delta,y=freq,fill=ncp))+geom_raster()+scale_fill_viridis_c()
 plt = plt + labs(x=element_text('shift (days)'),
                  y=element_text('frequency (cycles/day)'),
-                 fill='ncp')
+                 fill=TeX('$\\lambda(t;A,f,\\phi)$'))
 plt=plt+guides(fill=guide_colorbar(title.position='right'))
 plt=plt+theme(legend.key.height = unit(plt_height*.1, "in"),
                legend.title = element_text(angle = 90),
@@ -449,7 +454,7 @@ plt_f = plt
 plt = pars %>% ggplot(aes(x=delta,y=freq,fill=dncp))+geom_raster()+scale_fill_viridis_c(option='B')
 plt = plt + labs(x=element_text('shift (days)'),
                  y=element_text('frequency (cycles/day)'),
-                 fill='d_f ncp')
+                 fill=TeX('$\\partial_f \\; \\lambda(t;A,f,\\phi)$'))
 plt=plt+guides(fill=guide_colorbar(title.position='right'))
 plt=plt+theme(legend.key.height = unit(plt_height*.1, "in"),
                legend.title = element_text(angle = 90),
@@ -547,6 +552,10 @@ plt = plt + theme(
   axis.text.x = element_text(vjust = 0.25)
 )
 plt=plt+theme(text=element_text(size=9))
+
+
+plt=plt+scale_x_continuous(sec.axis = sec_axis(~ . , name = "Temporal resolution scale factor", breaks = NULL, labels = NULL))+
+  theme(axis.line.x.top = element_blank()) 
 plt_app = plt
 
 plt_app
@@ -635,7 +644,26 @@ plt1=pars %>% filter(wreg==0) %>% ggplot(aes(x=ta,y=tb,fill=power_norm))+geom_ra
 
 plt2=pars %>% filter(wreg>0) %>% ggplot(aes(x=ta,y=tb,fill=power_norm))+geom_raster()+scale_fill_viridis_c()+
   facet_wrap(~fmax,nrow=1)
+
+
+plt1 = plt1 & scale_x_continuous(limits =c(xmin,xmax),
+                               breaks=c(xmin,xmax),
+                               labels=round(c(xmin,xmax),2)) 
+plt1 = plt1 & scale_y_continuous(limits =c(ymin,ymax),
+                               breaks=c(ymin,ymax),
+                               labels=round(c(ymin,ymax),2)) 
+plt2 = plt2 & scale_x_continuous(limits =c(xmin,xmax),
+                               breaks=c(xmin,xmax),
+                               labels=round(c(xmin,xmax),2)) 
+plt2 = plt2 & scale_y_continuous(limits =c(ymin,ymax),
+                               breaks=c(ymin,ymax),
+                               labels=round(c(ymin,ymax),2)) 
+
+
+plt1 = plt1 + scale_x_continuous(sec.axis = sec_axis(~ . , name = "max frequency (cycles/day)", breaks = NULL, labels = NULL))+theme(axis.line.x.top = element_blank())
+
 plt = plt1/plt2
+plt
 ```
 
 ```{r}
@@ -646,12 +674,6 @@ xmin=0
 xmax=.5
 ymin=0
 ymax=.5
-plt = plt & scale_x_continuous(limits =c(xmin,xmax),
-                               breaks=c(xmin,xmax),
-                               labels=round(c(xmin,xmax),2)) 
-plt = plt & scale_y_continuous(limits =c(ymin,ymax),
-                               breaks=c(ymin,ymax),
-                               labels=round(c(ymin,ymax),2)) 
 
 plt = plt & labs(x=TeX('$t_1$'),
                  y=TeX('$t_2$'),
@@ -679,6 +701,7 @@ show_temp_plt(plt,plt_width,plt_height)
 ### Relative performance
 Solutions normalized by unconstrained unregularized problem
 ```{r}
+source('results/data/extract_data.R') 
 # all solutions that don't have regularization
 sols_plt = sols[sols@wreg %in% c(0,1),]
 df = sols_plt@''
@@ -818,6 +841,8 @@ plt = plt + theme(
   panel.grid.minor = element_blank(),
   axis.text.x = element_text(vjust = 0.25)
   )
+plt = plt +  scale_x_continuous(sec.axis = sec_axis(~ . , name = "Measurement budget", breaks = NULL, labels = NULL))+theme(axis.line.x.top = element_blank())
+
 plt_hmap=plt
 plt_hmap
 ```
@@ -961,8 +986,13 @@ plt = plt + theme(
   axis.text.x = element_text(vjust = 0.25)
   )
 
-p_hmap = plt
 
+plt = plt + 
+  scale_y_continuous(sec.axis = sec_axis(~ . , name = "Constraint (10 min intervals)", breaks = NULL, labels = NULL)) +
+  scale_x_continuous(sec.axis = sec_axis(~ . , name = "Measurement budget", breaks = NULL, labels = NULL))+
+  theme(axis.line.x.top = element_blank())+
+  theme(axis.line.y.right = element_blank())
+p_hmap = plt
 ```
 
 ## Combine
