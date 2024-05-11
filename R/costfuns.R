@@ -13,6 +13,9 @@
 #' @return minimum of cost function evaluated at \code{freqs}
 #' @author Turner Silverthorne
 #' @export
+#' 
+#' TODO: change this to a function for worst-case power and a separate function 
+#' for regularization term
 costfun_svdpower=function(mt,freqs,
                           Amp=1,alpha=.05,weight_ncp=1,regL1=0,regFder=0,
                           gapPenalty=0,leveragePenalty=0,
