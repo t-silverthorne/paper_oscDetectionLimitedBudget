@@ -10,7 +10,7 @@ require(dplyr)
 require(latex2exp)
 require(annmatrix)
 devtools::load_all()
-sol_dir   = 'results/data/fminfmax//'
+sol_dir   = 'results/data/fminfmax/'
 sol_files = list.files(sol_dir,pattern='sol_gur')
 
 Ampglob    = 1 
@@ -40,10 +40,9 @@ for (ii in c(1:length(sol_files))){
     Nmeas      = length(mtloc)
     Nmeas_good = Nmeas==f_Nmeas
     freqs_loc  = seq(f_fmin,f_fmin+f_df,dfreq)
-    pwr        = costfun_svdpower(mtloc,freqs_loc,Amp=Ampglob,cfuntype = 'power')
-    
+    pwr        = evalWorstPower(mt=mtloc,freqs=freqs_loc,Amp=Ampglob)
     mt_unif    = c(1:Nmeas)/Nmeas - 1/Nmeas
-    pwr_unif   = costfun_svdpower(mt_unif,freqs_loc,Amp=Ampglob,cfuntype='power')
+    pwr_unif   = evalWorstPower(mt=mt_unif,freqs=freqs_loc,Amp=Ampglob)
     stat_code  = gres$status
    
     

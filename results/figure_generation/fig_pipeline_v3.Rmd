@@ -15,7 +15,6 @@ require(annmatrix)
 load_all()
 source('plotConfig.R')
 source('plot_template.R')
-source('results/source/powerChord.R')
 source('results/data/extract_data.R') 
 get_legend <- function(p) {
    tmp <- ggplot_gtable(ggplot_build(p))
@@ -146,7 +145,7 @@ pars$power = c(1:dim(pars)[1]) %>% lapply(function(ii){
   acro  = x$acro
   freq  = x$freq
   mt = c(1:Nmeas)/Nmeas-1/Nmeas
-  return(eval_exact_power(mt,param=list(Amp=Amp,acro=acro,freq=freq)))
+  return(evalExactPower(mt,param=list(Amp=Amp,acro=acro,freq=freq)))
 })
 
 pars$power = as.numeric(pars$power)
@@ -280,7 +279,7 @@ pwrvec = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
     stop('unknown type')
   }
   
-  return(costfun_svdpower(mt,freqs_pc,Amp,cfuntype = 'power'))
+  return(evalWorstPower(mt,freqs_pc,Amp))
 })
 pars$power =as.numeric(pwrvec)
 
@@ -342,7 +341,7 @@ pwr_vec = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
   }else{
     stop('unknown type')
   }
-  power=eval_exact_power(mt,param)
+  power=evalExactPower(mt,param)
   return(power)
 })
 pars$power = pwr_vec
@@ -576,26 +575,11 @@ ggsave(paste0('~/research/ms_powerCHORD/figures/','pure_regularization.png'),Fig
 ## Augmented cost function
 ### Degeneracy heatmap
 ```{r}
-get_exact_reg = function(tau,fmin,fmax){
-  dtau_mat          = outer(tau,tau,'-')
-  tau_prod_mat      = outer(tau,tau,'*')
-  ncp_reg_mat       = ((sin(4*pi*fmax*dtau_mat) - sin(4*pi*fmin*dtau_mat))*(4*tau_prod_mat*pi^2 + 1))/(4*dtau_mat)
-  diag(ncp_reg_mat) = pi*(4*pi^2*tau^2 + 1)*(fmax - fmin) 
-  return(sum(sum(ncp_reg_mat)))
-}
-
+Amp=1
 # compute power with/without regularization
 eval_reg_cfun = function(mt,freqs,w_reg){
-  # worst-case non-centrality
-  ncp = freqs %>% sapply(function(freq){
-    getReducedFIM(mt,list(freq=freq)) %>% 
-    {getMinEig(.,is_symmetric=T)} 
-    })%>% min()
-  # for regularization term
-  fmin = min(freqs)
-  fmax = max(freqs)
-  # result
-  return(ncp-w_reg*get_exact_reg(mt,fmin,fmax))
+  evalWorstNCP(mt,freqs,Amp=1)-
+    w_reg*evalAcroFreqGradL2(mt,pars=list(fmin=min(freqs),fmax=max(freqs)))
 }
 ```
 

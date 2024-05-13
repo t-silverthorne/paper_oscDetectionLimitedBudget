@@ -39,7 +39,7 @@ for (ii in c(1:length(sol_files))){
     Nmeas = length(mtloc)
     Nmeas_good = Nmeas==f_Nmeas
     
-    ncp = costfun_svdpower(mtloc,freqs,Amp=NaN,cfuntype = 'ncp')
+    ncp = evalWorstNCP(mt=mtloc,freqs = freqs,Amp=1)
     stat_code = gres$status
    
     rowdat=data.frame(
@@ -59,7 +59,7 @@ for (ii in c(1:length(sol_files))){
   }
 }
 
-sols_plt = sols[sols@wreg %in% c(0,1),]
-sols_plt@''%>% 
-  ggplot(aes(x=Nmeas,y=ncp,
-             shape=as.factor(wreg),color=as.factor(drts)))+geom_point(size=2)+facet_wrap(~stat_code)
+#sols_plt = sols[sols@wreg %in% c(0,1),]
+#sols_plt@''%>% 
+#  ggplot(aes(x=Nmeas,y=ncp,
+#             shape=as.factor(wreg),color=as.factor(drts)))+geom_point(size=2)+facet_wrap(~stat_code)
