@@ -795,7 +795,7 @@ pwr_vec = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
   
   mt=as.numeric(sloc[sloc@Nmeas==Nmeas,])
   mt=mt[mt<Inf]
-  power=eval_exact_power(mt,param)
+  power=evalExactPower(mt,param)
   return(power)
 })
 pars$power = pwr_vec
@@ -943,7 +943,7 @@ pwr_vec = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
   
   mt=as.numeric(sloc[sloc@Nmeas==Nmeas &sloc@drts==drts,])
   mt=mt[mt<Inf]
-  power=eval_exact_power(mt,param)
+  power=evalExactPower(mt,param)
   return(power)
 })
 pars$power = pwr_vec
