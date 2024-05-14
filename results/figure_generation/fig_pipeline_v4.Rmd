@@ -350,7 +350,7 @@ Fig_thresh_width=6
 Fig_thresh_height=6
 
 show_temp_plt(Fig_thresh,Fig_thresh_width,Fig_thresh_height)
-ggsave(paste0('~/research/ms_powerCHORD/figures/','gain_of_non_unif.png'),plt,width=plt_width,height=plt_height,device='png',dpi=600)
+ggsave(paste0('~/research/ms_powerCHORD/figures/','gain_of_non_unif.png'),Fig_thresh,width=Fig_thresh_width,height=Fig_thresh_height,device='png',dpi=600)
 
 ```
 # Fig_trade: Tradeoff and comparison
@@ -392,27 +392,137 @@ splt[splt$is_uniform,]$type = 'equispaced'
 
 ```{r}
 Nm_plt = seq(16,48,4)
-plt=splt %>% filter(Nmeas %in% Nm_plt) %>% 
-  ggplot(aes(x=ncp,y=-sc_afder,color=type,shape=wreg>0))+geom_point(size=2)+
-  facet_wrap(~Nmeas)
+plt=splt %>% mutate(N=Nmeas) %>% 
+  filter(Nmeas %in% Nm_plt) %>% 
+  ggplot(aes(x=ncp,y=-sc_afder,color=type,shape=wreg>0))+geom_point(size=1.5)+
+  facet_wrap(~N,labeller = purrr::partial(label_both, sep = " = "))
 
 
 plt = plt + labs(x=element_text('worst-case power score'),
                  y=element_text('negative regularization score'),
-                 color='design type')
+                 color='design type',
+                 shape='regularized')
 
 plt=plt+theme(text=element_text(size=9))
 
+plt = plt + theme(
+  strip.background=element_blank(),
+  plot.margin = margin(0,0,0,0),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.text.x = element_text(vjust = 0.25)
+  )
+Fig_trade = plt
+
+Fig_trade_height = 3 
+Fig_trade_width  = 6
+
+show_temp_plt(plt,Fig_trade_width,Fig_trade_height)
+ggsave(paste0('~/research/ms_powerCHORD/figures/','tradeoff.png'),Fig_trade,width=Fig_trade_width,height=Fig_trade_height,device='png',dpi=600)
+
+
 ```
 
 
-
-# Fig: Lomb Scargle
+# Fig_lomb : Lomb Scargle
 ```{r}
+# redo TPR estimates
+Nmc=1000
+Nmeas=48
+p_osc=.1
 
+alpha_vals = seq(0,1,.1)
+freq_vals  = c(1,2,4,8,16,24) 
+mt_unif    = c(1:Nmeas)/Nmeas-1/Nmeas
+mt_opt     = sols[sols@wreg==0 & sols@drts==Inf & sols@Nmeas==Nmeas,]
+mt_rob     = sols[sols@wreg==1 & sols@drts==6 & sols@Nmeas==Nmeas,]
+pars       = expand.grid(alpha_val=alpha_vals,
+                         freq=freq_vals,
+                         Amp = c(1),
+                         p_osc = c(0.1,0.5),
+                         type=c('uniform','optimal','robust'))
+
+dfTPR = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ind){
+  alpha_val = pars[ind,]$alpha_val
+  freq      = pars[ind,]$freq
+  Amp       = pars[ind,]$Amp
+  p_oscloc  = pars[ind,]$p_osc
+  if (pars[ind,]$type=='uniform'){
+    tvec_loc = mt_unif
+  }else if(pars[ind,]$type=='optimal'){
+    tvec_loc = mt_opt
+  }else if(pars[ind,]$type=='robust'){
+    tvec_loc = mt_rob
+  }else{
+    stop('unrecognized type')
+  }
+  
+  TPR_loc = estimateTPR(alpha = alpha_val,
+              Nmc   = Nmc,
+              tvec  = tvec_loc,
+              freq  = freq,
+              Amp   = Amp,
+              p_osc = p_oscloc,
+              mc_cores=1)
+  par_ind = rbindlist(replicate(dim(TPR_loc)[1],pars[ind,],F))
+  return(cbind(par_ind,TPR_loc))
+}
+) %>%  rbindlist() %>% data.frame()
+
+dfTPR$f = factor(dfTPR$freq,unique(dfTPR$freq),paste0('f = ',unique(dfTPR$freq)))
+p1=dfTPR %>% filter(p_osc==.1 & fdr_method !='BY') %>% ggplot(aes(x=alpha_val,y=TPR,group=type,color=type))+
+  geom_line()+
+  facet_grid(fdr_method+p_method~f)
+
+p2=dfTPR %>% filter(p_osc==.5 & fdr_method !='BY') %>% ggplot(aes(x=alpha_val,y=TPR,group=type,color=type))+
+  geom_line()+
+  facet_grid(fdr_method+p_method~f)
 ```
 
-# Fig: Misc performance
+
 ```{r}
+xmin=0
+xmax=1
+xav = c(0,.50,1)
+
+
+p1 = p1 + scale_x_continuous(limits =c(xmin,xmax),
+                               breaks=xav,
+                               labels=round(xav,2)) 
+p1 = p1 + theme(
+  strip.background=element_blank(),
+  plot.margin = margin(0,0,0,0),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.text.x = element_text(vjust = 0.25)
+  )
+p2 = p2 + scale_x_continuous(limits =c(xmin,xmax),
+                               breaks=xav,
+                               labels=round(xav,2)) 
+p2 = p2 + theme(
+  strip.background=element_blank(),
+  plot.margin = margin(0,0,0,0),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.text.x = element_text(vjust = 0.25)
+  )
+
+plt = p1/p2
+
+plt=plt&theme(text=element_text(size=9))
+plt=plt&labs(x=element_text('FPR'),y=element_text('TPR'))
+
+
+Fig =plt + plot_layout(guides='collect')+
+  plot_annotation(tag_levels='A') & theme(legend.position='bottom')
+
+show_temp_plt(Fig,6,6)
+
+Fig_LS        = Fig
+Fig_LS_width  = 6
+Fig_LS_height = 6
+
+ggsave(paste0('~/research/ms_powerCHORD/figures/','LombScargle_varp.png'),Fig_LS,width=Fig_LS_width,height=Fig_LS_height,device='png',dpi=600)
 
 ```
+

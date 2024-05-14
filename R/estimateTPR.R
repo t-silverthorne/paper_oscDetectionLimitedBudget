@@ -16,7 +16,8 @@ require(data.table)
 #' @author Turner Silverthorne
 #' @export 
 estimateTPR=function(alpha,Nmc,tvec,
-                       Amp=1,freq=1,p_osc=.1,mc_cores=1){
+                       Amp=1,freq=1,p_osc=.1,mc_cores=1,
+                     fdr_methods=c('none','BH')){
   # simulated data
   Nmeas = length(tvec)
   Ydat                = matrix(rnorm(Nmc*Nmeas),nrow=Nmc)
@@ -33,8 +34,12 @@ estimateTPR=function(alpha,Nmc,tvec,
                  data.frame(p_method='press',pval =lomb_press$p.value,state=state[ii])))
   }) %>% rbindlist() %>% data.frame()
   num_P  = sum(state=='osc')
-  
-  methods = expand.grid(p_method = c('std','press'),fdr_method=c('none','BH','BY'))
+ 
+  if (all(fdr_methods  %in% c('none','BH','BY'))){
+    methods = expand.grid(p_method = c('std','press'),fdr_method=fdr_methods)
+  }else{
+    stop('unknown fdr method')
+  }
   
   methods$TPR = methods %>% apply(1,function(x){
     dfloc = pvdf[pvdf$p_method==x[['p_method']],]
