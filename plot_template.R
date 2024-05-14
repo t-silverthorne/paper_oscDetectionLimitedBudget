@@ -109,8 +109,17 @@ show_temp_plt=function(plt,plt_width,plt_height){
   viewer(plt_path)
 }
 
-plt + 
-  scale_y_continuous(sec.axis = sec_axis(~ . , name = "SECOND Y AXIS", breaks = NULL, labels = NULL)) +
-  scale_x_continuous(sec.axis = sec_axis(~ . , name = "SECOND X AXIS", breaks = NULL, labels = NULL))
-+theme(axis.line.x.top = element_blank())
-+theme(axis.line.y.right = element_blank())
+# how to get nice labels for wrapped variables
+df=data.frame(val=runif(10),Nval=sample(c('1','2'),10,T)) 
+df$Nval = as.factor(df$Nval)
+df %>% 
+  mutate(N=Nval) %>% 
+  ggplot(aes(x=val,y=1))+geom_point()+
+  facet_wrap(~N,labeller = purrr::partial(label_both, sep = " = "))
+
+
+#plt + 
+#  scale_y_continuous(sec.axis = sec_axis(~ . , name = "SECOND Y AXIS", breaks = NULL, labels = NULL)) +
+#  scale_x_continuous(sec.axis = sec_axis(~ . , name = "SECOND X AXIS", breaks = NULL, labels = NULL))
+#+theme(axis.line.x.top = element_blank())
+#+theme(axis.line.y.right = element_blank())

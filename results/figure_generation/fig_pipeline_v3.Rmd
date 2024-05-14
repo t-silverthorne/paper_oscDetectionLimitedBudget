@@ -183,9 +183,7 @@ ggsave(paste0('~/research/ms_powerCHORD/figures/','motivation_fig_v2.png'),Fig,w
 source('results/data/extract_fminfmax_data.R')
 theme_set(theme_classic()) 
 fdf$fmax = fdf$fmin+fdf$df
-```
 
-```{r}
 plt = fdf %>% ggplot(aes(x=fmin,y=fmax,color=d_power))+geom_point(size=3)+facet_wrap(~Nmeas,nrow=1)+scale_color_viridis_c(limits=c(0,1)) 
 plt_height = 3
 plt_width  = 6

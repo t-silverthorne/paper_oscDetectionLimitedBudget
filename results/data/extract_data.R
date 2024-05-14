@@ -40,6 +40,9 @@ for (ii in c(1:length(sol_files))){
     Nmeas_good = Nmeas==f_Nmeas
     
     ncp = evalWorstNCP(mt=mtloc,freqs = freqs,Amp=1)
+    acro_freq_der = evalAcroFreqGradL2(tvec=mtloc,
+                                       pars=list(fmin=min(freqs),fmax=max(freqs)),
+                                       Amp=1)
     stat_code = gres$status
    
     rowdat=data.frame(
@@ -47,6 +50,7 @@ for (ii in c(1:length(sol_files))){
       wreg        = f_wreg,
       drts        = f_drts,
       ncp         = ncp,
+      sc_afder    = sqrt(acro_freq_der)/Nmeas,
       stat_code   = stat_code,
       Nmeas_match = Nmeas_good
       )
