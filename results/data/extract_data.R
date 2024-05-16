@@ -62,7 +62,7 @@ for (ii in c(1:length(sol_files))){
     sols=rbind(sols,am)
   }
 }
-
+saveRDS(sols,'results/data/MCperiodogram/hiresSols.RDS')
 #sols_plt = sols[sols@wreg %in% c(0,1),]
 #sols_plt@''%>% 
 #  ggplot(aes(x=Nmeas,y=ncp,
