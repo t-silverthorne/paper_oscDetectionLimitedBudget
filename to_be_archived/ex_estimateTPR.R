@@ -3,12 +3,12 @@ require(dplyr)
 require(devtools)
 devtools::load_all()
 mc_cores   = 12   # number of threads for parallel
-Nmc        = 5000 # number of MC samples (<500 in parallel runs in about 1 minute)
+Nmc        = 1000 # number of MC samples (<500 in parallel runs in about 1 minute)
 
 # parameters for simulated data
 p_osc      = .1   # proportion of oscillating genes
 Nmeas      = 48   # number of measurements
-alpha_vals = seq(0,1,.1)
+alpha_vals = seq(0,1,.05)
 freq_vals  = c(1,24) 
 pars       = expand.grid(alpha=alpha_vals,
                          freq=freq_vals,
@@ -50,6 +50,6 @@ df = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
 
 
 df %>% filter(p_method =='std') %>% 
-  ggplot(aes(x=alpha,y=TPR,group=type,color=type))+
+  ggplot(aes(x=FPR,y=TPR,group=type,color=type))+
   geom_line()+
   facet_grid(fdr_method~freq)

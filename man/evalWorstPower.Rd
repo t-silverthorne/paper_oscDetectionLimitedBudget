@@ -4,7 +4,7 @@
 \alias{evalWorstPower}
 \title{Eval worst-case power}
 \usage{
-evalWorstPower(mt, freqs, Amp = 1, alpha = 0.05)
+evalWorstPower(mt, freqs, Amp = 1, alpha = 0.05, ...)
 }
 \arguments{
 \item{mt}{vector of measurement times}
