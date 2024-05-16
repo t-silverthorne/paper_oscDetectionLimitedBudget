@@ -206,7 +206,7 @@ gset = list(
   Nmin_2lat         = 4,
   Nmax_2lat         = 12,
   nrep              = 100,
-  regL1             = 1,
+  regL1             = 10,
   gset_save         = T
 )
 
