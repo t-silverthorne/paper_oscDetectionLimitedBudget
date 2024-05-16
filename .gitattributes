@@ -30,3 +30,4 @@ results/output/Nmeas16/Nfi_288_Nfr_256_rL1_0_msa_500_mbf_10_nrep_20_batch_2024-0
 results/output/Nmeas16/Nfi_288_Nfr_256_rL1_1_msa_500_mbf_10_nrep_20_batch_2024-02-11__21:36:56amm_all.RDS filter=lfs diff=lfs merge=lfs -text
 results/output/Nmeas16/Nfi_288_Nfr_256_rL1_1_msa_500_mbf_10_nrep_20_batch_2024-02-11__21:36:56fig1.RDS filter=lfs diff=lfs merge=lfs -text
 *.RDS filter=lfs diff=lfs merge=lfs -text
+results/data/MCperiodogram/hiresSols.RDS filter=lfs diff=lfs merge=lfs -text

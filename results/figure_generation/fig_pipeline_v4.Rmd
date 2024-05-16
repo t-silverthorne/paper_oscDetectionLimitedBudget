@@ -183,7 +183,7 @@ plt_motivC       = plt
 Fig_motiv        = Fig
 Fig_motiv_width  = 6
 Fig_motiv_height = 5
-
+ggsave(paste0('~/research/ms_powerCHORD/figures/','motivation_fig_v2.png'),Fig_motiv,width=Fig_motiv_width,height=Fig_motiv_height,device='png',dpi=600)
 ```
 
 # Fig_thresh: Performance of worst-case 
@@ -280,7 +280,7 @@ acros=seq(0,2*pi,length.out=Nacro)
 acros=acros[1:(length(acros)-1)]
 freqs_plt = seq(1,24,length.out=Nfreq_plt)
 
-pars=expand.grid(Amp=c(1),Nmeas=Nmeas_vals,acro=acros,freq=freqs_plt,type=c('uniform','optimal'))
+pars=expand.grid(Amp=c(1),Nmeas=Nmeas_vals,acro=acros,freq=freqs_plt,type=c('equispaced design','threshold design'))
 
 pwr_vec = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
   # unpack
@@ -291,9 +291,9 @@ pwr_vec = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
   Amp    = as.numeric(x[['Amp']]) 
   param =list(Amp=Amp,freq=freq,acro=acro) 
   
-  if(x$type == 'uniform'){
+  if(x$type == 'equispaced design'){
     mt = c(1:Nmeas)/Nmeas-1/Nmeas 
-  }else if(x$type =='optimal'){
+  }else if(x$type =='threshold design'){
     mt=as.numeric(sloc[sloc@Nmeas==Nmeas,])
     mt=mt[mt<Inf]
   }else{
@@ -308,11 +308,11 @@ pars$freq =as.numeric(pars$freq)
 pars$acro =as.numeric(pars$acro)
 pars$power=as.numeric(pars$power)
 
-pars = pars %>% mutate(N=Nmeas,design=type)
+pars$N = factor(pars$Nmeas,unique(pars$Nmeas),paste0('N = ',unique(pars$Nmeas)))
 plt = pars%>%
   ggplot(aes(x=freq,y=acro,fill=power))+
   geom_raster()+
-  facet_grid(N~design,labeller = purrr::partial(label_both, sep = " = "))+
+  facet_grid(N~type)+
   scale_y_continuous(limits=c(0,2*pi),breaks =rad_brk[c(1,3,5)],labels = rad_lab[c(1,3,5)])+
   scale_fill_viridis_c(limits=c(0,1))+
   labs(y='acrophase (rad)',x='frequency (cycles/day)')
@@ -353,6 +353,7 @@ show_temp_plt(Fig_thresh,Fig_thresh_width,Fig_thresh_height)
 ggsave(paste0('~/research/ms_powerCHORD/figures/','gain_of_non_unif.png'),Fig_thresh,width=Fig_thresh_width,height=Fig_thresh_height,device='png',dpi=600)
 
 ```
+
 # Fig_trade: Tradeoff and comparison
 ```{r}
 sloc = sols
@@ -383,9 +384,9 @@ sloc@is_uniform = F
 splt = rbind(sloc@'',unif_stats) 
 
 splt$type = NaN
-splt[splt$drts==6,]$type    = '1hr constraint'
-splt[splt$drts==12,]$type   = '2hr constraint'
-splt[splt$drts==18,]$type   = '3hr constraint'
+splt[splt$drts==6,]$type    = '1hr'
+splt[splt$drts==12,]$type   = '2hr'
+splt[splt$drts==18,]$type   = '3hr'
 splt[splt$drts==Inf,]$type  = 'free'
 splt[splt$is_uniform,]$type = 'equispaced'
 ```
@@ -400,7 +401,7 @@ plt=splt %>% mutate(N=Nmeas) %>%
 
 plt = plt + labs(x=element_text('worst-case power score'),
                  y=element_text('negative regularization score'),
-                 color='design type',
+                 color='constraint',
                  shape='regularized')
 
 plt=plt+theme(text=element_text(size=9))
@@ -431,27 +432,27 @@ Nmc=1000
 Nmeas=48
 p_osc=.1
 
-alpha_vals = seq(0,1,.1)
+alpha_vals = seq(0,.25,.01)
 freq_vals  = c(1,2,4,8,16,24) 
 mt_unif    = c(1:Nmeas)/Nmeas-1/Nmeas
 mt_opt     = sols[sols@wreg==0 & sols@drts==Inf & sols@Nmeas==Nmeas,]
 mt_rob     = sols[sols@wreg==1 & sols@drts==6 & sols@Nmeas==Nmeas,]
 pars       = expand.grid(alpha_val=alpha_vals,
                          freq=freq_vals,
-                         Amp = c(1),
+                         Amp = c(1,1.5,2),
                          p_osc = c(0.1,0.5),
-                         type=c('uniform','optimal','robust'))
+                         type=c('equispaced','threshold','balanced'))
 
 dfTPR = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ind){
   alpha_val = pars[ind,]$alpha_val
   freq      = pars[ind,]$freq
   Amp       = pars[ind,]$Amp
   p_oscloc  = pars[ind,]$p_osc
-  if (pars[ind,]$type=='uniform'){
+  if (pars[ind,]$type=='equispaced'){
     tvec_loc = mt_unif
-  }else if(pars[ind,]$type=='optimal'){
+  }else if(pars[ind,]$type=='threshold'){
     tvec_loc = mt_opt
-  }else if(pars[ind,]$type=='robust'){
+  }else if(pars[ind,]$type=='balanced'){
     tvec_loc = mt_rob
   }else{
     stop('unrecognized type')
@@ -468,27 +469,27 @@ dfTPR = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ind){
   return(cbind(par_ind,TPR_loc))
 }
 ) %>%  rbindlist() %>% data.frame()
+saveRDS(dfTPR,'results/data/MC_periodogram.RDS')
 
 dfTPR$f = factor(dfTPR$freq,unique(dfTPR$freq),paste0('f = ',unique(dfTPR$freq)))
-p1=dfTPR %>% filter(p_osc==.1 & fdr_method !='BY') %>% ggplot(aes(x=alpha_val,y=TPR,group=type,color=type))+
+p1=dfTPR %>% filter(p_osc==.1 & fdr_method =='BH') %>% ggplot(aes(x=alpha_val,y=TPR,group=type,color=type))+
   geom_line()+
-  facet_grid(fdr_method+p_method~f)
+  facet_grid(Amp+p_method~f)
 
-p2=dfTPR %>% filter(p_osc==.5 & fdr_method !='BY') %>% ggplot(aes(x=alpha_val,y=TPR,group=type,color=type))+
+p2=dfTPR %>% filter(p_osc==.5 & fdr_method =='BH') %>% ggplot(aes(x=alpha_val,y=TPR,group=type,color=type))+
   geom_line()+
-  facet_grid(fdr_method+p_method~f)
+  facet_grid(Amp+p_method~f)
 ```
 
 
 ```{r}
 xmin=0
-xmax=1
+xmax=.25
 xav = c(0,.50,1)
 
 
-p1 = p1 + scale_x_continuous(limits =c(xmin,xmax),
-                               breaks=xav,
-                               labels=round(xav,2)) 
+p1 = p1 + scale_x_continuous(limits =c(xmin,xmax),breaks=c(0,.25),labels=c(0,0.25)) +
+  scale_y_continuous(limits=c(0,1))
 p1 = p1 + theme(
   strip.background=element_blank(),
   plot.margin = margin(0,0,0,0),
@@ -496,9 +497,10 @@ p1 = p1 + theme(
   panel.grid.minor = element_blank(),
   axis.text.x = element_text(vjust = 0.25)
   )
-p2 = p2 + scale_x_continuous(limits =c(xmin,xmax),
-                               breaks=xav,
-                               labels=round(xav,2)) 
+p1=p1+theme(text=element_text(size=9))
+
+p2 = p2 + scale_x_continuous(limits =c(xmin,xmax),breaks=c(0,.25),labels=c(0,0.25)) +
+  scale_y_continuous(limits=c(0,1))
 p2 = p2 + theme(
   strip.background=element_blank(),
   plot.margin = margin(0,0,0,0),
@@ -506,18 +508,23 @@ p2 = p2 + theme(
   panel.grid.minor = element_blank(),
   axis.text.x = element_text(vjust = 0.25)
   )
+p2=p2+theme(text=element_text(size=9))
 
 plt = p1/p2
 
 plt=plt&theme(text=element_text(size=9))
-plt=plt&labs(x=element_text('FPR'),y=element_text('TPR'))
+plt=plt&labs(x=element_text('false positive rate'),
+             y=element_text('true positive rate'),
+             color=element_text('design'))
 
 
 Fig =plt + plot_layout(guides='collect')+
   plot_annotation(tag_levels='A') & theme(legend.position='bottom')
 
 show_temp_plt(Fig,6,6)
+```
 
+```{r}
 Fig_LS        = Fig
 Fig_LS_width  = 6
 Fig_LS_height = 6
