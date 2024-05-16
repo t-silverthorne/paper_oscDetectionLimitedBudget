@@ -219,9 +219,15 @@ gset = list(
   timelimit_by_bfgs = T,
   Nmin_2lat         = 4,
   Nmax_2lat         = 12,
+<<<<<<< HEAD:results/multi_method_test.R
+  nrep              = 100,
+  regL1             = 10,
+  gset_save         = T
+=======
   nrep              = 20,
   regL1             = 0,
   gset_save         = F
+>>>>>>> 2564a9ac052064d80dc06ef3683395fc8bca5b41:sandbox/results/multi_method_test.R
 )
 
 for (Nmeas in seq(16)){
