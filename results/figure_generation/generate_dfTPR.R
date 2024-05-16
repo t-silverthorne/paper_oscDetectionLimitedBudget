@@ -4,15 +4,15 @@ require(parallel)
 require(data.table)
 require(stringr)
 require(dplyr)
-require(latex2exp)
 require(annmatrix)
+require(lomb)
 load_all()
 sols = readRDS('results/data/MCperiodogram/hiresSols.RDS')
-mc_cores=10
+mc_cores = 16
 # redo TPR estimates
-Nmc=1e1
-Nmeas=48
-p_osc=.1
+Nmc      = 1e4
+Nmeas    = 48
+p_osc    = .1
 
 alpha_vals = seq(0,.25,.01)
 freq_vals  = c(1,2,4,8,16,24) 
