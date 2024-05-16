@@ -1,0 +1,96 @@
+```{r}
+require(devtools)
+require(ggplot2)
+require(annmatrix)
+require(ggplotify)
+require(patchwork)
+require(parallel)
+require(data.table)
+require(stringr)
+require(CVXR)
+require(circular)
+source('plotConfig.R')
+load_all()
+fs_glob=9
+mc_cores=10
+fmin=1
+fmax=24
+Nfreq=2^10
+freqs=seq(fmin,fmax,length.out=Nfreq)
+
+```
+
+# Simulate 
+Generate grids
+```{r}
+trace_global=0
+report_global=1
+maxit_sa = 500
+Nmc      =  80 
+Nmeasvals = c(12,24,48)
+
+pars=expand.grid(sched_type=c('random','optimal'),Nmeas=Nmeasvals)
+
+df = c(1:dim(pars)[1]) %>% lapply(function(ii){
+  Nmeas      = pars[ii,]$Nmeas
+  sched_type = pars[ii,]$sched_type
+ 
+  if (sched_type=='random'){
+    mt = runif(Nmeas*Nmc) %>% matrix(nrow=Nmc)
+  }else if (sched_type=='optimal'){
+    ctrl_cts_arb_sa   = list(costfun_choice='svdpower',optim_method='simul_anneal',
+            tfun_choice='brownian-torus',tfun_mean=0,tfun_sd=.5,
+            trace=trace_global,REPORT=report_global,maxit=maxit_sa) 
+    mt=c(1:Nmc) %>% mclapply(mc.cores=mc_cores,function(ind){
+      var0_cts_arb_sa   = runif(Nmeas) 
+      opt_res=opt_osc_power(dvar0  = var0_cts_arb_sa,
+                    control = ctrl_cts_arb_sa,
+                    freqs   = freqs,
+                    Amp     = NaN,
+                    cfuntype= 'ncp')
+      return(data.frame(matrix(sort(as.numeric(opt_res$mtvalue)),nrow=1)))
+    }) %>% rbindlist() %>% data.frame()
+  }else{
+    stop('unrec sched type')
+  }
+  res = c(1:Nmc) %>% lapply(function(ind){
+    rao_stat=suppressWarnings(rao.spacing.test(2*pi*as.numeric(mt[ind,]),alpha=.05)) %>% {.$statistic}
+    ncp = costfun_svdpower(as.numeric(mt[ind,]),freqs,cfuntype = 'ncp')
+    fder = costfun_svdpower(as.numeric(mt[ind,]),freqs,weight_ncp=0,regFder='2norm',cfuntype = 'ncp')
+    return(data.frame(rao=as.numeric(rao_stat),
+                      ncp=as.numeric(ncp),
+                      fder=as.numeric(fder)))
+    }) %>% rbindlist() 
+  res$Nmeas = Nmeas
+  res$type  = sched_type
+  return(res) 
+}) %>% rbindlist()
+
+df_rao  = data.frame(feature='rao',Nmeas=df$Nmeas,type=df$type,ncp=df$ncp,y=df$rao)
+df_fder = data.frame(feature='fder',Nmeas=df$Nmeas,type=df$type,ncp=df$ncp,y=df$fder)
+df_tot = rbind(df_rao,df_fder)
+
+head(df_tot)
+```
+```{r}
+df_tot=df_tot_bkup
+df_tot$feature =factor(df_tot$feature,levels=c('rao','fder'),labels = c('non-uniformity','frequency sensitivity')) 
+df_tot$type=factor(df_tot$type,levels=c('random','optimal'),labels = c('random','near optimal')) 
+df_tot$Nmeas =factor(df_tot$Nmeas,levels=c(12,24,48),labels = c('12','24','48')) 
+
+p1=df_tot %>% ggplot(aes(x=ncp,y=y,color=type))+geom_point(size=1)+facet_grid(feature~Nmeas,scales='free')
+
+p1c = p1 + theme(
+    strip.background=element_blank(),
+    text=element_text(size=fs_glob)
+
+)+labs(
+  x='non-centrality',
+  y=element_blank(),
+  color='measurement distribution'
+)&theme(legend.position='bottom',plot.margin=margin(0,0,0,0))
+p1c
+
+ggsave(paste0(overleaf_plot_directory,'multiobjective.png'),p1c,width = 6,height=4,device='png',dpi=600)
+
+```

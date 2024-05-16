@@ -1,0 +1,7 @@
+C:/gurobi/gurobi.lic
+require(knitr) for knit options
+
+March 7:
+
+- For Rmd files, select Knit -> Knit directory -> project directory
+- Autocomplete will still work, but always will start in project root

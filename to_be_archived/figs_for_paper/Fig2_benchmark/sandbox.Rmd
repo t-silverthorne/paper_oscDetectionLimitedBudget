@@ -1,0 +1,139 @@
+```{r setup}
+require(devtools)
+require(ggplot2)
+require(annmatrix)
+require(ggplotify)
+require(patchwork)
+require(parallel)
+require(data.table)
+require(stringr)
+require(CVXR)
+source('plotConfig.R')
+load_all()
+fs_glob=9
+mc_cores=10
+```
+
+```{r}
+Nmeas = 16 
+Nmc   = 10 
+Amin  = log2(1)
+Amax  = log2(5)
+fmin  = 1
+fmax  = 24 
+
+Nfreq_test = 2^6
+fmin_test=fmin
+fmax_test=fmax*.99 #TODO fix detuning
+mt_all = readRDS('figs_for_paper/Fig1_aug_vs_cvxr/solns.RDS')
+
+Nms = mt_all$Nmeas %>% unique()
+
+for (Nm in Nms){
+  mt = c(1:Nm)/Nm-1/Nm
+  mt_all=rbind(mt_all,data.frame(time=mt,solver='uniform',Nmeas=Nm,ncp=NaN))
+}
+names=unique(mt_all$solver)
+mdf=names %>% lapply(function(solver){
+  mt = mt_all[mt_all$solver==solver & mt_all$Nmeas==Nmeas,]$time
+  # make pars
+  Amps    = 2^runif(Nmc,Amin,Amax) %>% matrix(nrow=Nmc)
+  freqs   = runif(Nmc,fmin,fmax) %>% matrix(nrow=Nmc)
+  acros   = runif(Nmc,0,2*pi) %>% matrix(nrow=Nmc)
+  
+  # make data
+  acromat = replicate(Nmeas,{acros}) %>% matrix(ncol=Nmeas)
+  Ampmat  = replicate(Nmeas,{Amps}) %>% matrix(ncol=Nmeas)
+  X       = Ampmat*cos(2*pi*freqs%*%t(mt) - acromat) + rnorm(Nmeas*Nmc) %>% matrix(nrow=Nmc)
+ 
+  test_freqs = seq(from=fmin_test,to=fmax_test,length.out=Nfreq_test) 
+  
+  Lfit = test_freqs %>% lapply(function(freq){
+    cbind(rowCosinor(X,zts=mt,per=1/freq),data.frame(freq=freq))
+  }) 
+  
+  ests = c(1:Nmc) %>% mclapply(mc.cores=mc_cores,function(jj){
+    fits = Lfit %>% lapply(function(df){df[jj,]}) %>% rbindlist()
+    fits$qval = p.adjust(fits$pvalue,method='fdr')
+    return(fits[which.min(fits$qval),])
+  })
+  
+  res=ests %>% rbindlist()
+  names(res) = names(res) %>% sapply(function(x){paste0(x,'_est')})
+ 
+  cbind(res,data.frame(Amp_true=Amps,freq_true=freqs,acro_true=acros,method=solver)) 
+}) %>% rbindlist()
+
+head(mdf)
+
+mdf$method=factor(mdf$method,c('uniform','pin2lat','cvxr'))
+```
+Make plot
+```{r}
+al_glob=.5
+sz_glob=.5
+p1=mdf %>% ggplot(aes(x=Amp_true,y=amplitude_est,color=qval_est<.05))+
+  geom_point(alpha=al_glob,size=sz_glob) +
+  facet_wrap(~method,nrow=1)+
+  scale_color_manual(values=c('red','black'))+
+  scale_y_continuous(trans='log2')+scale_x_continuous(trans='log2')
+
+p2=mdf %>% ggplot(aes(x=acro_true,y=phase_est,color=qval_est<.05))+
+  geom_point(alpha=al_glob,size=sz_glob) + 
+  scale_color_manual(values=c('red','black'))+
+  facet_wrap(~method,nrow=1)
+
+p3=mdf %>% ggplot(aes(x=freq_true,y=freq_est,color=qval_est<.05))+
+  geom_point(alpha=al_glob,size=sz_glob) + 
+  scale_color_manual(values=c('red','black'))+
+  facet_wrap(~method,nrow=1)
+
+```
+
+Clean up aesthetics
+```{r}
+
+p1c = p1+
+  theme(
+    strip.background=element_blank(),
+    text=element_text(size=fs_glob),
+    legend.position='bottom'
+    )+
+  labs(
+    x='true amplitude',
+    y='estimate',
+    color='FDR signif'
+  )
+p2c = p2+
+  theme(
+    strip.background=element_blank(),
+    text=element_text(size=fs_glob),
+    legend.position='bottom'
+    )+
+  labs(
+    x='true acrophase (rad)',
+    y='estimate',
+    color='FDR signif'
+  )
+
+p3c = p3+
+  theme(
+    strip.background=element_blank(),
+    text=element_text(size=fs_glob),
+    legend.position='bottom'
+    )+
+  labs(
+    x     = 'true frequency (1/day)',
+    y     = 'estimate',
+    color = 'FDR signif'
+  )
+
+sc=0
+Fig=(p1c/p2c/p3c) + plot_annotation(tag_levels = 'A')+plot_layout(guides='collect')& 
+  theme(legend.position='bottom',
+        plot.margin=margin(-sc,-sc,-sc,-sc)
+        )
+Fig
+
+ggsave(paste0(overleaf_plot_directory,'accuracy_benchmark.png'),Fig,width = 6,height=6,device='png',dpi=600)
+```

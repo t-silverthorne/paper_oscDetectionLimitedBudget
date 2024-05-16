@@ -1,10 +1,10 @@
-theme_set(theme_bw()) #ggplot global setting
-user='TurnerLinux'
-#user='TurnerMac'
+theme_set(theme_classic()) #ggplot global setting
+#user='TurnerLinux'
+user='TurnerMac'
 if (user == 'TurnerMac'){
 	overleaf_plot_directory = '/Users/turnersilverthorn/research/overleaf/samplingPaper/figures/'
 } else {
-  overleaf_plot_directory = '/home/turner/research/overleaf/rate_limited_sampling/figures/'
+  overleaf_plot_directory = '/home/turner/research/ms_powerCHORD/figures/'
 }
 
 get_legend <- function(p) {
@@ -36,3 +36,18 @@ control_labels <- function(plot,
   #TODO legend_vis option
   return(plot)
 }
+
+fs_glob=9
+
+rad_brk = c(0,pi/2,pi,3*pi/2,2*pi)
+rad_lab = c(expression(0),
+            expression(pi/2),
+            expression(pi),
+            expression(3*pi/2),
+            expression(2*pi))
+#  theme(
+#   strip.background=element_blank(),
+#   text=element_text(size=9),
+#   plot.margin=margin(0,0,0,0))
+#   panel.grid.major = element_blank(),panel.grid.minor = element_blank()
+#)

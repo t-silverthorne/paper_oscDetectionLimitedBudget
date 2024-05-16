@@ -1,0 +1,729 @@
+```{r}
+require(devtools)
+require(ggplot2)
+require(annmatrix)
+require(ggplotify)
+require(patchwork)
+require(parallel)
+require(data.table)
+require(stringr)
+require(dplyr)
+require(latex2exp)
+require(annmatrix)
+load_all()
+source('plotConfig.R')
+source('plot_template.R')
+source('results/data/extract_data.R') 
+
+#slide_version_directory='/home/turner/research/misc_tex/committee_meeting/figs/'
+mc_cores=12
+fsize=9
+```
+
+# Motivation: empirical p-values
+```{r}
+gen_panel_loc=function(mt){
+  Nmeas =length(mt)
+  mtdf=data.frame(time=mt)
+  
+  # panel 1 
+  t_fine = seq(0,1,.005)
+  freqs = c(1,4,9*.99)
+  cp_levels = sort(24/freqs) %>% rev()
+  cp_labels = round(cp_levels,2) %>%  {paste0(.,' hr')}
+  phi_plt1=pi/2
+  
+  df = freqs %>% lapply(function(freq){
+   data.frame(expr=cos(2*pi*freq*t_fine - phi_plt1),freq=freq,time=t_fine)
+  }) %>% rbindlist() %>% data.frame()
+  
+  df_noise = freqs %>% lapply(function(freq){
+   data.frame(expr=cos(2*pi*freq*mt - phi_plt1)+rnorm(length(mt)),
+              freq=freq,time=mt)
+  }) %>% rbindlist() %>% data.frame()
+  df$circ_per=24/df$freq
+  df$circ_per = factor(df$circ_per,cp_levels,cp_labels)
+  df_noise$circ_per=24/df_noise$freq
+  df_noise$circ_per = factor(df_noise$circ_per,cp_levels,cp_labels)
+  p1=ggplot()+geom_line(data=df,aes(x=24*time,y=expr,group=circ_per,color=circ_per))+
+    scale_color_manual(values = freq_colors)+
+    geom_point(data=df_noise,aes(x=24*time,y=expr,color=circ_per),size=.5)+
+    facet_wrap(~circ_per,nrow=3)+
+    labs(y='simulated signal',x='measurement time (hr)')+
+    scale_x_continuous(limits=c(0,24),breaks = 4*c(0:6))+
+    scale_y_continuous(limits=c(-3,3),n.breaks=3)
+ 
+  # panel 2 
+  Nmc=1e2
+  monteCarloPval <-function(tvec,Amp,freq,acro){
+    Ydat = replicate(Nmc,{Amp*cos(2*pi*freq*tvec -acro) + rnorm(length(tvec))}) %>% t
+    return(rowCosinor(Ydat,tvec,per=1/freq) %>% {.$pvalue} )
+  }
+  acrovec=seq(from=0,to=2*pi,.05)
+  pars=expand.grid(freq=freqs,acro=acrovec)
+  
+  #TODO: better way of doing this
+  df=c(1:dim(pars)[1]) %>% lapply(function(ind){
+    x=pars[ind,]
+    freq=as.numeric(x['freq'])
+    acro=as.numeric(x['acro'])
+    return(data.frame(freq=freq,acro=acro,
+                      pvalue=monteCarloPval(mt,Amp,freq,acro)))
+  }) %>% rbindlist() %>% data.frame()
+  
+  
+  df$circ_per=24/df$freq
+  df$circ_per = factor(df$circ_per,cp_levels,cp_labels)
+   
+  p2=df %>% ggplot(aes(x=acro,y=-log10(pvalue),color=circ_per))+
+    geom_point(size=.5,alpha=.2)+
+    facet_wrap(~circ_per,nrow=3)+
+    geom_hline(aes(yintercept =-log10(.05),linetype='p=0.05'),color='black')+
+    scale_x_continuous(limits=c(0,2*pi),breaks =rad_brk,labels = rad_lab)+
+    scale_y_continuous(limits =c(0,12),n.breaks = 2) +
+    labs(x='acrophase (rad)',y='-log(pvalue)',linetype=element_blank())+
+    scale_color_manual(values=freq_colors)+scale_linetype_manual(values=c('dashed'))+guides(color='none')
+  plots=list()
+  
+  plots[[1]]=p1
+  plots[[2]]=p2
+  Fig=p1+p2 + plot_layout(guides='collect') & theme(legend.position='bottom',
+     strip.background=element_blank(),
+     text=element_text(size=fsize),
+     plot.margin=margin(0,0,0,0),
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.text.x = element_text(vjust = 0.25)
+  )& labs(color='period')
+ return(Fig) 
+}
+
+
+cols=viridisLite::viridisMap(3,begin=.3,end=.7,option='magma')
+freq_colors=c(rgb(cols[1,c(1:3)]),rgb(cols[2,c(1:3)]),rgb(cols[3,c(1:3)]))
+Nmeas = 18
+mt_unif = c(1:Nmeas)/Nmeas-1/Nmeas
+
+Amp = 3
+Na  = 14
+Nb  = Nmeas-Na
+mta = c(1:Na)/Na-1/Na
+mtb = c(1:Nb)/Nb-1/Nb
+mt_alt  =c(mta/2,.5 + mtb/2) 
+
+F1raw=gen_panel_loc(mt_unif)
+F2raw=gen_panel_loc(mt_alt)
+F1=as.ggplot(F1raw&theme(legend.position = 'none'))
+F2=as.ggplot(F2raw&theme(legend.position = 'bottom'))
+
+Fig = F1/F2 + plot_annotation(tag_levels ='A')+plot_layout(guides='collect',heights = c(5,6.5))
+
+plt_width  = 6
+plt_height = 5
+show_temp_plt(Fig,plt_width,plt_height)
+ggsave(paste0('~/research/ms_powerCHORD/figures/','motivation_fig_v2.png'),Fig,width=plt_width,height=plt_height,device='png',dpi=600)
+
+```
+
+# Motivation: power variability
+
+## First version of figure
+```{r}
+#Nfreq=2^8
+#Nacro=2^6+1
+#
+#Nmeas=12
+#mt = c(1:Nmeas)/Nmeas-1/Nmeas
+#
+#freqs=seq(1,24,length.out=Nfreq)
+#acros=seq(0,2*pi,length.out=Nacro)
+#acros=acros[1:(length(acros)-1)]
+#
+#Amps  = seq(1,2,.2)
+#Nmvec = seq(10,30,2)
+#
+#pars=expand.grid(Amp=Amps,Nmeas=Nmvec)
+#
+#pars$delta = c(1:dim(pars)[1]) %>% mclapply(mc.cores = mc_cores,function(ind){
+#  # unpack
+#  x     = pars[ind,]
+#  Nmeas = x$Nmeas
+#  Amp   = x$Amp
+#  mt    = c(1:Nmeas)/Nmeas-1/Nmeas
+#
+#  # for each freq, compute power variation 
+#  delta_vec = rep(NaN,length(freqs)) 
+#  for (fr_ind in c(1:length(freqs))){
+#    freq_loc = freqs[fr_ind]
+#    pwrs = sapply(acros,function(acro){
+#      eval_exact_power(t=mt,param=list(Amp=Amp,acro=acro,freq=freq_loc))
+#    }) 
+#    delta_vec[fr_ind] = max(pwrs)-min(pwrs)
+#  } 
+#  return(max(abs(delta_vec)))
+#})
+#pars$delta=as.numeric(pars$delta)
+#pars %>% ggplot(aes(x=Amp,y=Nmeas,fill=delta))+geom_raster()+
+#  scale_fill_viridis_c(limits=c(0,1))
+```
+
+## Second version
+```{r}
+Amps  = seq(0.5,2,.05)
+Nmvec = c(12,24,32)
+
+Nacro=2^6+1
+acros=seq(0,2*pi,length.out=Nacro)
+acros=acros[1:(length(acros)-1)]
+
+Nmeas=12
+mt = c(1:Nmeas)/Nmeas-1/Nmeas
+
+Nfreq=2^8
+freqs=seq(1,24,length.out=Nfreq)
+pars=expand.grid(Amp=Amps,Nmeas=Nmvec,freq=freqs)
+
+delta_vec = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ind){
+  # unpack
+  x     = pars[ind,] 
+  Amp   = x$Amp
+  Nmeas = x$Nmeas
+  freq  = x$freq
+  mt    = c(1:Nmeas)/Nmeas-1/Nmeas
+  
+  pwrs = sapply(acros,function(acro){
+    eval_exact_power(t=mt,param=list(Amp=Amp,acro=acro,freq=freq))
+  }) 
+  return(max(pwrs)-min(pwrs))
+})
+pars$delta=as.numeric(delta_vec)
+
+plt_raw =  pars %>% ggplot(aes(x=Amp,y=freq,fill=delta))+geom_raster()+facet_wrap(~Nmeas)+
+  scale_fill_viridis_c(limits=c(0,1))
+
+
+theme_set(theme_classic()) 
+plt=plt_raw
+plt_height = 1.8 
+plt_width  = 6
+
+plt=plt+theme(text=element_text(size=fsize))
+
+plt = plt + labs(x=element_text('amplitude'),
+                 y=element_text('frequency (cycles/day)'),
+                 fill ='power variation')
+
+plt=plt+guides(fill=guide_colorbar(title.position='right'))
+plt=plt+theme(legend.key.height = unit(plt_height*.15, "in"),
+               legend.title = element_text(angle = 90),
+               legend.title.align = 0.5,
+               legend.direction = "vertical")
+
+  
+plt = plt + theme(
+  strip.background=element_blank(),
+  plot.margin = margin(0,0,0,0),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.text.x = element_text(vjust = 0.25)
+  )
+
+show_temp_plt(plt,plt_width,plt_height)
+
+ggsave(paste0('~/research/ms_powerCHORD/figures/','motivation_power_var.png'),plt,width=plt_width,height=plt_height,device='png',dpi=600)
+```
+
+
+# Result: Power heatmap
+```{r}
+amp_vals = c(1,1.5)
+Nmeas_vals = c(16,48)
+theme_set(theme_classic())
+```
+
+## Plot the raw solutions
+```{r}
+# unpack
+sloc = sols[sols@wreg==0 & sols@drts==Inf,]
+
+for (ii in c(1:dim(sloc)[1])){
+  sloc[ii,]=sloc[ii,]-min(sloc[ii,])
+}
+
+splt = sloc %>% stack()
+splt = splt[splt$value<Inf,]
+
+
+head(splt[,c('value','Nmeas')])
+plt=splt[splt$Nmeas %in% Nmeas_vals, ] %>% ggplot(aes(x=value,y=0))+geom_point(size=.5)+facet_wrap(~Nmeas,ncol=length(Nmeas_vals))
+
+plt = plt + theme(axis.title.y=element_blank()) 
+plt = plt + theme(axis.text.y=element_blank()) 
+plt = plt + labs(x=element_text('time'))
+plt = plt+scale_x_continuous(limits=c(0,1),breaks=c(0,1))
+plt = plt + theme(
+  strip.background=element_blank(),
+  plot.margin = margin(0,0,0,0),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.text.x = element_text(vjust = 0.25)
+  )
+
+plt_width=6
+plt_height=3
+show_temp_plt(plt,plt_width,plt_height)
+
+psol=plt
+```
+
+## Plot power curves
+```{r}
+solvers=c('optimal','uniform')
+freqs_pc=seq(1,24,length.out=2^10)
+Amps=seq(0,2,length.out=50)
+pars=expand.grid(solver=solvers,Nmeas=Nmeas_vals,Amp=Amps)
+pwrvec = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
+  # unpack
+  x = pars[ii,]
+  solver = x[['solver']]
+  Nmeas  = as.numeric(x[['Nmeas']])
+  Amp    = as.numeric(x[['Amp']])
+  if(solver == 'uniform'){
+    mt = c(1:Nmeas)/Nmeas-1/Nmeas 
+  }else if(solver =='optimal'){
+    mt=as.numeric(sloc[sloc@Nmeas==Nmeas,])
+    mt=mt[mt<Inf]
+  }else{
+    stop('unknown type')
+  }
+  
+  return(costfun_svdpower(mt,freqs_pc,Amp,cfuntype = 'power'))
+})
+pars$power =as.numeric(pwrvec)
+
+plt=pars %>%ggplot(aes(x=Amp,y=power,group=solver,color=solver))+
+  geom_line(show.legend=T)+
+  scale_linetype_manual(values='dashed')+
+  facet_wrap(~Nmeas,ncol=length(Nmeas_vals))+labs(x='amplitude',y='worst-case power')
+```
+
+```{r}
+plt = plt+labs(color=element_blank())
+plt=plt+theme(legend.position='bottom',
+               legend.key.width = unit(plt_width*.15, "in"),
+               legend.title.align = 0.5,
+               legend.direction = "horizontal")
+
+plt = plt + theme(
+  strip.background=element_blank(),
+  plot.margin = margin(0,0,0,0),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.text.x = element_text(vjust = 0.25)
+  )
+
+
+ymin=0
+ymax=1
+plt = plt + scale_y_continuous(limits =c(ymin,ymax),
+                               breaks=c(ymin,ymax),
+                               labels=round(c(ymin,ymax),2)) 
+
+
+
+pcurve=plt
+
+PLT = psol / pcurve
+
+plt_width=6
+plt_height=4
+show_temp_plt(PLT,plt_width,plt_height)
+
+```
+
+## Plot power heatmap
+```{r}
+Nfreq_plt=2^7
+Nacro=2^5+1
+acros=seq(0,2*pi,length.out=Nacro)
+acros=acros[1:(length(acros)-1)]
+freqs_plt = seq(1,24,length.out=Nfreq_plt)
+
+pars=expand.grid(Amp=1,Nmeas=Nmeas_vals,acro=acros,freq=freqs_plt,type=c('uniform','optimal'))
+
+pwr_vec = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
+  # unpack
+  x      = pars[ii,]
+  Nmeas  = as.numeric(x[['Nmeas']])
+  acro   = as.numeric(x[['acro']])
+  freq   = as.numeric(x[['freq']])
+  Amp    = as.numeric(x[['Amp']]) 
+  param =list(Amp=Amp,freq=freq,acro=acro) 
+  
+  if(x$type == 'uniform'){
+    mt = c(1:Nmeas)/Nmeas-1/Nmeas 
+  }else if(x$type =='optimal'){
+    mt=as.numeric(sloc[sloc@Nmeas==Nmeas,])
+    mt=mt[mt<Inf]
+  }else{
+    stop('unknown type')
+  }
+  power=eval_exact_power(mt,param)
+  return(power)
+})
+pars$power = pwr_vec
+
+pars$freq =as.numeric(pars$freq)
+pars$acro =as.numeric(pars$acro)
+pars$power=as.numeric(pars$power)
+
+```
+
+```{r}
+plt = pars%>%
+  ggplot(aes(x=freq,y=acro,fill=power))+
+  geom_raster()+
+  facet_grid(type~Nmeas)+
+  scale_y_continuous(limits=c(0,2*pi),breaks =rad_brk[c(1,3,5)],labels = rad_lab[c(1,3,5)])+
+  scale_fill_viridis_c(limits=c(0,1))+
+  labs(y='acrophase (rad)',x='frequency (cycles/day)')
+
+
+```
+
+```{r}
+plt=plt+theme(legend.position='bottom',
+               legend.key.width = unit(plt_width*.15, "in"),
+               legend.title.align = 0.5,
+               legend.direction = "horizontal")
+
+plt = plt + theme(
+  strip.background=element_blank(),
+  plot.margin = margin(0,0,0,0),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.text.x = element_text(vjust = 0.25)
+  )
+phmap = plt
+```
+
+
+```{r}
+PLT = psol/pcurve/phmap + plot_annotation(tag_levels='A')+
+  plot_layout(heights=c(2,1,1))&theme(text=element_text(size=9))
+
+plt_width=6
+plt_height=5
+show_temp_plt(PLT,plt_width,plt_height)
+
+ggsave(paste0('~/research/ms_powerCHORD/figures/','result_first_heatmap.png'),PLT,width=plt_width,height=plt_height,device='png',dpi=600)
+
+```
+# Result: Regularisation constraint performance heatmap
+
+
+
+## Convergence and constraints
+```{r}
+sols_plt = sols[sols@wreg %in% c(0,1),]
+plt = sols_plt@''%>% 
+  ggplot(aes(x=Nmeas,y=ncp,
+             shape=as.factor(wreg),color=as.factor(drts)))+
+  geom_point(size=1)+
+  facet_wrap(~stat_code)
+
+xmin = 16
+xmax = 48
+
+plt=plt + labs(x=element_text('measurement budget'),
+           y=element_text('non-centrality'),
+           color=element_text('constraint'),
+           shape=element_text('regularisation'))
+
+plt=plt+theme(text=element_text(size=fsize))
+
+plt = plt + scale_x_continuous(limits =c(xmin,xmax),
+                               breaks=seq(xmin,xmax,8),
+                               labels=seq(xmin,xmax,8))
+plt=plt+guides(color=guide_legend(title.position='top'),
+               shape=guide_legend(title.position='top'))
+
+plt=plt+theme(legend.position='bottom',
+                 legend.title.align = 0.5,
+                 legend.direction = "horizontal")
+
+plt = plt + theme(
+  strip.background=element_blank(),
+  plot.margin = margin(0,0,0,0),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.text.x = element_text(vjust = 0.25)
+  )
+
+plt_conv = plt
+
+plt_height=4
+show_temp_plt(plt,plt_width,plt_height)
+```
+
+## Several heatmaps
+
+```{r}
+Nfreq_plt=2^7
+Nacro=2^5+1
+Nmeas = 48 
+acros=seq(0,2*pi,length.out=Nacro)
+acros=acros[1:(length(acros)-1)]
+freqs_plt = seq(1,24,length.out=Nfreq_plt)
+Amp  = 1
+pars = expand.grid(wreg=c(0,1),drts=unique(sols@drts),acro=acros,freq=freqs_plt)
+
+pwr_vec=c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
+  x        = pars[ii,]
+  acro     = as.numeric(x[['acro']])
+  freq     = as.numeric(x[['freq']])
+  drts     = as.numeric(x[['drts']])
+  wreg     = as.numeric(x[['wreg']])
+  param    = list(Amp=Amp,freq=freq,acro=acro) 
+  sol_filt = sols@Nmeas == Nmeas & sols@wreg == wreg & sols@drts ==  drts
+  mt       = as.numeric(sols[sol_filt,])
+  mt       = mt[mt<Inf]
+  if (length(mt)==Nmeas){
+    power=eval_exact_power(mt,param)
+  }else{
+    stop('error mt length')
+  }
+  return(power)
+})
+ 
+pwr_min = pwr_vec %>% unlist() %>% min()
+
+pars$power  = as.numeric(pwr_vec)
+plt = pars %>% ggplot(aes(x=freq,y=acro,fill=power))+
+  geom_raster()+
+  facet_grid(drts~wreg)+
+  scale_y_continuous(limits=c(0,2*pi),breaks =rad_brk[c(1,3,5)],labels = rad_lab[c(1,3,5)])+
+  scale_fill_viridis_c(limits=c(pwr_min,1))+
+  labs(y='acrophase (rad)',x='frequency (cycles/day)')
+
+plt=plt+theme(text=element_text(size=fsize))
+plt=plt+guides(fill=guide_colorbar(title.position='left'))
+plt=plt+theme(legend.position='bottom',
+               legend.key.width = unit(plt_width*.15, "in"),
+               legend.title.align = 0.5,
+               legend.direction = "horizontal")
+
+plt = plt + theme(
+strip.background=element_blank(),
+plot.margin = margin(0,0,0,0),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+axis.text.x = element_text(vjust = 0.25)
+)
+
+plt_mhmap = plt
+```
+
+## solutions
+```{r}
+sol_filt = Nmeas
+
+pars = expand.grid(wreg=c(0,1),drts=unique(sols@drts))
+ii=1
+pdf = c(1:dim(pars)[1]) %>% lapply(function(ii){
+  x        = pars[ii,]
+  drts     = as.numeric(x[['drts']])
+  wreg     = as.numeric(x[['wreg']])
+  sol_filt = sols@Nmeas == Nmeas & sols@wreg == wreg & sols@drts ==  drts
+  mt       = as.numeric(sols[sol_filt,])
+  mt       = mt[mt<Inf]
+  return(data.frame(mt=mt,wreg=wreg,drts=drts))
+}) %>% rbindlist() %>% data.frame()
+
+plt = pdf %>% ggplot(aes(x=mt,y=0))+geom_point(size=1)+facet_grid(drts~wreg)
+
+plt = plt + theme(axis.title.y=element_blank()) 
+plt = plt + theme(axis.text.y=element_blank()) 
+plt = plt + labs(x=element_text('time (days)'))
+plt = plt+scale_x_continuous(limits=c(0,1),breaks=c(0,1))
+plt = plt + theme(
+  strip.background=element_blank(),
+  plot.margin = margin(0,0,0,0),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.text.x = element_text(vjust = 0.25)
+  )
+plt_raw = plt
+```
+
+```{r}
+
+PLT = plt_raw/plt_mhmap/plt_conv  + plot_annotation(tag_levels='A')+
+  plot_layout(heights = c(.7,1.5,1))
+
+plt_height=6
+show_temp_plt(PLT,plt_width,plt_height)
+
+ggsave(paste0('~/research/ms_powerCHORD/figures/','result_multi_hmap.png'),PLT,width=plt_width,height=plt_height,device='png',dpi=600)
+```
+
+# Result: Gain of non-uniformity
+```{r}
+source('results/data/extract_fminfmax_data.R')
+theme_set(theme_classic()) 
+fdf$fmax = fdf$fmin+fdf$df
+plt = fdf %>% ggplot(aes(x=fmin,y=fmax,fill=d_power))+geom_tile(height=2)+facet_wrap(~Nmeas,nrow=1)+scale_fill_viridis_c(limits=c(0,1)) 
+
+plt_height = 3
+plt_width  = 6
+
+plt=plt+theme(text=element_text(size=fsize))
+
+plt = plt + labs(x=element_text('minimum frequency (cycles/day)'),
+                 y=element_text('maximum frequency (cycles/day)'),
+                 fill='gain of power')
+
+xmin=0
+xmax=13
+ymax=25
+plt = plt + scale_x_continuous(limits =c(xmin,xmax),
+                         breaks=seq(xmin,12,4),
+                         labels=seq(xmin,12,4)) 
+
+plt = plt + scale_y_continuous(limits =c(xmin,ymax),
+                         breaks=seq(xmin,24,8),
+                         labels=seq(xmin,24,8)) 
+
+plt=plt+guides(fill=guide_colorbar(title.position='top'))
+plt=plt+theme(legend.position='bottom',
+               legend.key.width = unit(plt_width*.15, "in"),
+               legend.title.align = 0.5,
+               legend.direction = "horizontal")
+plt = plt + theme(
+  strip.background=element_blank(),
+  plot.margin = margin(0,0,0,0),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.text.x = element_text(vjust = 0.25)
+  )
+plt
+
+show_temp_plt(plt,plt_width,plt_height)
+
+ggsave(paste0('~/research/ms_powerCHORD/figures/','gain_of_non_unif.png'),plt,width=plt_width,height=plt_height,device='png',dpi=600)
+```
+
+# Result: Non-uniqueness of maximizers
+## Visualize surface
+```{r}
+plt_height = 2
+plt_width  = 6
+nt    = 100
+Nfreq = 2^7
+Nm    = 24 
+Amps  = c(3)
+fmin  = 1
+fmaxs = c(seq(6,24,2),24)
+mt_unif = c(1:Nm)/Nm - 1/Nm
+
+ta_vals = seq(0,.25,length.out=nt)
+tb_vals = seq(0,.25,length.out=nt)
+pars    = expand.grid(ta=ta_vals,tb=tb_vals,Amp=Amps,fmax=fmaxs)
+
+pars    = pars[pars$ta <= pars$tb,]
+pars    = pars[!(pars$ta %in% mt_unif),]
+pars    = pars[!(pars$tb %in% mt_unif),]
+
+pars$power = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
+  x     = pars[ii,]
+  ta    = x$ta %>% as.numeric()
+  tb    = x$tb %>% as.numeric()
+  Amp   = x$Amp %>% as.numeric()
+  fmax  = x$fmax %>% as.numeric()
+  
+  mt    = c(mt_unif,ta,tb) 
+  
+  freqs = seq(fmin,fmax,length.out=Nfreq)
+  
+  return(costfun_svdpower(mt,freqs,Amp,cfuntype = 'power'))
+})
+pars$power = as.numeric(pars$power)
+theme_set(theme_classic()) 
+plt=pars %>% ggplot(aes(x=ta,y=tb,fill=power))+geom_tile()+scale_fill_viridis_c(limits=c(0,1))+
+  facet_wrap(~fmax,nrow=1)+
+  geom_hline(yintercept =mt_unif[mt_unif<.25])+
+  geom_vline(xintercept =mt_unif[mt_unif<.25])
+
+
+plt=plt+theme(text=element_text(size=fsize))
+
+xmin=0
+xmax=.25
+ymin=0
+ymax=.25
+plt = plt + scale_x_continuous(limits =c(xmin,xmax),
+                               breaks=c(xmin,xmax),
+                               labels=round(c(xmin,xmax),2)) 
+plt = plt + scale_y_continuous(limits =c(ymin,ymax),
+                               breaks=c(ymin,ymax),
+                               labels=round(c(ymin,ymax),2)) 
+
+plt = plt + labs(x=TeX('$t_1$'),
+                 y=TeX('$t_2$'),
+                 fill='power')
+
+plt=plt+guides(fill=guide_colorbar(title.position='right'))
+plt=plt+theme(legend.key.height = unit(plt_height*.12, "in"),
+               legend.title = element_text(angle = 90),
+               legend.title.align = 0.5,
+               legend.direction = "vertical")
+
+
+plt = plt + theme(
+  strip.background=element_blank(),
+  plot.margin = margin(0,0,0,0),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.text.x = element_text(vjust = 0.25))
+
+show_temp_plt(plt,plt_width,plt_height)
+
+
+ggsave(paste0('~/research/ms_powerCHORD/figures/','degenerate_optima.png'),plt,width=plt_width,height=plt_height,device='png',dpi=600)
+```
+
+## Optimization
+```{r}
+#source('results/source/powerChord.R')
+#require(gurobi)
+#require(dplyr)
+#ds = 1 # down sampling factor
+#
+#Nmeas       = 26
+#fmin        = 1
+#fmax        = 24 
+#drts        = 6/ds
+#w_reg       = 0
+#Nfreq       = 100
+#Nfine       = 144/ds 
+#num_threads = 1
+#tlim        = 10 
+#uu=powerChord(Nmeas=Nmeas,
+#           fmin=fmin,
+#           fmax=fmax,
+#           drts=drts,
+#           w_reg=w_reg,
+#           Nfine=Nfine,
+#           Nfreq=Nfreq,
+#           num_threads=num_threads,
+#           tlim=tlim)
+
+
+
+
+```
+
+## Compare adding a point to redistributing 
+```{r}
+
+```

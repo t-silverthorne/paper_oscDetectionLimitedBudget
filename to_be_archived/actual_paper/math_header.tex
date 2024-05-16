@@ -1,0 +1,210 @@
+\usepackage{amsmath,amsthm,amsfonts,amssymb,latexsym,verbatim,bbm}
+\usepackage[colorlinks=true, pdfstartview=FitV, linkcolor=blue, citecolor=blue, urlcolor=blue]{hyperref}
+\usepackage{mathtools}
+\mathtoolsset{showonlyrefs=true}% only show eq num if referenced
+\usepackage{subcaption}
+\usepackage{afterpage}
+
+\usepackage{bm} % Greek symbols in bold
+\usepackage{listings}
+\usepackage[framed,numbered]{matlab-prettifier}
+\usepackage{tikz}
+\usepackage{tikz-network}
+\usetikzlibrary{decorations.markings} % for tangent lines in tikz figures
+\usepgflibrary{decorations.pathreplacing}
+\usetikzlibrary{positioning}
+\usetikzlibrary{math}
+\usetikzlibrary[arrows]
+\tikzset{main node/.style={circle,fill=blue!20,draw,minimum size=1cm,inner sep=0pt},
+            }
+            
+%\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}{Corollary}[theorem]
+\newtheorem{prop}{Proposition}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}[section]
+\newtheorem{meth}{Method}[section]
+\newtheorem{remark}{Remark}
+\newtheorem{question}{Question}
+
+% Custom commands
+\newcommand{\cF}{ {\cal F} }
+\newcommand{\cS}{ {\cal S} }
+
+\newcommand{\bN}{ {\mathbb{N}} }
+\newcommand{\bQ}{ {\mathbb{Q}} }
+\newcommand{\bR}{ {\mathbb{R}} }
+\newcommand{\bT}{ {\mathbb{T}} }
+\newcommand{\bC}{ {\mathbb{C}} }
+\newcommand{\bZ}{ {\mathbb{Z}} }
+
+% standard commands
+\newcommand{\iso}{\cong}
+\newcommand{\arr}{\rightarrow}
+\newcommand{\incl}{\hookrightarrow}
+
+% letters --- shortcuts for standard mathematical objects
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\K}{\mathbb{K}}
+\newcommand{\T}{\mathbb{T}}
+\newcommand{\eps}{\epsilon}
+\newcommand{\vareps}{\varepsilon}
+\newcommand{\Id}{\mathbbm{1}}
+
+% letters --- mathcal 
+\newcommand{\mcA}{\mathcal{A}}
+\newcommand{\mcB}{\mathcal{B}}
+\newcommand{\mcC}{\mathcal{C}}
+\newcommand{\mcD}{\mathcal{D}}
+\newcommand{\mcE}{\mathcal{E}}
+\newcommand{\bmu}{\bm{\mu}}
+\newcommand{\mcF}{\mathcal{F}}
+\newcommand{\mcG}{\mathcal{G}}
+\newcommand{\mcH}{\mathcal{H}}
+\newcommand{\mcI}{\mathcal{I}}
+\newcommand{\mcJ}{\mathcal{J}}
+\newcommand{\mcK}{\mathcal{K}}
+\newcommand{\mcL}{\mathcal{L}}
+\newcommand{\mcM}{\mathcal{M}}
+\newcommand{\mcN}{\mathcal{N}}
+\newcommand{\mcO}{\mathcal{O}}
+\newcommand{\mcP}{\mathcal{P}}
+\newcommand{\mcQ}{\mathcal{Q}}
+\newcommand{\mcR}{\mathcal{R}}
+\newcommand{\mcS}{\mathcal{S}}
+\newcommand{\mcT}{\mathcal{T}}
+\newcommand{\mcU}{\mathcal{U}}
+\newcommand{\mcV}{\mathcal{V}}
+\newcommand{\mcW}{\mathcal{W}}
+\newcommand{\mcX}{\mathcal{X}}
+\newcommand{\mcY}{\mathcal{Y}}
+\newcommand{\mcZ}{\mathcal{Z}}
+
+% letters --- mathbb
+\newcommand{\mbA}{\mathbb{A}}
+\newcommand{\mbB}{\mathbb{B}}
+\newcommand{\mbC}{\mathbb{C}}
+\newcommand{\mbD}{\mathbb{D}}
+\newcommand{\mbE}{\mathbb{E}}
+\newcommand{\mbF}{\mathbb{F}}
+\newcommand{\mbG}{\mathbb{G}}
+\newcommand{\mbH}{\mathbb{H}}
+\newcommand{\mbI}{\mathbb{I}}
+\newcommand{\mbJ}{\mathbb{J}}
+\newcommand{\mbK}{\mathbb{K}}
+\newcommand{\mbL}{\mathbb{L}}
+\newcommand{\mbM}{\mathbb{M}}
+\newcommand{\mbN}{\mathbb{N}}
+\newcommand{\mbO}{\mathbb{O}}
+\newcommand{\mbP}{\mathbb{P}}
+\newcommand{\mbQ}{\mathbb{Q}}
+\newcommand{\mbR}{\mathbb{R}}
+\newcommand{\mbS}{\mathbb{S}}
+\newcommand{\mbT}{\mathbb{T}}
+\newcommand{\mbU}{\mathbb{U}}
+\newcommand{\mbV}{\mathbb{V}}
+\newcommand{\mbW}{\mathbb{W}}
+\newcommand{\mbX}{\mathbb{X}}
+\newcommand{\mbY}{\mathbb{Y}}
+\newcommand{\mbZ}{\mathbb{Z}}
+
+% letters --- mathfrak
+\newcommand{\mfa}{\mathfrak{a}}
+\newcommand{\mfb}{\mathfrak{b}}
+\newcommand{\mfc}{\mathfrak{c}}
+\newcommand{\mfd}{\mathfrak{d}}
+\newcommand{\mfe}{\mathfrak{e}}
+\newcommand{\mff}{\mathfrak{f}}
+\newcommand{\mfg}{\mathfrak{g}}
+\newcommand{\mfh}{\mathfrak{h}}
+\newcommand{\mfi}{\mathfrak{i}}
+\newcommand{\mfj}{\mathfrak{j}}
+\newcommand{\mfk}{\mathfrak{k}}
+\newcommand{\mfl}{\mathfrak{l}}
+\newcommand{\mfm}{\mathfrak{m}}
+\newcommand{\mfn}{\mathfrak{n}}
+\newcommand{\mfo}{\mathfrak{o}}
+\newcommand{\mfp}{\mathfrak{p}}
+\newcommand{\mfq}{\mathfrak{q}}
+\newcommand{\mfr}{\mathfrak{r}}
+\newcommand{\mfs}{\mathfrak{s}}
+\newcommand{\mft}{\mathfrak{t}}
+\newcommand{\mfu}{\mathfrak{u}}
+\newcommand{\mfv}{\mathfrak{v}}
+\newcommand{\mfw}{\mathfrak{w}}
+\newcommand{\mfx}{\mathfrak{x}}
+\newcommand{\mfy}{\mathfrak{y}}
+\newcommand{\mfz}{\mathfrak{z}}
+
+\newcommand{\mfA}{\mathfrak{A}}
+\newcommand{\mfB}{\mathfrak{B}}
+\newcommand{\mfC}{\mathfrak{C}}
+\newcommand{\mfD}{\mathfrak{D}}
+\newcommand{\mfE}{\mathfrak{E}}
+\newcommand{\mfF}{\mathfrak{F}}
+\newcommand{\mfG}{\mathfrak{G}}
+\newcommand{\mfH}{\mathfrak{H}}
+\newcommand{\mfI}{\mathfrak{I}}
+\newcommand{\mfJ}{\mathfrak{J}}
+\newcommand{\mfK}{\mathfrak{K}}
+\newcommand{\mfL}{\mathfrak{L}}
+\newcommand{\mfM}{\mathfrak{M}}
+\newcommand{\mfN}{\mathfrak{N}}
+\newcommand{\mfO}{\mathfrak{O}}
+\newcommand{\mfP}{\mathfrak{P}}
+\newcommand{\mfQ}{\mathfrak{Q}}
+\newcommand{\mfR}{\mathfrak{R}}
+\newcommand{\mfS}{\mathfrak{S}}
+\newcommand{\mfT}{\mathfrak{T}}
+\newcommand{\mfU}{\mathfrak{U}}
+\newcommand{\mfV}{\mathfrak{V}}
+\newcommand{\mfW}{\mathfrak{W}}
+\newcommand{\mfX}{\mathfrak{X}}
+\newcommand{\mfY}{\mathfrak{Y}}
+\newcommand{\mfZ}{\mathfrak{Z}}
+
+\newcommand{\veps}{\varepsilon}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert} 
+\newcommand{\cov}[1]{\langle\langle #1\rangle\rangle} 
+\newcommand{\qpart}[1]{\noindent\fbox{\parbox{\textwidth}{#1}}}
+\newcommand{\vb}{\mathbf} % bolded vector
+\renewcommand{\P}{\tilde{P}}
+\newcommand{\Pc}{\tilde{P}_{\mathrm{c}}}
+\newcommand{\M}{\tilde{M}}
+\newcommand{\A}{\tilde{A}_\mathrm{tot}}
+\newcommand{\Kd}{\tilde{K}_d}
+\newcommand{\Talpha}{ \tilde{\alpha}}
+\newcommand{\Ttheta}{ \tilde{\theta}}
+\newcommand{\TKd}{ \tilde{K}_d}
+\newcommand{\TB}{ \tilde{B}}
+\newcommand{\TA}{ \tilde{A}}
+\newcommand{\TBc}{ \tilde{B}_c}
+\newcommand{\Tr}{ \tilde{r}}
+\newcommand{\kmeth}{ \frac{\Talpha_2}{\Ttheta_2} }
+\newcommand{\gso}{ g_{\textrm{eq}}^{\textrm{MFL}} }
+\newcommand{\ext}{ \textrm{ext} }
+\newcommand{\eq}{ \textrm{eq} }
+\newcommand{\Peq}{ \P_{\textrm{eq}} }
+\newcommand{\Bso}{ B_{\textrm{eq}}^{\textrm{MFL}} }
+\newcommand{\gse}{ g_{\textrm{eq}}^{\textrm{IT-MFL}} }
+\newcommand{\Bse}{ B_{\textrm{eq}}^{\textrm{IT-MFL}} }
+\renewcommand{\dim}{\textrm{dim}}
+\newcommand{\Aq}{\tilde{A}_{\qss}(\tilde{B}_{\tot})}
+\newcommand{\Tbt}{T(\tilde{B}_\tot)}
+\newcommand{\Bt}{\tilde{B}_\tot}
+\newcommand{\diff}{\mathrm{d}} % Roman d for "dx" in integration
+\newcommand{\tot}{\mathrm{tot}}
+\renewcommand{\dim}{\textrm{dim}}
+\newcommand{\qss}{\textrm{qss}}
+\newcommand{\q}{\overline{q}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+%\DeclareMathOperator{\tr}{tr}

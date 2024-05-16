@@ -1,0 +1,87 @@
+```{r}
+require(devtools)
+require(ggplot2)
+require(annmatrix)
+require(ggplotify)
+require(patchwork)
+require(parallel)
+require(data.table)
+require(stringr)
+require(CVXR)
+source('plotConfig.R')
+load_all()
+fs_glob=9
+mc_cores=10
+```
+
+```{r}
+Nmc   = 1e4
+Amp   = 2 
+fmin  = 1
+fmax  = 24
+
+f0 = 1 
+df = 23 
+true_freqs = f0+df*rbeta(Nmc,2,.5)
+
+mt_all = readRDS('figs_for_paper/Fig1_aug_vs_cvxr/solns.RDS')
+names = c(unique(mt_all$solver),'uniform')
+budgets = unique(mt_all$Nmeas)
+pars = expand.grid(solver=names,Nmeas=budgets)
+
+ldf_out = c(1:dim(pars)[1]) %>%
+  mclapply(mc.cores=9,
+    function(ii){
+      solver = pars[ii,]$solver       
+      Nmeas  = pars[ii,]$Nmeas
+      
+      if (solver=='uniform'){
+        mt = c(1:Nmeas)/Nmeas -1/Nmeas %>% matrix(nrow=Nmeas)
+      }else{
+        mt = sort(mt_all[mt_all$solver==solver & mt_all$Nmeas==Nmeas ,]$time)
+      }
+      ldf=c(1:Nmc) %>% lapply(function(ind){
+        res=data.frame(time=mt,
+                       dat=Amp*cos(2*pi*mt*true_freqs[ind]-runif(1,0,2*pi))+rnorm(length(mt))) %>% 
+          lsp(from=fmin,to=fmax,plot=F)
+        return(data.frame(pval = res$p.value,freq=res$peak.at[1],Nmeas=Nmeas,method=solver))
+      }) %>% rbindlist()
+      ldf=ldf[ldf$pval<.05,] #TODO: verify this doesnt need to be FDR corrected
+      return(ldf)
+    }) %>% rbindlist()
+
+#tdf = data.frame(freq=true_freqs,method='true_distribution',Nmeas=Nmeas)
+
+df_tot =ldf_out# rbind(ldf_out[,c('freq','method','Nmeas')],tdf)
+df_tot$method=factor(df_tot$method,c('uniform','pin2lat','cvxr'))
+
+p1=data.frame(freq=true_freqs) %>% ggplot(aes(x=freq))+geom_histogram()+xlim(c(1,24))
+p2=df_tot %>% ggplot(aes(x=freq))+geom_histogram()+facet_grid(Nmeas~method)+xlim(c(1,24))
+(p1c|p2c) + plot_annotation(tag_levels='A')+plot_layout(widths = c(1,1.5))
+
+p1c=p1+theme(
+    strip.background=element_blank(),
+    text=element_text(size=fs_glob)
+    )+
+  labs(
+    x='true frequency (1/day)',
+    y='count'
+  )
+p2c=p2+theme(
+    strip.background=element_blank(),
+    text=element_text(size=fs_glob)
+    )+
+  labs(
+    x='estimated frequency (1/day)',
+    y='count'
+  )
+Fig=(p1c|p2c) + plot_annotation(tag_levels='A')+plot_layout(widths = c(1,1.5))+theme(plot.margin=margin(0,0,0,0))
+
+ggsave(paste0(overleaf_plot_directory,'lombscargle_benchmark.png'),Fig,width = 6,height=3,device='png',dpi=600)
+```
+
+
+
+```{r}
+
+```

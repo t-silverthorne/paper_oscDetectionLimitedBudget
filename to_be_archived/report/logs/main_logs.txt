@@ -1,0 +1,2 @@
+WARNING: ignoring environment value of R_HOME
+- The project is out-of-sync -- use `renv::status()` for details.

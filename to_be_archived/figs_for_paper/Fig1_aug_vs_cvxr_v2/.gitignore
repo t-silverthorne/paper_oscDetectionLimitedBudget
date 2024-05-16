@@ -1,0 +1,4 @@
+*.RDS
+*.out
+cvxr_solns/*
+pin2lat_solns/*

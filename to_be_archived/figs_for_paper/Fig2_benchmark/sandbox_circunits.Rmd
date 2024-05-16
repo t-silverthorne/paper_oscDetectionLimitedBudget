@@ -1,0 +1,87 @@
+```{r setup}
+require(devtools)
+require(ggplot2)
+require(annmatrix)
+require(ggplotify)
+require(patchwork)
+require(parallel)
+require(data.table)
+require(stringr)
+require(CVXR)
+source('plotConfig.R')
+load_all()
+mc_cores=10
+```
+
+```{r}
+Nmeas = 16 
+Nmc   = 5e3
+Amin  = log2(1)
+Amax  = log2(5)
+fmin  = 1
+fmax  = 24
+
+Nfreq_test = 2^6
+fmin_test=fmin
+fmax_test=fmax*.99
+mt_all = readRDS('figs_for_paper/Fig1_aug_vs_cvxr/solns.RDS')
+names = c(unique(mt_all$solver),'uniform')
+mdf=names %>% lapply(function(solver){
+  if (solver=='uniform'){
+    mt = c(1:Nmeas)/Nmeas -1/Nmeas %>% matrix(nrow=Nmeas)
+  }else if(solver%in% names){
+    mt = sort(mt_all[mt_all$solver==solver & mt_all$Nmeas==Nmeas ,]$time)
+  }else{
+    stop('unrecognized solver')
+  }
+  # make pars
+  Amps    = 2^runif(Nmc,Amin,Amax) %>% matrix(nrow=Nmc)
+  freqs   = 1/runif(Nmc,1/fmax,1/fmin) %>% matrix(nrow=Nmc)
+  acros   = runif(Nmc,0,2*pi) %>% matrix(nrow=Nmc)
+  
+  # make data
+  acromat = replicate(Nmeas,{acros}) %>% matrix(ncol=Nmeas)
+  Ampmat  = replicate(Nmeas,{Amps}) %>% matrix(ncol=Nmeas)
+  X       = Ampmat*cos(2*pi*freqs%*%t(mt) - acromat) + rnorm(Nmeas*Nmc) %>% matrix(nrow=Nmc)
+ 
+  test_freqs = seq(from=fmin_test,to=fmax_test,length.out=Nfreq_test) 
+  
+  Lfit = test_freqs %>% lapply(function(freq){
+    cbind(rowCosinor(X,zts=mt,per=1/freq),data.frame(freq=freq))
+  }) 
+  
+  ests = c(1:Nmc) %>% mclapply(mc.cores=mc_cores,function(jj){
+    fits = Lfit %>% lapply(function(df){df[jj,]}) %>% rbindlist()
+    return(fits[which.min(fits$pvalue),])
+  })
+  
+  res=ests %>% rbindlist()
+  names(res) = names(res) %>% sapply(function(x){paste0(x,'_est')})
+ 
+  cbind(res,data.frame(Amp_true=Amps,freq_true=freqs,acro_true=acros,method=solver)) 
+}) %>% rbindlist()
+
+```
+
+Switch to circadian units
+```{r}
+head(mdf)
+mdf$circ_per     = 24*1/mdf$freq_true
+mdf$circ_per_est = 24*1/mdf$freq_est
+```
+
+Make plot
+```{r}
+al_glob=.5
+sz_glob=.5
+p1=mdf %>% ggplot(aes(x=Amp_true,y=amplitude_est,color=circ_per))+geom_point(alpha=al_glob,size=sz_glob) + facet_wrap(~method,nrow=1)+scale_color_viridis_c()+scale_y_continuous(trans='log2')+scale_x_continuous(trans='log2')+theme(legend.position = 'bottom')
+p2=mdf %>% ggplot(aes(x=acro_true,y=phase_est,color=circ_per))+geom_point(alpha=al_glob,size=sz_glob) + facet_wrap(~method,nrow=1)+scale_color_viridis_c()+theme(legend.position = 'bottom')
+p3=mdf %>% ggplot(aes(x=circ_per,y=circ_per_est,color=circ_per))+geom_point(alpha=al_glob,size=sz_glob) + facet_wrap(~method,nrow=1)+scale_color_viridis_c()+theme(legend.position = 'bottom')
+
+
+```
+
+Clean up aesthetics
+```{r}
+(p1/p2/p3) + plot_annotation(tag_levels = 'A')+plot_layout(guides='collect')
+```

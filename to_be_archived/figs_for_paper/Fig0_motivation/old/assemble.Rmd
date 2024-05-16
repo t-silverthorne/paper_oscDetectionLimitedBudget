@@ -1,0 +1,62 @@
+```{r}
+require(devtools)
+require(ggplot2)
+require(annmatrix)
+require(ggplotify)
+require(patchwork)
+require(parallel)
+require(data.table)
+require(stringr)
+require(dplyr)
+require(latex2exp)
+source('plotConfig.R')
+```
+
+Add another panel illustrating why power drops at certain phases
+```{r}
+
+
+```
+
+```{r}
+p1=readRDS('figs_for_paper/Fig0_motivation/p1.RDS')
+p2=readRDS('figs_for_paper/Fig0_motivation/p2.RDS')
+p1=p1+geom_hline(aes(yintercept=.05,color='red'))
+p2=p2+geom_hline(aes(yintercept=.05,color='red'))
+p1c = p1+theme(
+  legend.position = 'bottom',
+  strip.background = element_blank(),
+  text=element_text(size=fs_glob),
+  legend.key.height= unit(.3,'cm'),
+  legend.key.width = unit(.85,'cm')
+  )+labs(
+    y='p-value',
+    x='acrophase (rad)',
+    color='period (hr)'
+  )
+leg1=get_legend(p1c)
+p1c = as.ggplot(p1+theme(
+  legend.position = 'none',
+  strip.background = element_blank(),
+  text=element_text(size=fs_glob)
+  )+labs(
+    y='p-value',
+    x='acrophase (rad)',
+    x=element_blank()
+  ))
+
+p2c = as.ggplot(p2+theme(
+  legend.position = 'none',
+  strip.background = element_blank(),
+  text=element_text(size=fs_glob)
+  )+labs(
+    x='acrophase (rad)',
+    y='FDR q-value'
+  ))
+Ptot=as.ggplot((p1c/p2c)+plot_annotation(tag_levels ='A')+plot_layout(heights=c(1.3,2)) & theme(plot.margin=margin(0,0,0,0)))
+
+Fig = Ptot/leg1 + plot_layout(heights=c(10,1))
+ggsave(paste0(overleaf_plot_directory,'motivation_fig_v2.png'),Fig,width=6,height=5,device='png',dpi=600)
+Fig
+
+```
