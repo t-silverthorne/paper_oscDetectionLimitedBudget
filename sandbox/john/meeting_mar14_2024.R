@@ -5,8 +5,6 @@ require(pracma)
 featureGroups = data.table(amp = c(0, 1))
 
 B  = 12 
-
-
 mt = linspace(0,24,B+1)
 mt = mt[1:B]
 length(mt)
