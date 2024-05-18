@@ -1,5 +1,5 @@
 # methods for Power-CHORD solver
-pChord_old=function(Nmeas,fmin=1,fmax=24,
+powerChord_old=function(Nmeas,fmin=1,fmax=24,
                     drts=Inf,w_reg=1,
                     Nfine=144,Nfreq=47,
                     num_threads=1,tlim=60,
@@ -72,7 +72,6 @@ pChord_old=function(Nmeas,fmin=1,fmax=24,
     }
     
   }
-  
   if(return_model){
     return(model) # useful for unit tests
   }else{
@@ -84,4 +83,7 @@ pChord_old=function(Nmeas,fmin=1,fmax=24,
     sol=gurobi(model,params)
     return(sol)    
   }
+  # gurobi settings
+  
+  return(sol)
 }

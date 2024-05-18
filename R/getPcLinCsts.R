@@ -1,4 +1,4 @@
-getPcLinCsts=function(Nfine,drts){
+getPcLinCsts=function(Nmeas,Nfine,drts){
   # construct linear constraint matrix
   zero_vec        = rep(0,Nfine+1)
   rt_inds         = seq(1,Nfine,drts)

@@ -119,7 +119,8 @@ test_that("takes min of freqs", {
   fall = costfun_svdpower(tau[xinds],freqs=c(1,2),Amp=1,alpha=.05)
   
   expect_equal(min(f1,f2),fall)
-})test_that("function evaluation, fast method matches slow", {
+})
+test_that("function evaluation, fast method matches slow", {
   param=list()
   param$Amp=2
   param$freq=2.1

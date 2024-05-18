@@ -427,58 +427,32 @@ ggsave(paste0('~/research/ms_powerCHORD/figures/','tradeoff.png'),Fig_trade,widt
 
 # Fig_lomb : Lomb Scargle
 ```{r}
-# redo TPR estimates
-dfTPR = readRDS('results/data/MC_periodogram.RDS')
-
-dfTPR$f = factor(dfTPR$freq,unique(dfTPR$freq),paste0('f = ',unique(dfTPR$freq)))
-p1=dfTPR %>% filter(p_osc==.1 & fdr_method =='BH') %>% ggplot(aes(x=alpha_val,y=TPR,group=type,color=type))+
-  geom_line()+
-  facet_grid(p_method~f)#Amp+p_method
-
-p2=dfTPR %>% filter(p_osc==.5 & fdr_method =='BH') %>% ggplot(aes(x=alpha_val,y=TPR,group=type,color=type))+
-  geom_line()+
-  facet_grid(p_method~f)#Amp+p_method
-```
-
-
-```{r}
+dfROC=readRDS('results/data/MCperiodogram/dfROC.RDS')
 xmin=0
-xmax=.25
-xav = c(0,.50,1)
+xmax=1
 
+plt =dfROC %>% mutate(A=Amp,f=freq) %>% 
+  filter(fdr_method=='BH',p_method=='std') %>% 
+  ggplot(aes(x=FPR,y=TPR,group=type,color=type))+geom_line()+
+  scale_x_continuous(limits = c(0,1))+
+  facet_grid(A+p_osc~f,labeller=purrr::partial(label_both, sep = " = "))
 
-p1 = p1 + scale_x_continuous(limits =c(xmin,xmax),breaks=c(0,.25),labels=c(0,0.25)) +
+plt = plt + scale_x_continuous(limits =c(xmin,xmax),breaks=c(0,1),labels=c(0,1)) +
   scale_y_continuous(limits=c(0,1))
-p1 = p1 + theme(
+plt = plt + theme(
   strip.background=element_blank(),
   plot.margin = margin(0,0,0,0),
   panel.grid.major = element_blank(),
   panel.grid.minor = element_blank(),
   axis.text.x = element_text(vjust = 0.25)
   )
-p1=p1+theme(text=element_text(size=9))
+plt=plt+theme(text=element_text(size=9))
 
-p2 = p2 + scale_x_continuous(limits =c(xmin,xmax),breaks=c(0,.25),labels=c(0,0.25)) +
-  scale_y_continuous(limits=c(0,1))
-p2 = p2 + theme(
-  strip.background=element_blank(),
-  plot.margin = margin(0,0,0,0),
-  panel.grid.major = element_blank(),
-  panel.grid.minor = element_blank(),
-  axis.text.x = element_text(vjust = 0.25)
-  )
-p2=p2+theme(text=element_text(size=9))
-
-plt = p1/p2
-
-plt=plt&theme(text=element_text(size=9))
-plt=plt&labs(x=element_text('false positive rate'),
+plt=plt+labs(x=element_text('false positive rate'),
              y=element_text('true positive rate'),
              color=element_text('design'))
 
-
-Fig =plt + plot_layout(guides='collect')+
-  plot_annotation(tag_levels='A') & theme(legend.position='bottom')
+Fig =plt & theme(legend.position='bottom')
 
 show_temp_plt(Fig,6,6)
 ```
@@ -492,3 +466,218 @@ ggsave(paste0('~/research/ms_powerCHORD/figures/','LombScargle_varp.png'),Fig_LS
 
 ```
 
+# Fig_regu_degen: Degeneracy
+
+```{r}
+Amp=1
+# compute power with/without regularization
+eval_reg_cfun = function(mt,freqs,w_reg){
+  evalWorstNCP(mt,freqs,Amp=1)-
+    w_reg*evalAcroFreqGradL2(mt,pars=list(fmin=min(freqs),fmax=max(freqs)))
+}
+```
+
+```{r}
+nt      = 60*2
+Nfreq   = 2^7
+Nm      = 24 
+fmin    = 1 
+fmaxs   = c(6,12,24)
+mt_unif = c(1:Nm)/Nm - 1/Nm
+
+ta_vals = seq(0,.5,length.out=nt)
+tb_vals = seq(0,.5,length.out=nt)
+pars    = expand.grid(ta=ta_vals,tb=tb_vals,fmax=fmaxs,wreg=c(0,1))
+
+pars    = pars[pars$ta < pars$tb,]
+pars    = pars[!(pars$ta %in% mt_unif),]
+pars    = pars[!(pars$tb %in% mt_unif),]
+
+pars$power = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
+  x     = pars[ii,]
+  ta    = x$ta %>% as.numeric()
+  tb    = x$tb %>% as.numeric()
+  fmax  = x$fmax %>% as.numeric()
+  wreg  = x$wreg %>% as.numeric()
+  
+  mt    = c(mt_unif,ta,tb) 
+  
+  freqs = seq(fmin,fmax,length.out=Nfreq)
+  
+  return(eval_reg_cfun(mt,freqs,wreg))
+})
+
+pars$power = as.numeric(pars$power)
+pars = pars %>% group_by(wreg,fmax) %>% 
+  mutate(gmax = max(abs(power))) %>% ungroup()
+
+pars = pars %>% group_by(wreg,fmax) %>% 
+  mutate(power_norm = power/gmax) %>% ungroup()
+```
+
+```{r}
+theme_set(theme_classic()) 
+
+plt1=pars %>% filter(wreg==0) %>% ggplot(aes(x=ta,y=tb,fill=power_norm))+geom_raster()+scale_fill_viridis_c()+
+  facet_wrap(~fmax,labeller = purrr::partial(label_both, sep = " = "),nrow=1)
+
+plt2=pars %>% filter(wreg>0) %>% ggplot(aes(x=ta,y=tb,fill=power_norm))+geom_raster()+scale_fill_viridis_c()+
+  facet_wrap(~fmax,labeller = purrr::partial(label_both, sep = " = "),nrow=1)
+
+plt1 = plt1 & scale_x_continuous(limits =c(xmin,xmax),
+                               breaks=c(xmin,xmax),
+                               labels=round(c(xmin,xmax),2)) 
+plt1 = plt1 & scale_y_continuous(limits =c(ymin,ymax),
+                               breaks=c(ymin,ymax),
+                               labels=round(c(ymin,ymax),2)) 
+plt2 = plt2 & scale_x_continuous(limits =c(xmin,xmax),
+                               breaks=c(xmin,xmax),
+                               labels=round(c(xmin,xmax),2)) 
+plt2 = plt2 & scale_y_continuous(limits =c(ymin,ymax),
+                               breaks=c(ymin,ymax),
+                               labels=round(c(ymin,ymax),2)) 
+
+
+
+plt = plt1/plt2
+plt
+```
+
+```{r}
+
+plt=plt&theme(text=element_text(size=fsize))
+
+xmin=0
+xmax=.5
+ymin=0
+ymax=.5
+plt_width = 6
+plt_height=4
+
+plt = plt & labs(x=TeX('$t_1$'),
+                 y=TeX('$t_2$'),
+                 fill='objective')
+
+plt=plt&guides(fill=guide_colorbar(title.position='right'))
+plt=plt&theme(legend.key.height = unit(plt_height*.06, "in"),
+               legend.title = element_text(angle = 90),
+               legend.title.align = 0.5,
+               legend.direction = "vertical")
+
+plt = plt & theme(
+  strip.background=element_blank(),
+  plot.margin = margin(0,0,0,0),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.text.x = element_text(vjust = 0.25))
+
+
+plt = plt + plot_annotation(tag_levels='A')
+plt_degen = plt
+show_temp_plt(plt,plt_width,plt_height)
+ggsave(paste0('~/research/ms_powerCHORD/figures/','degeneracy.png'),plt_degen,width=plt_width,height=plt_height,device='png',dpi=600)
+```
+
+# Fig_regu:  Pure regularization
+## Raw solutions 
+```{r}
+scale=1.4
+tau   = c(1:Nfine)/Nfine -1/Nfine 
+
+Nfine = floor(144*scale/3)
+Nmeas = floor(40*scale)
+fmax  = 45
+fmin_vals = c(1,10,20)
+sols = c(1:length(fmin_vals)) %>% lapply(function(ii){
+  fmin = fmin_vals[ii]
+  sol=powerChord(Nmeas       = Nmeas,
+                 drts        = Inf,
+                 w_reg       = 1,
+                 Nfreq       = 8,
+                 num_threads = 12,
+                 tlim        = 10,
+                 Nfine       = Nfine,
+                 w_wc        = 0,
+                 fmin        = fmin,
+                 fmax        = fmax,
+                 MIPGap      = 1e-12
+                 ) 
+  return(data.frame(fmin=fmin,mt=tau[sol$x[1:Nfine]>0]))
+}) %>% rbindlist() %>% data.frame()
+head(sols)
+
+plt = sols %>% ggplot(aes(x=mt,y=1))+geom_point(size=1)+
+  facet_wrap(~fmin,labeller=purrr::partial(label_both, sep = " = "),nrow=3)+
+  scale_x_continuous(limits=c(0,1))
+plt = plt + theme(axis.title.y=element_blank()) 
+
+plt = plt + theme(axis.text.y=element_blank()) 
+plt = plt + labs(x=element_text('time (days)'))
+plt = plt+scale_x_continuous(limits=c(0,1),breaks=c(0,1))
+plt = plt + theme(
+  strip.background=element_blank(),
+  plot.margin = margin(0,0,0,0),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.text.x = element_text(vjust = 0.25)
+  )
+plt = plt+theme(axis.line.y = element_blank())
+plt = plt+theme(axis.ticks.y = element_blank())
+plt=plt+theme(text=element_text(size=9))
+plt_raw = plt
+plt_raw 
+```
+
+## Applicability 
+```{r}
+pdf = readRDS('results/data/pure_reg.RDS')
+pdf = pdf %>% mutate(outcome = ifelse(status=='TIME_LIMIT','time_out',is_unif))
+pdf = pdf %>% filter(cfactor<=2)
+pdf$outcome = factor(pdf$outcome,c(T,F,'time_out'),c('equispaced optimal','irregular optimal','timeout'))
+plt = pdf %>% mutate(c=cfactor) %>% ggplot(aes(x=Nmeas,y=fmax,fill=outcome))+ geom_raster()+
+  facet_wrap(~c,labeller=purrr::partial(label_both, sep = " = "))
+
+
+plt_height = 2.25
+plt_width  = 6
+
+# theme
+theme_set(theme_classic()) 
+
+# font size
+
+plt = plt + labs(x=element_text('measurement budget'),
+                 y=element_text('max frequency (cycles/day)'))
+plt=plt+guides(fill=guide_legend(title.position='top'))
+plt=plt+theme(legend.position='bottom',
+               legend.key.width = unit(plt_width*.05, "in"),
+               legend.title.align = 0.5,
+               legend.direction = "horizontal",
+                text = element_text(size=9))
+# misc visuals
+plt = plt + theme(
+  strip.background=element_blank(),
+  plot.margin = margin(0,0,0,0),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.text.x = element_text(vjust = 0.25)
+)
+plt=plt+theme(text=element_text(size=9))
+
+
+plt_app = plt
+
+plt_app
+```
+
+## Combine
+```{r}
+plt_width =6 
+plt_height=5
+plt_raw = plt_raw
+plt_app = plt_app
+Fig = plt_raw/plt_app  + plot_annotation(tag_levels='A')+
+  plot_layout(heights=c(1.5,2))
+show_temp_plt(Fig,plt_width,plt_height)
+ggsave(paste0('~/research/ms_powerCHORD/figures/','pure_regularization.png'),Fig,width=plt_width,height=plt_height,device='png',dpi=600)
+```

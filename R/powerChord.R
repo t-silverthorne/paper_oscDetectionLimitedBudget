@@ -7,7 +7,7 @@ powerChord=function(Nmeas,fmin=1,fmax=24,
   model=list()
  
   # construct linear constraints 
-  LC = getPcLinCsts(Nfine,drts)
+  LC = getPcLinCsts(Nmeas,Nfine,drts)
   
   # construct quadratic constraints
   QC = getPcQuadCsts(fmin,fmax,Nfreq,w_reg,w_wc,Nfine)

@@ -21,5 +21,5 @@ evalMonteCarloPower<-function(tvec,param,Nmc,alpha=.05){
   freq = param$freq
   acro = param$acro
   Ydat = replicate(Nmc,{Amp*cos(2*pi*freq*tvec -acro) + rnorm(length(tvec))}) %>% t
-  return(rowCosinor(Ydat,tvec,per=1/freq) %>% {.$pvalue <.05} %>% mean())
+  return(rowCosinor(Ydat,tvec,per=1/freq) %>% {.$pvalue <alpha} %>% mean())
 }
