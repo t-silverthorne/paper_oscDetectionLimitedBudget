@@ -26,6 +26,12 @@ slide_version_directory='/home/turner/research/ms_powerCHORD/srbr_talk/pres_figs
 mc_cores=12
 fsize=9
 theme_set(theme_classic()) 
+
+cmap = c('balanced'='#40826E',
+         'threshold'='#A60A5E',
+         'random' ='#003399',
+         'equispaced'='black'
+         )
 ```
 
 # Fig_motiv: Motivation from empirical histogram
@@ -74,7 +80,6 @@ gen_panel_loc=function(mt){
   acrovec=seq(from=0,to=2*pi,.05)
   pars=expand.grid(freq=freqs,acro=acrovec)
   
-  #TODO: better way of doing this
   df=c(1:dim(pars)[1]) %>% lapply(function(ind){
     x=pars[ind,]
     freq=as.numeric(x['freq'])
@@ -274,8 +279,8 @@ psol=plt
 
 ## Heatmaps
 ```{r}
-Nfreq_plt=2^7
-Nacro=2^5+1
+Nfreq_plt=2^8
+Nacro=2^6+1
 acros=seq(0,2*pi,length.out=Nacro)
 acros=acros[1:(length(acros)-1)]
 freqs_plt = seq(1,24,length.out=Nfreq_plt)
@@ -342,12 +347,12 @@ phmap
 ```{r}
 #plt_GainWC_width  = plt_width
 #plt_GainWC_height = plt_height
-Fig_thresh = ((plt_GainWC&theme(legend.position = 'none'))/psol/phmap)+
+Fig_thresh = (plt_GainWC/psol/phmap)+
   plot_layout(heights = c(1.5,1,1.25))+
   plot_annotation(tag_levels='A')
 
 Fig_thresh_width=6
-Fig_thresh_height=6
+Fig_thresh_height=6.5
 
 show_temp_plt(Fig_thresh,Fig_thresh_width,Fig_thresh_height)
 ggsave(paste0('~/research/ms_powerCHORD/figures/','gain_of_non_unif.png'),Fig_thresh,width=Fig_thresh_width,height=Fig_thresh_height,device='png',dpi=600)
@@ -356,6 +361,7 @@ ggsave(paste0('~/research/ms_powerCHORD/figures/','gain_of_non_unif.png'),Fig_th
 
 # Fig_trade: Tradeoff and comparison
 ```{r}
+#TODO: color
 sloc = sols
 
 Nmvals = sloc@Nmeas %>% unique()
@@ -384,21 +390,32 @@ sloc@is_uniform = F
 splt = rbind(sloc@'',unif_stats) 
 
 splt$type = NaN
-splt[splt$drts==6,]$type    = '1hr'
-splt[splt$drts==12,]$type   = '2hr'
-splt[splt$drts==18,]$type   = '3hr'
+splt[splt$drts==6,]$type    = '1 hr'
+splt[splt$drts==12,]$type   = '2 hr'
+splt[splt$drts==18,]$type   = '3 hr'
 splt[splt$drts==Inf,]$type  = 'free'
 splt[splt$is_uniform,]$type = 'equispaced'
 ```
 
 ```{r}
 Nm_plt = seq(16,48,4)
+cmap_cust = c('equispaced'='black',
+              'free' = '#A60A5E',
+              '1 hr' = rgb(1,.03,0),
+              '2 hr' = rgb(.29,.59,0.82),
+              '3 hr' = rgb(.82,.41,.12)
+              )
+
 plt=splt %>% mutate(N=Nmeas) %>% 
   filter(Nmeas %in% Nm_plt) %>% 
   ggplot(aes(x=ncp,y=-sc_afder,color=type,shape=wreg>0))+geom_point(size=1.5)+
-  facet_wrap(~N,labeller = purrr::partial(label_both, sep = " = "))
+  facet_wrap(~N,labeller = purrr::partial(label_both, sep = " = "))+
+  scale_colour_manual(values=cmap_cust)
 
 
+```
+
+```{r}
 plt = plt + labs(x=element_text('worst-case power score'),
                  y=element_text('negative regularization score'),
                  color='constraint',
@@ -436,6 +453,7 @@ plt =dfROC %>% mutate(A=Amp,f=freq) %>%
   ggplot(aes(x=FPR,y=TPR,group=type,color=type))+geom_line()+
   scale_x_continuous(limits = c(0,1))+
   facet_grid(A+p_osc~f,labeller=purrr::partial(label_both, sep = " = "))
+plt=plt+scale_color_manual(values=cmap)
 
 plt = plt + scale_x_continuous(limits =c(xmin,xmax),breaks=c(0,1),labels=c(0,1)) +
   scale_y_continuous(limits=c(0,1))
@@ -582,9 +600,9 @@ ggsave(paste0('~/research/ms_powerCHORD/figures/','degeneracy.png'),plt_degen,wi
 ## Raw solutions 
 ```{r}
 scale=1.4
-tau   = c(1:Nfine)/Nfine -1/Nfine 
 
 Nfine = floor(144*scale/3)
+tau   = c(1:Nfine)/Nfine -1/Nfine 
 Nmeas = floor(40*scale)
 fmax  = 45
 fmin_vals = c(1,10,20)
@@ -602,7 +620,8 @@ sols = c(1:length(fmin_vals)) %>% lapply(function(ii){
                  fmax        = fmax,
                  MIPGap      = 1e-12
                  ) 
-  return(data.frame(fmin=fmin,mt=tau[sol$x[1:Nfine]>0]))
+  mt=tau[sol$x[1:Nfine]>0]
+  return(data.frame(status=sol$status,fmin=fmin,mt=mt,Ngood=length(mt)==Nmeas))
 }) %>% rbindlist() %>% data.frame()
 head(sols)
 
@@ -634,9 +653,14 @@ pdf = readRDS('results/data/pure_reg.RDS')
 pdf = pdf %>% mutate(outcome = ifelse(status=='TIME_LIMIT','time_out',is_unif))
 pdf = pdf %>% filter(cfactor<=2)
 pdf$outcome = factor(pdf$outcome,c(T,F,'time_out'),c('equispaced optimal','irregular optimal','timeout'))
-plt = pdf %>% mutate(c=cfactor) %>% ggplot(aes(x=Nmeas,y=fmax,fill=outcome))+ geom_raster()+
-  facet_wrap(~c,labeller=purrr::partial(label_both, sep = " = "))
 
+cmap_cust=c('equispaced optimal'='#1CABD6',
+            'irregular optimal'='#FF7D00',
+            'timeout'='#70808F')
+
+plt = pdf %>% mutate(c=cfactor) %>% ggplot(aes(x=Nmeas,y=fmax,fill=outcome))+ geom_raster()+
+  facet_wrap(~c,labeller=purrr::partial(label_both, sep = " = "))+
+  scale_fill_manual(values = cmap_cust)
 
 plt_height = 2.25
 plt_width  = 6

@@ -10,7 +10,7 @@ load_all()
 sols = readRDS('results/data/MCperiodogram/hiresSols.RDS')
 mc_cores = 16
 # redo TPR estimates
-Nmc      = 1e3
+Nmc      = 5e3
 Nmeas    = 48
 p_osc    = .1
 
