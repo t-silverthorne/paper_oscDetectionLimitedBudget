@@ -50,7 +50,7 @@ for (ii in c(1:length(sol_files))){
       Nmeas       = Nmeas,
       fmin        = f_fmin,
       df          = f_df,
-      d_power     = pwr-pwr_unif,
+      d_power     = max(pwr-pwr_unif,0),
       Nmeas_match = Nmeas_good
       )
     
