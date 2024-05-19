@@ -1,5 +1,5 @@
 % setup
-N    = 12;
+N    = 5;
 f    = 10*rand;
 t    = sort(rand(N,1));
 cvec = cos(2*pi*f*t);
@@ -15,12 +15,11 @@ A1  = 0.5*(a11*a22' + a22*a11') - a12*(a12');
 A2  = a11*a11' + a22*a22' - a11*a22' - a22*a11' + 4*a12*(a12');
 
 %% check they give same result
-sum(mu)^2- 4*mu'*A1*mu
-mu'*A2*mu
+mu = randsample([0,1],N,true)';
+sum(mu)^2- 4*mu'*A1*mu ==mu'*A2*mu
 
 %% compare spectra
-eig(A1)
-eig(A2)
+max(abs(eig(A1)-eig(A2)))
 
 
 %min(eig([cvec'*cvec cvec'*svec; cvec'*svec svec'*svec])) % min eig FIM
