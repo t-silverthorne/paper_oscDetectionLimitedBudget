@@ -401,7 +401,7 @@ splt[splt$is_uniform,]$type = 'equispaced'
 Nm_plt = seq(16,48,4)
 cmap_cust = c('equispaced'='black',
               'free' = '#A60A5E',
-              '1 hr' = rgb(1,.03,0),
+              '1 hr' = rgb(0,.8,.6),
               '2 hr' = rgb(.29,.59,0.82),
               '3 hr' = rgb(.82,.41,.12)
               )
@@ -413,9 +413,6 @@ plt=splt %>% mutate(N=Nmeas) %>%
   scale_colour_manual(values=cmap_cust)
 
 
-```
-
-```{r}
 plt = plt + labs(x=element_text('worst-case power score'),
                  y=element_text('negative regularization score'),
                  color='constraint',
