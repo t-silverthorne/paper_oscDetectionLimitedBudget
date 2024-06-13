@@ -1,5 +1,4 @@
 #' Get p-values from Lomb Scargle periodogram 
-#' @param alpha_vals values of threshold parameter
 #' @param Nmc number of signals to include in dataset
 #' @param tvec vector of measurement times
 #' @param Amp amplitude of signal
@@ -11,7 +10,7 @@
 #' 
 #' @author Turner Silverthorne
 #' @export
-simLombScarglePvals=function(alpha_vals,Nmc,tvec,
+simLombScarglePvals=function(Nmc,tvec,
                        Amp=1,freq=1,p_osc=.1,mc_cores=1){
   # generate simulated data
   Nmeas               = length(tvec)

@@ -24,7 +24,8 @@ getLombScargleROC=function(alpha_vals,Nmc,tvec,
                      fdr_methods=c('none','BH')){
   
   # simulate Lomb-Scargle periodogram analysis 
-  sim   = simLombScarglePvals(alpha_vals,Nmc,tvec,Amp,freq,p_osc,mc_cores) 
+  sim   = simLombScarglePvals(Nmc=Nmc,tvec=tvec,
+                              Amp=Amp,freq=freq,p_osc=p_osc,mc_cores=mc_cores) 
   state = sim$state  
   pvdf  = sim$pvdf
 
