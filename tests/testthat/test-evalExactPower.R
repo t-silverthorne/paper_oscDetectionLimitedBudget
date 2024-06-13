@@ -2,12 +2,14 @@ test_that("compare with monte carlo", {
   param = list(freq=1+runif(1),
                Amp=1.2+.1*runif(1),
                acro=2*pi*runif(1))
-  mt = c(1:24)/24-1/24
+  mt = c(1:15)/15-1/15
   
   al_val = sample(c(.01,.05),1) 
   pwr_exact = evalExactPower(mt,param,al_val)
   
-  pwr_MC    = evalMonteCarloPower(mt,param,1e4,al_val)
+  pwr_MC    = evalMonteCarloPower(mt,param,1e6,al_val)
+  pwr_MC
+  pwr_exact
   expect_equal(pwr_exact,pwr_MC,tolerance = 1e-2)
 })
 
