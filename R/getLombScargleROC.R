@@ -4,6 +4,9 @@ require(data.table)
 require(dplyr)
 #' Estimate TPR for multi-frequency hypothesis testing
 #' 
+#' @details
+#' Relies on [simLombScarglePvals()]
+#'   
 #' @param alpha_vals values of threshold parameter
 #' @param Nmc number of signals to include in dataset
 #' @param tvec vector of measurement times
@@ -19,24 +22,15 @@ require(dplyr)
 getLombScargleROC=function(alpha_vals,Nmc,tvec,
                        Amp=1,freq=1,p_osc=.1,mc_cores=1,
                      fdr_methods=c('none','BH')){
-  # generate simulated data
-  Nmeas               = length(tvec)
-  Ydat                = matrix(rnorm(Nmc*Nmeas),nrow=Nmc)
-  state               = sample(c('osc','non_osc'),Nmc,replace = T,c(p_osc,1-p_osc))
-  N_osc               = sum(state=='osc')
-  Ydat[state=='osc',] = Ydat[state=='osc',]+Amp*cos(outer(2*pi*runif(N_osc),2*pi*freq*tvec,'-'))
+  
+  # simulate Lomb-Scargle periodogram analysis 
+  sim   = simLombScarglePvals(alpha_vals,Nmc,tvec,Amp,freq,p_osc,mc_cores) 
+  state = sim$state  
+  pvdf  = sim$pvdf
+
   num_P  = sum(state=='osc')
   num_N  = sum(state=='non_osc')
   
-  # compute p-values from Lomb-Scargle
-  pvdf = c(1:dim(Ydat)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
-    x              = Ydat[ii,]
-    lomb_std       = lsp(x,times=tvec,plot=F,normalize = 'standard')
-    lomb_press     = lsp(x,times=tvec,plot=F,normalize = 'press')
-    return(rbind(data.frame(p_method='std',pval =lomb_std$p.value,state=state[ii]),
-                 data.frame(p_method='press',pval =lomb_press$p.value,state=state[ii])))
-  }) %>% rbindlist() %>% data.frame()
- 
   # check multiple test correction methods are implemented 
   if (all(fdr_methods  %in% c('none','BH','BY'))){
     methods = expand.grid(p_method = c('std','press'),fdr_method=fdr_methods,alpha=alpha_vals)
