@@ -188,7 +188,7 @@ plt_motivC       = plt
 Fig_motiv        = Fig
 Fig_motiv_width  = 6
 Fig_motiv_height = 5
-ggsave(paste0('~/research/ms_powerCHORD/figures/','motivation_fig_v2.png'),Fig_motiv,width=Fig_motiv_width,height=Fig_motiv_height,device='png',dpi=600)
+ggsave(paste0('~/research/ms_powerCHORD/figures/plos_submission/','fig1.png'),Fig_motiv,width=Fig_motiv_width,height=Fig_motiv_height,device='png',dpi=600)
 ```
 
 # Fig_thresh: Performance of worst-case 
@@ -355,7 +355,7 @@ Fig_thresh_width=6
 Fig_thresh_height=6.5
 
 show_temp_plt(Fig_thresh,Fig_thresh_width,Fig_thresh_height)
-ggsave(paste0('~/research/ms_powerCHORD/figures/','gain_of_non_unif.png'),Fig_thresh,width=Fig_thresh_width,height=Fig_thresh_height,device='png',dpi=600)
+ggsave(paste0('~/research/ms_powerCHORD/figures/plos_submission/','fig2.png'),Fig_thresh,width=Fig_thresh_width,height=Fig_thresh_height,device='png',dpi=600)
 
 ```
 
@@ -433,129 +433,9 @@ Fig_trade_height = 3
 Fig_trade_width  = 6
 
 show_temp_plt(plt,Fig_trade_width,Fig_trade_height)
-ggsave(paste0('~/research/ms_powerCHORD/figures/','tradeoff.png'),Fig_trade,width=Fig_trade_width,height=Fig_trade_height,device='png',dpi=600)
+ggsave(paste0('~/research/ms_powerCHORD/figures/plos_submission/','fig4.png'),Fig_trade,width=Fig_trade_width,height=Fig_trade_height,device='png',dpi=600)
 
 
-```
-
-
-# Fig_lomb : Lomb Scargle
-```{r}
-dfROC=readRDS('results/data/MCperiodogram/dfROC.RDS')
-xmin=0
-xmax=1
-
-plt =dfROC %>% mutate(A=Amp,f=freq) %>% 
-  filter(fdr_method=='BH',p_method=='std') %>% 
-  ggplot(aes(x=FPR,y=TPR,group=type,color=type))+geom_line()+
-  scale_x_continuous(limits = c(0,1))+
-  facet_grid(A+p_osc~f,labeller=purrr::partial(label_both, sep = " = "))
-plt=plt+scale_color_manual(values=cmap)
-
-plt = plt + scale_x_continuous(limits =c(xmin,xmax),breaks=c(0,1),labels=c(0,1)) +
-  scale_y_continuous(limits=c(0,1))
-plt = plt + theme(
-  strip.background=element_blank(),
-  plot.margin = margin(0,0,0,0),
-  panel.grid.major = element_blank(),
-  panel.grid.minor = element_blank(),
-  axis.text.x = element_text(vjust = 0.25)
-  )
-plt=plt+theme(text=element_text(size=9))
-
-plt=plt+labs(x=element_text('false positive rate'),
-             y=element_text('true positive rate'),
-             color=element_text('design'))
-
-Fig =plt & theme(legend.position='bottom')
-
-show_temp_plt(Fig,6,6)
-```
-
-```{r}
-Fig_LS        = Fig
-Fig_LS_width  = 6
-Fig_LS_height = 6
-
-ggsave(paste0('~/research/ms_powerCHORD/figures/','LombScargle_varp.png'),Fig_LS,width=Fig_LS_width,height=Fig_LS_height,device='png',dpi=600)
-
-```
-
-# Fig_regu_degen: Degeneracy
-
-```{r}
-Amp=1
-# compute power with/without regularization
-eval_reg_cfun = function(mt,freqs,w_reg){
-  evalWorstNCP(mt,freqs,Amp=1)-
-    w_reg*evalAcroFreqGradL2(mt,pars=list(fmin=min(freqs),fmax=max(freqs)))
-}
-```
-
-```{r}
-nt      = 60*2
-Nfreq   = 2^7
-Nm      = 24 
-fmin    = 1 
-fmaxs   = c(6,12,24)
-mt_unif = c(1:Nm)/Nm - 1/Nm
-
-ta_vals = seq(0,.5,length.out=nt)
-tb_vals = seq(0,.5,length.out=nt)
-pars    = expand.grid(ta=ta_vals,tb=tb_vals,fmax=fmaxs,wreg=c(0,1))
-
-pars    = pars[pars$ta < pars$tb,]
-pars    = pars[!(pars$ta %in% mt_unif),]
-pars    = pars[!(pars$tb %in% mt_unif),]
-
-pars$power = c(1:dim(pars)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
-  x     = pars[ii,]
-  ta    = x$ta %>% as.numeric()
-  tb    = x$tb %>% as.numeric()
-  fmax  = x$fmax %>% as.numeric()
-  wreg  = x$wreg %>% as.numeric()
-  
-  mt    = c(mt_unif,ta,tb) 
-  
-  freqs = seq(fmin,fmax,length.out=Nfreq)
-  
-  return(eval_reg_cfun(mt,freqs,wreg))
-})
-
-pars$power = as.numeric(pars$power)
-pars = pars %>% group_by(wreg,fmax) %>% 
-  mutate(gmax = max(abs(power))) %>% ungroup()
-
-pars = pars %>% group_by(wreg,fmax) %>% 
-  mutate(power_norm = power/gmax) %>% ungroup()
-```
-
-```{r}
-theme_set(theme_classic()) 
-
-plt1=pars %>% filter(wreg==0) %>% ggplot(aes(x=ta,y=tb,fill=power_norm))+geom_raster()+scale_fill_viridis_c()+
-  facet_wrap(~fmax,labeller = purrr::partial(label_both, sep = " = "),nrow=1)
-
-plt2=pars %>% filter(wreg>0) %>% ggplot(aes(x=ta,y=tb,fill=power_norm))+geom_raster()+scale_fill_viridis_c()+
-  facet_wrap(~fmax,labeller = purrr::partial(label_both, sep = " = "),nrow=1)
-
-plt1 = plt1 & scale_x_continuous(limits =c(xmin,xmax),
-                               breaks=c(xmin,xmax),
-                               labels=round(c(xmin,xmax),2)) 
-plt1 = plt1 & scale_y_continuous(limits =c(ymin,ymax),
-                               breaks=c(ymin,ymax),
-                               labels=round(c(ymin,ymax),2)) 
-plt2 = plt2 & scale_x_continuous(limits =c(xmin,xmax),
-                               breaks=c(xmin,xmax),
-                               labels=round(c(xmin,xmax),2)) 
-plt2 = plt2 & scale_y_continuous(limits =c(ymin,ymax),
-                               breaks=c(ymin,ymax),
-                               labels=round(c(ymin,ymax),2)) 
-
-
-
-plt = plt1/plt2
-plt
 ```
 
 ```{r}
@@ -590,7 +470,7 @@ plt = plt & theme(
 plt = plt + plot_annotation(tag_levels='A')
 plt_degen = plt
 show_temp_plt(plt,plt_width,plt_height)
-ggsave(paste0('~/research/ms_powerCHORD/figures/','degeneracy.png'),plt_degen,width=plt_width,height=plt_height,device='png',dpi=600)
+ggsave(paste0('~/research/ms_powerCHORD/figures/plos_submission/','fig6.png'),plt_degen,width=plt_width,height=plt_height,device='png',dpi=600)
 ```
 
 # Fig_regu:  Pure regularization
@@ -700,5 +580,5 @@ plt_app = plt_app
 Fig = plt_raw/plt_app  + plot_annotation(tag_levels='A')+
   plot_layout(heights=c(1.5,2))
 show_temp_plt(Fig,plt_width,plt_height)
-ggsave(paste0('~/research/ms_powerCHORD/figures/','pure_regularization.png'),Fig,width=plt_width,height=plt_height,device='png',dpi=600)
+ggsave(paste0('~/research/ms_powerCHORD/figures/plos_submission/','fig7.png'),Fig,width=plt_width,height=plt_height,device='png',dpi=600)
 ```

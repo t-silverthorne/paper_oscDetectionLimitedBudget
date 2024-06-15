@@ -11,23 +11,23 @@ require(ggplot2)
 load_all()
 sols = readRDS('results/data/MCperiodogram/hiresSols.RDS')
 
-mc_cores = 8
-Nmc      = 2e3
+mc_cores = 12 
+Nmc      = 1e3
 Nmeas    = 48
 
-freq_vals  = seq(1,24,.5)
+freq_vals  = seq(1,24,.25)
 mt_unif    = c(1:Nmeas)/Nmeas-1/Nmeas
 mt_opt     = sols[sols@wreg==0 & sols@drts==Inf & sols@Nmeas==Nmeas,]
 mt_rob     = sols[sols@wreg==1 & sols@drts==6 & sols@Nmeas==Nmeas,]
-mt_rand    = runif(Nmeas)
+#mt_rand    = runif(Nmeas)
 pars       = expand.grid(freq=freq_vals,
-                         Amp = c(1,1.5),
-                         p_osc = c(0.1,0.5),
-                         fdr_method=c('none','fdr'),
-                         type=c('equispaced','threshold','balanced','random'))
-pars=rbind(pars,pars,pars) # run 3 copies so you can compute sdev
-
-df=c(1:dim(pars)[1]) %>% lapply(function(ind){
+                         Amp = c(0.5,1,2),
+                         p_osc = c(0.5),
+                         fdr_method=c('none'),
+                         type=c('equispaced','threshold','balanced'))
+#pars=rbind(pars,pars,pars) # run 3 copies so you can compute sdev
+dim(pars)
+df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
   freq  = pars[ind,]$freq
   Amp   = pars[ind,]$Amp
   p_osc = pars[ind,]$p_osc
@@ -52,7 +52,7 @@ df=c(1:dim(pars)[1]) %>% lapply(function(ind){
   Ydat[state=='osc',] = Ydat[state=='osc',]+Amp*cos(outer(2*pi*runif(N_osc),2*pi*freq*tvec,'-'))
   
   # simualte p-values
-  pvdf = c(1:dim(Ydat)[1]) %>% mclapply(mc.cores=8,function(ii){
+  pvdf = c(1:dim(Ydat)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
     x              = Ydat[ii,]
     lomb_std       = lsp(x,times=tvec,plot=F,normalize = 'standard')
     return(data.frame(p_method='std',pval =lomb_std$p.value,state=state[ii]))
@@ -75,14 +75,20 @@ df=c(1:dim(pars)[1]) %>% lapply(function(ind){
   return(cbind(pars[ind,],data.frame(AUC=roc$auc,TPR=TPR,FPR=FPR)))
 }) %>% rbindlist() %>% data.frame()
 
-saveRDS(df,'results/data/roc2_hires.RDS')
-# output
-#df %>% ggplot(aes(x=freq,y=AUC,color=type,group=type))+
-#  geom_line()+geom_point()+facet_wrap(~Amp+p_osc,ncol=4)+ylim(c(0.25,1))
-#
-#df %>% ggplot(aes(x=freq,y=TPR,color=type))+geom_point()+facet_wrap(~Amp+p_osc)
-#df %>% ggplot(aes(x=freq,y=FPR,color=type))+geom_point()+facet_wrap(~Amp+p_osc)
+saveRDS(df,'results/data/roc.RDS')
+df=readRDS('results/data/roc.RDS')
+df.sum=df %>% filter(type!='random' & fdr_method=='none') %>% group_by(Amp,p_osc,type,freq) %>% 
+  summarise(sd_AUC = sd(AUC),
+            sd_TPR = sd(TPR),
+            sd_FPR = sd(FPR),
+            AUC = mean(AUC),
+            TPR=mean(TPR),
+            FPR=mean(FPR))
+p1=df.sum %>%  ggplot(aes(x=freq,y=AUC,color=type,group=type))+
+  geom_line()+#geom_errorbar(aes(ymin=AUC-sd_AUC,ymax=AUC+sd_AUC),data=df.sum)+
+  facet_grid(Amp~p_osc)+ylim(c(0,1))
 
+p1
 
 
 

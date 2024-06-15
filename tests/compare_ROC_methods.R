@@ -3,7 +3,7 @@ load_all()
 require(pROC)
 require(ggplot2)
 
-Nmc        = 1e4
+Nmc        = 1e3
 Nmeas      = 20
 tvec       = c(1:Nmeas)/Nmeas-1/Nmeas
 alpha_vals = seq(0,1,.01)
@@ -16,7 +16,7 @@ bstate = sim$pvdf %>% filter(p_method=='std') %>% {.$state} %>%
 
 head(bstate)
 head(pvec)
-roc2=pROC::roc(factor(bstate),pvec,plot=T)
+roc2=pROC::roc(factor(bstate),pvec,plot=F,direction='>')
 
 
 df1=data.frame(x=roc1$FPR,
