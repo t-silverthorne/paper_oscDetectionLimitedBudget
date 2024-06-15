@@ -13,14 +13,19 @@ sols = readRDS('results/data/MCperiodogram/hiresSols.RDS')
 
 mc_cores = 12 
 Nmc      = 1e3
-Nmeas    = 48
+Nmeas    = 32 
 
 freq_vals  = seq(1,24,.25)
 mt_unif    = c(1:Nmeas)/Nmeas-1/Nmeas
 mt_opt     = sols[sols@wreg==0 & sols@drts==Inf & sols@Nmeas==Nmeas,]
 mt_rob     = sols[sols@wreg==1 & sols@drts==6 & sols@Nmeas==Nmeas,]
+
+mt_opt=mt_opt[mt_opt<Inf]
+mt_rob=mt_rob[mt_rob<Inf]
+
 #mt_rand    = runif(Nmeas)
 pars       = expand.grid(freq=freq_vals,
+                         Nmeas=Nmeas,
                          Amp = c(0.5,1,2),
                          p_osc = c(0.5),
                          fdr_method=c('none'),
@@ -77,18 +82,16 @@ df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
 
 saveRDS(df,'results/data/roc.RDS')
 df=readRDS('results/data/roc.RDS')
-df.sum=df %>% filter(type!='random' & fdr_method=='none') %>% group_by(Amp,p_osc,type,freq) %>% 
+df.sum=df %>% filter(type!='random' ) %>% group_by(Amp,p_osc,type,freq,fdr_method) %>% 
   summarise(sd_AUC = sd(AUC),
             sd_TPR = sd(TPR),
             sd_FPR = sd(FPR),
             AUC = mean(AUC),
             TPR=mean(TPR),
             FPR=mean(FPR))
-p1=df.sum %>%  ggplot(aes(x=freq,y=AUC,color=type,group=type))+
+df.sum %>%  ggplot(aes(x=freq,y=AUC,color=type,group=type))+
   geom_line()+#geom_errorbar(aes(ymin=AUC-sd_AUC,ymax=AUC+sd_AUC),data=df.sum)+
-  facet_grid(Amp~p_osc)+ylim(c(0,1))
-
-p1
+  facet_wrap(~Amp,nrow=2)
 
 
 
