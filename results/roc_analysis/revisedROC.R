@@ -16,26 +16,30 @@ Nmc      = 1e3
 Nmeas    = 32 
 
 freq_vals  = seq(1,24,.25)
-mt_unif    = c(1:Nmeas)/Nmeas-1/Nmeas
-mt_opt     = sols[sols@wreg==0 & sols@drts==Inf & sols@Nmeas==Nmeas,]
-mt_rob     = sols[sols@wreg==1 & sols@drts==6 & sols@Nmeas==Nmeas,]
-
-mt_opt=mt_opt[mt_opt<Inf]
-mt_rob=mt_rob[mt_rob<Inf]
 
 #mt_rand    = runif(Nmeas)
 pars       = expand.grid(freq=freq_vals,
-                         Nmeas=Nmeas,
+                         Nmeas=c(32,40,48),
                          Amp = c(0.5,1,2),
                          p_osc = c(0.5),
                          fdr_method=c('none'),
-                         type=c('equispaced','threshold','balanced'))
+                         type=c('equispaced','threshold','balanced','regu_no_cstr'))
 #pars=rbind(pars,pars,pars) # run 3 copies so you can compute sdev
 dim(pars)
 df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
   freq  = pars[ind,]$freq
   Amp   = pars[ind,]$Amp
   p_osc = pars[ind,]$p_osc
+  Nmeas = pars[ind,]$Nmeas
+  
+  mt_unif    = c(1:Nmeas)/Nmeas-1/Nmeas
+  mt_opt     = sols[sols@wreg==0 & sols@drts==Inf & sols@Nmeas==Nmeas,]
+  mt_rob     = sols[sols@wreg==1 & sols@drts==6 & sols@Nmeas==Nmeas,]
+  mt_rnc     = sols[sols@wreg==1 & sols@drts==Inf & sols@Nmeas==Nmeas,]
+  mt_opt     = mt_opt[mt_opt<Inf]
+  mt_rob     = mt_rob[mt_rob<Inf]
+  mt_rnc     = mt_rnc[mt_rnc<Inf]
+    
   fdr_method=toString(pars[ind,]$fdr_method)
   if (pars[ind,]$type=='equispaced'){
     tvec = mt_unif
@@ -43,8 +47,8 @@ df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
     tvec = mt_opt
   }else if(pars[ind,]$type=='balanced'){
     tvec = mt_rob
-  }else if(pars[ind,]$type=='random'){
-    tvec = mt_rand
+  }else if(pars[ind,]$type=='regu_no_cstr'){
+    tvec = mt_rnc
   }else{
     stop('unrecognized type')
   }
@@ -82,7 +86,7 @@ df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
 
 saveRDS(df,'results/data/roc.RDS')
 df=readRDS('results/data/roc.RDS')
-df.sum=df %>% filter(type!='random' ) %>% group_by(Amp,p_osc,type,freq,fdr_method) %>% 
+df.sum=df %>% filter(type!='random' ) %>% group_by(freq,Nmeas,Amp,p_osc,fdr_method,type) %>% 
   summarise(sd_AUC = sd(AUC),
             sd_TPR = sd(TPR),
             sd_FPR = sd(FPR),
@@ -91,8 +95,11 @@ df.sum=df %>% filter(type!='random' ) %>% group_by(Amp,p_osc,type,freq,fdr_metho
             FPR=mean(FPR))
 df.sum %>%  ggplot(aes(x=freq,y=AUC,color=type,group=type))+
   geom_line()+#geom_errorbar(aes(ymin=AUC-sd_AUC,ymax=AUC+sd_AUC),data=df.sum)+
-  facet_wrap(~Amp,nrow=2)
+  facet_grid(Nmeas~Amp)
 
+df.sum %>%  ggplot(aes(x=freq,y=TPR,color=type,group=type))+
+  geom_line()+#geom_errorbar(aes(ymin=AUC-sd_AUC,ymax=AUC+sd_AUC),data=df.sum)+
+  facet_grid(Nmeas~Amp)
 
 
 
