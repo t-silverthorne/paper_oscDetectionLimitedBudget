@@ -1,0 +1,2 @@
+../data/MCperiodogram/hiresSols_identical.RDS filter=lfs diff=lfs merge=lfs -text
+../data/MCperiodogram/dfROC.RDS filter=lfs diff=lfs merge=lfs -text

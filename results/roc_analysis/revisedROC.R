@@ -11,16 +11,15 @@ require(ggplot2)
 load_all()
 sols = readRDS('results/data/MCperiodogram/hiresSols.RDS')
 
-mc_cores = 12 
-Nmc      = 1e3
-Nmeas    = 32 
+mc_cores = 10 
+Nmc      = 1e4
 
-freq_vals  = seq(1,24,.25)
+freq_vals  = seq(1,24,.05)
 
 #mt_rand    = runif(Nmeas)
 pars       = expand.grid(freq=freq_vals,
                          Nmeas=c(32,40,48),
-                         Amp = c(0.5,1,2),
+                         Amp = c(1,2),
                          p_osc = c(0.5),
                          fdr_method=c('none'),
                          type=c('equispaced','threshold','balanced','regu_no_cstr'))
@@ -31,6 +30,7 @@ df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
   Amp   = pars[ind,]$Amp
   p_osc = pars[ind,]$p_osc
   Nmeas = pars[ind,]$Nmeas
+  roc_method = pars[ind,]$roc_method
   
   mt_unif    = c(1:Nmeas)/Nmeas-1/Nmeas
   mt_opt     = sols[sols@wreg==0 & sols@drts==Inf & sols@Nmeas==Nmeas,]
@@ -84,22 +84,22 @@ df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
   return(cbind(pars[ind,],data.frame(AUC=roc$auc,TPR=TPR,FPR=FPR)))
 }) %>% rbindlist() %>% data.frame()
 
-saveRDS(df,'results/data/roc.RDS')
-df=readRDS('results/data/roc.RDS')
-df.sum=df %>% filter(type!='random' ) %>% group_by(freq,Nmeas,Amp,p_osc,fdr_method,type) %>% 
-  summarise(sd_AUC = sd(AUC),
-            sd_TPR = sd(TPR),
-            sd_FPR = sd(FPR),
-            AUC = mean(AUC),
-            TPR=mean(TPR),
-            FPR=mean(FPR))
-df.sum %>%  ggplot(aes(x=freq,y=AUC,color=type,group=type))+
-  geom_line()+#geom_errorbar(aes(ymin=AUC-sd_AUC,ymax=AUC+sd_AUC),data=df.sum)+
-  facet_grid(Nmeas~Amp)
-
-df.sum %>%  ggplot(aes(x=freq,y=TPR,color=type,group=type))+
-  geom_line()+#geom_errorbar(aes(ymin=AUC-sd_AUC,ymax=AUC+sd_AUC),data=df.sum)+
-  facet_grid(Nmeas~Amp)
+saveRDS(df,'results/data/roc_jun17.RDS')
+#df=readRDS('results/data/roc.RDS')
+#df.sum=df %>% filter(type!='random' ) %>% group_by(freq,Nmeas,Amp,p_osc,fdr_method,type) %>% 
+#  summarise(sd_AUC = sd(AUC),
+#            sd_TPR = sd(TPR),
+#            sd_FPR = sd(FPR),
+#            AUC = mean(AUC),
+#            TPR=mean(TPR),
+#            FPR=mean(FPR))
+#df.sum %>%  ggplot(aes(x=freq,y=AUC,color=type,group=type))+
+#  geom_line()+#geom_errorbar(aes(ymin=AUC-sd_AUC,ymax=AUC+sd_AUC),data=df.sum)+
+#  facet_grid(Nmeas~Amp)
+#
+#df.sum %>%  ggplot(aes(x=freq,y=TPR,color=type,group=type))+
+#  geom_line()+#geom_errorbar(aes(ymin=AUC-sd_AUC,ymax=AUC+sd_AUC),data=df.sum)+
+#  facet_grid(Nmeas~Amp)
 
 
 
