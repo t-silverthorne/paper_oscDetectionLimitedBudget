@@ -7,7 +7,6 @@ require(lomb)
 require(pROC)
 require(ggplot2)
 
-mc_cores =  as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK"))
 
 sols = readRDS('../hiresSols.RDS')
 getAUC = function(tvec,Nmc,p_osc,freq,Amp,acro){
@@ -37,10 +36,10 @@ getWorstAUC = function(tvec,Nmc,p_osc,freq,Amp,Nacro){
   acro = acro[1:Nacro]
   acro %>% sapply(FUN=function(phi){getAUC(tvec,Nmc,p_osc,freq,Amp,phi)}) %>% min()
 }
-freq_vals  = c(1,24,.25) # todo make this a seq
+freq_vals  = seq(1,24,.25) # todo make this a seq
 Nmc        = 1e3
 Nacro      = 2^6
-mc_cores   = 1
+mc_cores   = as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK"))
 # compare designs
 pars       = expand.grid(freq=freq_vals,
                          Nmeas=c(32,40,48),
@@ -49,7 +48,8 @@ pars       = expand.grid(freq=freq_vals,
                          type=c('equispaced','threshold','balanced','regu_no_cstr'))
 dim(pars)
 
-df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
+#df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
+df=c(1:100) %>% lapply(function(ind){#parallel inside
   freq  = pars[ind,]$freq
   Amp   = pars[ind,]$Amp
   p_osc = pars[ind,]$p_osc
@@ -82,3 +82,5 @@ df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
                                                       Amp=Amp,
                                                       Nacro=Nacro))))
 }) %>% rbindlist() %>% data.frame()
+
+saveRDS(df,'results/data/roc_analysis/worst_case_auc.RDS')
