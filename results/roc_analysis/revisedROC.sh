@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --account=def-stinch   # replace this with your own account
 #SBATCH --cpus-per-task=32     # number of processes
-#SBATCH --mem-per-cpu=500M     # memory; default unit is megabytes
-#SBATCH --time=0-00:15         # time (DD-HH:MM)
+#SBATCH --mem-per-cpu=250M     # memory; default unit is megabytes
+#SBATCH --time=0-03:00         # time (DD-HH:MM)
 #SBATCH --mail-user=turner.silverthorne@utoronto.ca
 #SBATCH --mail-type=ALL
 

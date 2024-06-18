@@ -25,8 +25,7 @@ pars       = expand.grid(freq=freq_vals,
                          type=c('equispaced','threshold','balanced','regu_no_cstr'))
 #pars=rbind(pars,pars,pars) # run 3 copies so you can compute sdev
 dim(pars)
-#df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
-df=c(1:128) %>% lapply(function(ind){#parallel inside
+df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
   freq  = pars[ind,]$freq
   Amp   = pars[ind,]$Amp
   p_osc = pars[ind,]$p_osc
@@ -85,7 +84,7 @@ df=c(1:128) %>% lapply(function(ind){#parallel inside
   return(cbind(pars[ind,],data.frame(AUC=roc$auc,TPR=TPR,FPR=FPR)))
 }) %>% rbindlist() %>% data.frame()
 
-saveRDS(df,'results/data/roc_jun17.RDS')
+saveRDS(df,'results/data/rocFULL.RDS')
 #df=readRDS('results/data/roc.RDS')
 #df.sum=df %>% filter(type!='random' ) %>% group_by(freq,Nmeas,Amp,p_osc,fdr_method,type) %>% 
 #  summarise(sd_AUC = sd(AUC),

@@ -48,7 +48,7 @@ pars       = expand.grid(freq=freq_vals,
 dim(pars)
 
 #df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
-df=c(1:100) %>% lapply(function(ind){#parallel inside
+df=c(1:128) %>% lapply(function(ind){#parallel inside
   freq  = pars[ind,]$freq
   Amp   = pars[ind,]$Amp
   p_osc = pars[ind,]$p_osc
