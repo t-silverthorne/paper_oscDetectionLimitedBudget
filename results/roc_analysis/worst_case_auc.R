@@ -37,9 +37,9 @@ getWorstAUC = function(tvec,Nmc,p_osc,freq,Amp,Nacro){
   acro = acro[1:Nacro]
   acro %>% sapply(FUN=function(phi){getAUC(tvec,Nmc,p_osc,freq,Amp,phi)}) %>% min()
 }
-freq_vals  = c(1,24,1)
-Nmc        = 1e2
-Nacro      = 2^3
+freq_vals  = c(1,24,.25) # todo make this a seq
+Nmc        = 1e3
+Nacro      = 2^6
 mc_cores   = 1
 # compare designs
 pars       = expand.grid(freq=freq_vals,
