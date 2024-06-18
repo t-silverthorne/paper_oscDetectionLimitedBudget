@@ -7,8 +7,9 @@ require(lomb)
 require(pROC)
 require(ggplot2)
 
-# get AUC
-# tvec, Nmc, p_osc, freq, Amp,acro
+mc_cores =  as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK"))
+
+sols = readRDS('../hiresSols.RDS')
 getAUC = function(tvec,Nmc,p_osc,freq,Amp,acro){
   Nmeas               = length(tvec)
   Ydat                = matrix(rnorm(Nmc*Nmeas),nrow=Nmc)
@@ -30,7 +31,6 @@ getAUC = function(tvec,Nmc,p_osc,freq,Amp,acro){
   roc=pROC::roc(as.numeric(ostate=='osc'),qval,direction='>',quiet=T)
   return(roc$auc) 
 }
-
 # get worstAUC
 getWorstAUC = function(tvec,Nmc,p_osc,freq,Amp,Nacro){
   acro = seq(0,2*pi,length.out=Nacro+1)
@@ -38,9 +38,9 @@ getWorstAUC = function(tvec,Nmc,p_osc,freq,Amp,Nacro){
   acro %>% sapply(FUN=function(phi){getAUC(tvec,Nmc,p_osc,freq,Amp,phi)}) %>% min()
 }
 freq_vals  = c(1,24,1)
-Nmc = 1e1
-Nacro = 2^2
-mc_cores=1
+Nmc        = 1e2
+Nacro      = 2^3
+mc_cores   = 1
 # compare designs
 pars       = expand.grid(freq=freq_vals,
                          Nmeas=c(32,40,48),
