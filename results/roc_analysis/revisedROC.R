@@ -9,9 +9,9 @@ require(lomb)
 require(pROC)
 require(ggplot2)
 load_all()
-sols = readRDS('results/data/MCperiodogram/hiresSols.RDS')
+sols = readRDS('../hiresSols.RDS')
 
-mc_cores = 10 
+mc_cores = as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK"))
 Nmc      = 1e4
 
 freq_vals  = seq(1,24,.05)
@@ -84,7 +84,7 @@ df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
   return(cbind(pars[ind,],data.frame(AUC=roc$auc,TPR=TPR,FPR=FPR)))
 }) %>% rbindlist() %>% data.frame()
 
-saveRDS(df,'results/data/roc_jun17.RDS')
+saveRDS(df,'results/data/rocFULL.RDS')
 #df=readRDS('results/data/roc.RDS')
 #df.sum=df %>% filter(type!='random' ) %>% group_by(freq,Nmeas,Amp,p_osc,fdr_method,type) %>% 
 #  summarise(sd_AUC = sd(AUC),
