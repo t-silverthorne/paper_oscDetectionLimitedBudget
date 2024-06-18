@@ -52,7 +52,7 @@ df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
   Amp   = pars[ind,]$Amp
   p_osc = pars[ind,]$p_osc
   Nmeas = pars[ind,]$Nmeas
-
+  
   mt_unif    = c(1:Nmeas)/Nmeas-1/Nmeas
   mt_opt     = sols[sols@wreg==0 & sols@drts==Inf & sols@Nmeas==Nmeas,]
   mt_rob     = sols[sols@wreg==1 & sols@drts==6 & sols@Nmeas==Nmeas,]
