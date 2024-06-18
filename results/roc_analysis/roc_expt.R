@@ -1,3 +1,13 @@
+require(devtools)
+require(annmatrix)
+require(parallel)
+require(data.table)
+require(dplyr)
+require(annmatrix)
+require(lomb)
+require(pROC)
+require(ggplot2)
+load_all()
 mc_cores=12
 fdr_method='fdr'
 Nmc   = 1e4
@@ -6,7 +16,7 @@ p_osc = 0.1
 Amp   = 1 
 freq  = 24
 tvec  = c(1:Nmeas)/Nmeas - 1/Nmeas
-tvec   = sols[sols@wreg==1 & sols@drts==6 & sols@Nmeas==Nmeas,]
+#tvec   = sols[sols@wreg==1 & sols@drts==6 & sols@Nmeas==Nmeas,]
 tvec=tvec[tvec<Inf]
 Nmeas               = length(tvec)
 Ydat                = matrix(rnorm(Nmc*Nmeas),nrow=Nmc)
