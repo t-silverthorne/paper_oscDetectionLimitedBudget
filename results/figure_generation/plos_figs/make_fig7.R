@@ -1,4 +1,3 @@
-rm(list=ls(all=T)) # clear env
 source('results/figure_generation/plos_figs/fig_env.R')
 require(ggplot2)
 require(patchwork)
@@ -7,7 +6,6 @@ require(data.table)
 require(devtools)
 require(purrr)
 load_all()
-loadedNamespaces()
 
 fsize=9
 theme_set(theme_classic())
@@ -18,7 +16,7 @@ cmap = c('RVWCP'     ='#40826E',
          'equispaced'='black'
 )
 
-df=readRDS('results/data/roc.RDS')
+df=readRDS('results/roc_analysis/revisedROC.RDS')
 df$type = as.character(df$type)
 df[df$type=='threshold',]$type    = 'WCP'
 df[df$type=='balanced',]$type     = 'RVWCP constrained'
@@ -33,7 +31,7 @@ df.sum=df %>% filter(type!='random' ) %>%
             TPR=mean(TPR),
             FPR=mean(FPR))
 
-plt=df.sum %>% mutate(N=Nmeas,A=Amp) %>% 
+plt=df %>% mutate(N=Nmeas,A=Amp) %>% 
   ggplot(aes(x=freq,y=AUC,color=type,group=type))+
   geom_line()+#geom_errorbar(aes(ymin=AUC-sd_AUC,ymax=AUC+sd_AUC),data=df.sum)+
   facet_grid(N~A,labeller = purrr::partial(label_both,sep=' = '))+
@@ -48,7 +46,7 @@ plt=plt+ theme(
   panel.grid.minor = element_blank(),
   axis.text.x = element_text(vjust = 0.25)
 )
-plt_height = 4
+plt_height = 3.5
 plt_width  = 6
 plt=plt+theme(legend.position='bottom',
                legend.box='vertical',

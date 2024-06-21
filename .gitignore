@@ -1,11 +1,8 @@
 figs_for_paper/gurobi_raw_spt*/*.RDS
-
 matlab_checks/*.png
-
 *.asv
 *.out
 *.RDS
-
 transfer_fold/*
 figs_for_paper/gurobi_raw/*.RDS
 figs_for_paper/gurobi_raw/*.out
@@ -65,3 +62,4 @@ figs_for_paper/Fig1_aug_vs_cvxr/p3.RDS
 figs_for_paper/Fig1_aug_vs_cvxr/solns.RDS
 results/compute_canada/slurm-44965279.out
 cvxr_vs_gurobi.png
+AUCfig.png
