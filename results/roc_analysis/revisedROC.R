@@ -10,11 +10,20 @@ require(pROC)
 require(ggplot2)
 load_all()
 sols = readRDS('../hiresSols.RDS')
+high_freq=TRUE
+
 
 mc_cores = as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK"))
 Nmc      = 1e4
 
-freq_vals  = seq(1,24,.05)
+if (high_freq){
+  freq_vals  = seq(24,36,.05)
+  freq_vals  = freq_vals(2:length(freq_vals))
+  fname = 'revisedROC_highfreq.RDS'
+}else{
+  freq_vals  = seq(1,24,.05)
+  fname = 'revisedROC.RDS'
+}
 
 #mt_rand    = runif(Nmeas)
 pars       = expand.grid(freq=freq_vals,
@@ -85,7 +94,7 @@ df=c(1:128) %>% lapply(function(ind){#parallel inside
   return(cbind(pars[ind,],data.frame(AUC=roc$auc,TPR=TPR,FPR=FPR)))
 }) %>% rbindlist() %>% data.frame()
 
-saveRDS(df,'results/data/roc_jun17.RDS')
+saveRDS(df,paste0('results/roc_analysis/',fname))
 #df=readRDS('results/data/roc.RDS')
 #df.sum=df %>% filter(type!='random' ) %>% group_by(freq,Nmeas,Amp,p_osc,fdr_method,type) %>% 
 #  summarise(sd_AUC = sd(AUC),
