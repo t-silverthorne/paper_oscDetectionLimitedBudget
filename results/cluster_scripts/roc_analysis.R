@@ -15,7 +15,7 @@ estimate_TPR = function(alpha_val,p_osc,tvec,Nmc,Amp,freq,type){
     lomb_std       = lsp(x,alpha=alpha_val,tvec,plot=F,normalize = 'standard')
     lomb_press     = lsp(x,alpha=alpha_val,tvec,plot=F,normalize = 'press')
     freq_est       = lomb$peak.at[1]
-    pcosinor       = rowCosinor(matrix(x,nrow=1),matrix(tvec,ncol=1),freq_est) %>% {.$pvalue}
+    pcosinor       = row_cosinor(matrix(x,nrow=1),matrix(tvec,ncol=1),freq_est) %>% {.$pvalue}
     return(data.frame(plomb_std=lomb_std$p.value,
                       plomb_press=lomb_press$p.value,
                       pcosinor=pcosinor))

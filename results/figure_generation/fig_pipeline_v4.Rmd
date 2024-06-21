@@ -12,6 +12,7 @@ require(stringr)
 require(dplyr)
 require(latex2exp)
 require(annmatrix)
+require(matrixTests)
 load_all()
 source('plotConfig.R')
 source('plot_template.R')
@@ -75,7 +76,7 @@ gen_panel_loc=function(mt){
   Nmc=1e2
   monteCarloPval <-function(tvec,Amp,freq,acro){
     Ydat = replicate(Nmc,{Amp*cos(2*pi*freq*tvec -acro) + rnorm(length(tvec))}) %>% t
-    return(rowCosinor(Ydat,tvec,per=1/freq) %>% {.$pvalue} )
+    return(matrixTests::row_cosinor(Ydat,tvec,per=1/freq) %>% {.$pvalue} )
   }
   acrovec=seq(from=0,to=2*pi,.05)
   pars=expand.grid(freq=freqs,acro=acrovec)
