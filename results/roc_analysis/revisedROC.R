@@ -84,7 +84,7 @@ df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
   return(cbind(pars[ind,],data.frame(AUC=roc$auc,TPR=TPR,FPR=FPR)))
 }) %>% rbindlist() %>% data.frame()
 
-saveRDS(df,'results/data/rocFULL.RDS')
+saveRDS(df,'results/roc_analysis/revisedROC.RDS')
 #df=readRDS('results/data/roc.RDS')
 #df.sum=df %>% filter(type!='random' ) %>% group_by(freq,Nmeas,Amp,p_osc,fdr_method,type) %>% 
 #  summarise(sd_AUC = sd(AUC),
