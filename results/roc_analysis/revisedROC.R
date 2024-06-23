@@ -18,7 +18,7 @@ Nmc      = 1e4
 
 if (high_freq){
   freq_vals  = seq(24,36,.05)
-  freq_vals  = freq_vals(2:length(freq_vals))
+  freq_vals  = freq_vals[2:length(freq_vals)]
   fname = 'revisedROC_highfreq.RDS'
 }else{
   freq_vals  = seq(1,24,.05)
@@ -34,8 +34,7 @@ pars       = expand.grid(freq=freq_vals,
                          type=c('equispaced','threshold','balanced','regu_no_cstr'))
 #pars=rbind(pars,pars,pars) # run 3 copies so you can compute sdev
 dim(pars)
-#df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
-df=c(1:128) %>% lapply(function(ind){#parallel inside
+df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
   freq  = pars[ind,]$freq
   Amp   = pars[ind,]$Amp
   p_osc = pars[ind,]$p_osc
