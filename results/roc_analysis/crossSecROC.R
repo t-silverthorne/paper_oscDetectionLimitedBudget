@@ -8,14 +8,17 @@ require(annmatrix)
 require(lomb)
 require(pROC)
 require(ggplot2)
-sols = readRDS('../hiresSols.RDS')
+load_all()
+sols = readRDS('results/data/MCperiodogram/hiresSols.RDS')
 
 df=readRDS('results/roc_analysis/revisedROC.RDS')
 
-Nacro = 2^3
-freqs = c(5,5.65)
-acros = seq(0,2*pi,length.out=Nacro+1)
-acros = acros[1:Nacro]
+mc_cores = 12
+Nmc      = 5e2
+Nacro    = 2^5
+freqs    = c(5,5.65)
+acros    = seq(0,2*pi,length.out=Nacro+1)
+acros    = acros[1:Nacro]
 df=df[df$Amp==1 & df$Nmeas==40 &df$freq%in% freqs,] 
 
 pars  = expand.grid(freq=freqs,
@@ -32,7 +35,7 @@ df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
   Amp   = pars[ind,]$Amp
   p_osc = pars[ind,]$p_osc
   Nmeas = pars[ind,]$Nmeas
-  roc_method = pars[ind,]$roc_method
+  acro  = pars[ind,]$acro
   
   mt_unif    = c(1:Nmeas)/Nmeas-1/Nmeas
   mt_opt     = sols[sols@wreg==0 & sols@drts==Inf & sols@Nmeas==Nmeas,]
@@ -54,5 +57,14 @@ df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
   }else{
     stop('unrecognized type')
   }
+  return(cbind(pars[ind,],data.frame(AUC=getAUC(tvec  = tvec,
+                                                Nmc   = Nmc,
+                                                p_osc = p_osc,
+                                                freq  = freq,
+                                                Amp   = Amp,
+                                                acro  = acro))))
+}) %>% rbindlist() %>% data.frame()
+saveRDS('results/roc_analysis/crossSecROC.RDS')
 
-}
+#df=readRDS('results/roc_analysis/crossSecROC.RDS')
+#df %>% ggplot(aes(x=acro,y=AUC,group=freq,color=freq))+geom_line()+facet_wrap(~type)
