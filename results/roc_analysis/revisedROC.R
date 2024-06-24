@@ -8,38 +8,87 @@ require(annmatrix)
 require(lomb)
 require(pROC)
 require(ggplot2)
+require(matrixTests)
 load_all()
-sols = readRDS('../hiresSols.RDS')
-high_freq=TRUE
+sols = readRDS('results/data/MCperiodogram/hiresSols.RDS')
 
 
-mc_cores = as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK"))
+#sols = readRDS('../hiresSols.RDS')
+#mc_cores = as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK"))
 Nmc      = 1e4
 
-if (high_freq){
-  freq_vals  = seq(24,36,.05)
-  freq_vals  = freq_vals[2:length(freq_vals)]
-  fname = 'revisedROC_highfreq.RDS'
-}else{
-  freq_vals  = seq(1,24,.05)
-  fname = 'revisedROC.RDS'
+rowCosinor <- function(theData, zts, per=24) {
+  Y <- as.matrix(theData)
+  
+  x1 <- sin(2*pi*zts/per)
+  x2 <- cos(2*pi*zts/per)
+  x0 <- rep(1, dim(Y)[2])
+  X  <- cbind(x0,x1,x2)
+  
+  betas <- solve(t(X) %*% X) %*% t(X) %*% t(Y)
+  
+  phases     <- atan2(betas[2,], betas[3,]) %% (2*pi)
+  amplitudes <- sqrt(betas[2,]*betas[2,] + betas[3,]*betas[3,])
+  
+  fits <- t(X %*% betas)
+  
+  SStot <- rowSums((Y - rowMeans(Y))^2)
+  SSres <- rowSums((fits-Y)^2)
+  Rsqs  <- 1 - (SSres/SStot)
+  
+  SSmod <- SStot - SSres
+  DFres <- ncol(theData) - 3
+  DFmod <- 2
+  MSres <- SSres / DFres
+  MSmod <- SSmod / DFmod
+  Fstatistic <- MSmod / MSres
+  
+  pval <- pf(Fstatistic, DFmod, DFres, lower.tail=FALSE)
+  
+  data.frame(phase=phases, amplitude=amplitudes, mesor=betas[1,],
+             rsq=Rsqs, statistic=Fstatistic, pvalue=pval
+  )
 }
 
-#mt_rand    = runif(Nmeas)
+#high_freq=TRUE
+#if (high_freq){
+#  freq_vals  = seq(24,36,.05)
+#  freq_vals  = freq_vals[2:length(freq_vals)]
+#  fname = 'revisedROC_highfreq.RDS'
+#}else{
+#  freq_vals  = seq(1,24,.05)
+#  fname = 'revisedROC.RDS'
+#}
+#pars       = expand.grid(freq=freq_vals,
+#                         Nmeas=c(32,40,48),
+#                         Amp = c(1,2),
+#                         p_osc = c(0.5),
+#                         fdr_method=c('none'),
+#                         type=c('equispaced','threshold','balanced','regu_no_cstr'))
+
+eps=1e-3
+freq_vals = seq(1,36,.05)
+freq_vals = freq_vals + eps*runif(length(freq_vals))
+fname = 'cosinorROC.RDS'
+
 pars       = expand.grid(freq=freq_vals,
                          Nmeas=c(32,40,48),
-                         Amp = c(1,2),
+                         Amp = c(1),
                          p_osc = c(0.5),
                          fdr_method=c('none'),
+                         stat_method=c('cosinor'),
                          type=c('equispaced','threshold','balanced','regu_no_cstr'))
+ 
+
 #pars=rbind(pars,pars,pars) # run 3 copies so you can compute sdev
 dim(pars)
 df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
+  print(ind)
   freq  = pars[ind,]$freq
   Amp   = pars[ind,]$Amp
   p_osc = pars[ind,]$p_osc
   Nmeas = pars[ind,]$Nmeas
-  roc_method = pars[ind,]$roc_method
+  stat_method= pars[ind,]$stat_method
   
   mt_unif    = c(1:Nmeas)/Nmeas-1/Nmeas
   mt_opt     = sols[sols@wreg==0 & sols@drts==Inf & sols@Nmeas==Nmeas,]
@@ -70,11 +119,18 @@ df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
   Ydat[state=='osc',] = Ydat[state=='osc',]+Amp*cos(outer(2*pi*runif(N_osc),2*pi*freq*tvec,'-'))
   
   # simualte p-values
-  pvdf = c(1:dim(Ydat)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
-    x              = Ydat[ii,]
-    lomb_std       = lsp(x,times=tvec,plot=F,normalize = 'standard')
-    return(data.frame(p_method='std',pval =lomb_std$p.value,state=state[ii]))
-  }) %>% rbindlist() %>% data.frame()
+  if (stat_method=='cosinor'){
+   pvdf = data.frame(pval=rowCosinor(Ydat,tvec,per=1/freq) %>% {.$pvalue},
+                     state=state)
+  }else if(stat_method=='lomb'){
+    pvdf = c(1:dim(Ydat)[1]) %>% mclapply(mc.cores=mc_cores,function(ii){
+      x              = Ydat[ii,]
+      lomb_std       = lsp(x,times=tvec,plot=F,normalize = 'standard')
+      return(data.frame(p_method='std',pval =lomb_std$p.value,state=state[ii]))
+    }) %>% rbindlist() %>% data.frame()
+  }else{
+    stop('unknown stat method')
+  }
     
   # FDR correction
   qval   = p.adjust(pvdf$pval,method=fdr_method)

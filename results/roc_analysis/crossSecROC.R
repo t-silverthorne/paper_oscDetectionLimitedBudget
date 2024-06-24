@@ -66,5 +66,5 @@ df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
 }) %>% rbindlist() %>% data.frame()
 saveRDS(df,'results/roc_analysis/crossSecROC.RDS')
 
-#df=readRDS('results/roc_analysis/crossSecROC.RDS')
-#df %>% ggplot(aes(x=acro,y=AUC,group=freq,color=freq))+geom_line()+facet_wrap(~type)
+df=readRDS('results/roc_analysis/crossSecROC.RDS')
+df %>% ggplot(aes(x=acro,y=AUC,group=freq,color=freq))+geom_line()+facet_wrap(~type)
