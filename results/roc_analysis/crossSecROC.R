@@ -14,8 +14,8 @@ sols = readRDS('results/data/MCperiodogram/hiresSols.RDS')
 df=readRDS('results/roc_analysis/revisedROC.RDS')
 
 mc_cores = 12
-Nmc      = 5e2
-Nacro    = 2^5
+Nmc      = 1e3
+Nacro    = 2^7
 freqs    = c(5,5.65)
 acros    = seq(0,2*pi,length.out=Nacro+1)
 acros    = acros[1:Nacro]
@@ -64,7 +64,7 @@ df=c(1:dim(pars)[1]) %>% lapply(function(ind){#parallel inside
                                                 Amp   = Amp,
                                                 acro  = acro))))
 }) %>% rbindlist() %>% data.frame()
-saveRDS('results/roc_analysis/crossSecROC.RDS')
+saveRDS(df,'results/roc_analysis/crossSecROC.RDS')
 
 #df=readRDS('results/roc_analysis/crossSecROC.RDS')
 #df %>% ggplot(aes(x=acro,y=AUC,group=freq,color=freq))+geom_line()+facet_wrap(~type)
