@@ -37,3 +37,4 @@ results/output/Nmeas16/Nfi_288_Nfr_256_rL1_1_msa_500_mbf_10_nrep_20_batch_2024-0
 *.RDS filter=lfs diff=lfs merge=lfs -text
 results/data/MCperiodogram/hiresSols.RDS filter=lfs diff=lfs merge=lfs -text
 results/data/MCperiodogram/hiresSols_compatible.RDS filter=lfs diff=lfs merge=lfs -text
+results/roc_analysis/revisedROC_highfreq.RDS filter=lfs diff=lfs merge=lfs -text
