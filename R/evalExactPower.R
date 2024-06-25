@@ -19,12 +19,12 @@
 #' @export
 evalExactPower <- function(t,param,alpha=.05){
 # return power of one-frequency cosinor model
-  Amp    = param[['Amp']];
-  freq   = param[['freq']];
-  acro   = param[['acro']];
+  Amp    = param[['Amp']]
+  freq   = param[['freq']]
+  acro   = param[['acro']]
   N      = length(t)
   
-  cvec   = Amp*cos(2*pi*freq*t-acro);
+  cvec   = Amp*cos(2*pi*freq*t-acro)
   lambda = as.numeric(t(cvec)%*%cvec)
   
   f0     = qf(p=1-alpha,df1=2,df2=N-3)
