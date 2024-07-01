@@ -5,14 +5,24 @@ output: html_document
 
 ```{r sourcing functions}
 source("generate_data.R")
+source("C:/Users/johnl/OneDrive/Documents/OED_Project/oscpaper/R/rowCosinor.R")
 ```
 
 ```{r data_generation}
-param <- c(1, 1, 0, pi) #mu, amp, phase, and period
+library(pracma)
+
+amp <- 2
+phase <- 0
+period <- 0
+
+param <- c(amp, phase, period) #mu, amp, phase, and period
 Outer_loop <- 10
 Nmeas <- 4
 
-generate_data("gaussian", Outer_loop, Nmeas, param)
+zts <- linspace(0, 1, Nmeas)
+
+xdat <- generate_data("gaussian", Outer_loop, Nmeas, param)
+cosinor <- rowCosinor(xdat, zts)
 ```
 
 ```{r generating_data_manual}
